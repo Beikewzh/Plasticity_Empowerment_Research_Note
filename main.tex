@@ -153,8 +153,8 @@ $D_t = 0$ means $O_{t+1} \perp h_t \mid (M_t, A_t)$. The pair $(R_{t+1}, M_{t+1}
 (a) Let $\lambda$ be a behaviour that at every step takes only actions in $S_s(\phi_s(h_s))$. By induction on $s$, every pair $(h_s, a)$ reachable under $\lambda$ is reachable under $\pi$: the first observation does not depend on the behaviour; if $h_s$ is reachable under both and $\lambda$ takes $a \in S_s$, then $\pi$ takes $a$ with positive probability and the next observation has the same law $e(\cdot \mid h_s, a)$ under both. Hence Proposition~\ref{prop:markov} applies at every pair $\lambda$ reaches, with the same kernel $\kappa_s$. Backward induction: with $V^\lambda_T = 0 = v^*_T$, suppose $V^\lambda_{s+1}(h_{s+1}) \le v^*_{s+1}(\phi_{s+1}(h_{s+1}))$ at reachable histories. Then
 \begin{align*}
 V^\lambda_s(h_s) &= \sum_a \lambda_s(a \mid h_s)\, \E[R_{s+1} + \gamma V^\lambda_{s+1}(h_{s+1}) \mid h_s, a] \\
-&\le \sum_a \lambda_s(a \mid h_s)\, \sum_{r, m'} \kappa_s(r, m' \mid \phi_s(h_s), a)\,[r + \gamma v^*_{s+1}(m')]
-= \sum_a \lambda_s(a \mid h_s)\, q^*_s(\phi_s(h_s), a) \le v^*_s(\phi_s(h_s)),
+&\le \sum_a \lambda_s(a \mid h_s)\, \sum_{r, m'} \kappa_s(r, m' \mid \phi_s(h_s), a)\,[r + \gamma v^*_{s+1}(m')] \\
+&= \sum_a \lambda_s(a \mid h_s)\, q^*_s(\phi_s(h_s), a) \;\le\; v^*_s(\phi_s(h_s)),
 \end{align*}
 where the first inequality uses the induction hypothesis and Proposition~\ref{prop:markov}: $(h_s, a)$ is reachable under $\pi$ and $O_{s+1}$ has law $e(\cdot \mid h_s, a)$ under both behaviours, so $(R_{s+1}, M_{s+1})$ has law $\kappa_s(\cdot \mid \phi_s(h_s), a)$ under $\lambda$. Equality holds for the behaviour that is greedy for $q^*_s$, which reads the memory and takes actions in $S_s$. (b) With $S_s(m) = \calA$ at every reachable $m$, every history reachable by any behaviour is reachable under $\pi$, the class in (a) is the class of all behaviours, so $v^*_t(\phi_t(h_t)) = V^*_t(h_t)$ and $q^*_t(\phi_t(h_t), a) = Q^*_t(h_t, a)$ for every $a$, by the same induction applied to $Q$.
 \end{proof}
