@@ -1,6 +1,6 @@
 # Mathematical audit (outside the LaTeX document)
 
-Date: 2026-10-08. Companion to `main.tex` ("Constructing Sufficient Agent States from Plasticity and Empowerment").
+Date: 2026-10-08 (after an independent referee pass; its corrections are applied in `main.tex`). Companion to `main.tex` ("Constructing Sufficient Agent States from Plasticity and Empowerment").
 
 ## Rigorously established (finite alphabets, finite horizon, memory updated by a deterministic function,
 ## policy depending on the past only through the memory; all statements under the interaction distribution P)
@@ -29,6 +29,23 @@ Date: 2026-10-08. Companion to `main.tex` ("Constructing Sufficient Agent States
   or fresh on-policy data treated as fixed for the step). H(A | M) in the student pair equals H(A | h) on fresh
   on-policy data; on stale data it is an inertia term.
 
+## Corrections made after the referee pass (were in the first draft of this note)
+- "deterministic (or independently randomised) update": a randomised update breaks M_t = phi_t(h_t) and the
+  identities (M_t a fresh coin, A_t = M_t, O_{t+1} = A_t: D = D^0 = 0 but Delta E = 1 bit); fixed to deterministic.
+- "differ several steps later ... nothing in the stream reveals it": wrong; a later difference along followed paths
+  shows as D_{t+j} > 0 (late, possibly outside any window). Fixed.
+- "records the reward" in the plasticity sufficient condition: redundant; linear independence over next observations
+  already forces the update to separate them. Fixed.
+- Bias directions of the cross-entropy difference were reversed (poor window head => biased DOWNWARD). Fixed.
+- "the action-conditioned loss and the pair have the same population minimisers": false (constant memory under an
+  old policy reading an irrelevant history bit). Replaced by the exact statement: pair = D_t + I(h; A | M) on the
+  data for lambda_E = 1; equal to D^0 + lambda_E Delta E only at the memory that generated the data.
+- "kernel the agent can estimate from its own stream": needs repeated episodes or time-invariance. Fixed.
+- Hutter attribution (his point is that the reduced process need not be Markov); Allen/Rakelly cited for the right
+  results; Abel's framework is directed information over time, ours are single terms. Fixed.
+- Symbol clashes (P for probability/distribution/plasticity; phi for memory map and policy parameters) and
+  undefined gamma, return, V^lambda, Q*, sg, BPTT: fixed.
+
 ## Claims in the earlier PDFs that were incorrect or overstated, and are not reproduced
 - "Perfect = greedy on a reward state + coverage" as an equivalence: the only-if direction is false (an optimal
   agent need not have a state). Corrected to: optimal iff optimal within own actions and coverage; the state is
@@ -53,8 +70,11 @@ Date: 2026-10-08. Companion to `main.tex` ("Constructing Sufficient Agent States
   policies; never a loss on theta alone.
 
 ## Does the algorithm optimise the theoretical objective?
-- Memory gradient = gradient of l_O + lambda_E l_E (student cross-entropies), whose population value is
-  H(A | M) + H(O' | h, A) + D_t: yes, it descends an upper bound on D_t plus a term fixed on fresh on-policy data.
+- Memory gradient = gradient of l_O + lambda_E l_E (student cross-entropies). In population, with heads that have learned
+  the true laws, E[l_O + lambda_E l_E] = const + I(h; O' | M) + lambda_E I(h; A | M, O'); for lambda_E = 1 this is
+  const + D_t + I(h; A | M) on the data (defect plus an inertia term toward the memory that generated the data).
+  So yes, it descends the defect on the current data, up to that inertia term; it does not minimise sum_t D_t(theta)
+  with theta-dependent P.
   The window heads and next-action heads contribute no gradient to theta; they estimate the gaps.
 - Estimators exact only for Bayes-optimal heads; two time scales (heads > memory > policy); policy on detached memory;
   truncated BPTT limits the dependences the memory can learn to what crosses windows.
