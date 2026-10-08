@@ -1,0 +1,13 @@
+identities checked at every row (assertions); numbers in bits
+  pennies, uniform, constant memory            k=1 t=2: E 1.000 E(M) 0.000 dE 1.000 | P 0.000 P(M) 0.000 dP 0.000 | D0 0.000 D 1.000 | window: LO 0.000 LE 1.000 LP 0.000 D^(k) 1.000 residual 0.000
+  pennies, uniform, memory = coin              k=1 t=2: E 1.000 E(M) 1.000 dE 0.000 | P 0.000 P(M) 0.000 dP 0.000 | D0 0.000 D 0.000 | window: LO 0.000 LE 0.000 LP 0.000 D^(k) 0.000 residual 0.000
+  pennies, plays the coin, memory = coin       k=1 t=2: E 0.000 E(M) 0.000 dE 0.000 | P 1.000 P(M) 1.000 dP 0.000 | D0 0.000 D 0.000 | window: LO 0.000 LE 0.000 LP 0.000 D^(k) 0.000 residual 0.000
+  W1, uniform, constant memory                 k=1 t=2: E 0.131 E(M) 0.069 dE 0.062 | P 0.000 P(M) -0.000 dP -0.000 | D0 0.113 D 0.176 | window: LO 0.113 LE 0.062 LP -0.000 D^(k) 0.176 residual 0.000
+  W1, uniform, memory = state                  k=1 t=2: E 0.131 E(M) 0.131 dE 0.000 | P 0.000 P(M) 0.000 dP 0.000 | D0 0.000 D 0.000 | window: LO 0.000 LE 0.000 LP 0.000 D^(k) 0.000 residual 0.000
+  W1, agent 1, memory = last reward            k=1 t=2: E 0.072 E(M) 0.036 dE 0.036 | P 0.294 P(M) 0.321 dP 0.028 | D0 0.137 D 0.174 | window: LO 0.137 LE 0.036 LP 0.028 D^(k) 0.174 residual 0.000
+  W1, agent 1, memory = last reward            k=0 t=2: E 0.072 E(M) 0.036 dE 0.036 | P 0.294 P(M) 0.321 dP 0.028 | D0 0.137 D 0.174 | window: LO 0.137 LE 0.036 LP 0.028 D^(k) 0.174 residual -0.000
+counterexample 1: dP = 0 although D > 0 (the policy ignores its memory): pennies, uniform, constant memory above (dP 0, D 1)
+counterexample 2: finite window misses an old dependence: reward follows the action taken 3 steps before; constant memory
+  W6 lag 3, uniform, constant memory           k=1 t=3: E 0.000 E(M) 0.000 dE 0.000 | P nan P(M) nan dP nan | D0 1.000 D 1.000 | window: LO 0.000 LE 0.000 LP nan D^(k) 0.000 residual 1.000
+  W6 lag 3, uniform, constant memory           k=2 t=3: E 0.000 E(M) 0.000 dE 0.000 | P nan P(M) nan dP nan | D0 1.000 D 1.000 | window: LO 1.000 LE 0.000 LP nan D^(k) 1.000 residual 0.000
+all assertions passed
