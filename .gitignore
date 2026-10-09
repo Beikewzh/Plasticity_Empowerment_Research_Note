@@ -1,7 +1,11 @@
 main.pdf
+slides.pdf
 *.aux
 *.log
 *.bbl
 *.blg
 *.out
+*.nav
+*.snm
+*.toc
 *.synctex.gz
