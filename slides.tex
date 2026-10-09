@@ -26,15 +26,14 @@
 
 \begin{frame}
 \titlepage
-\begin{center}\small\gray{Can an agent build a state from its own stream, and do plasticity and empowerment help?}\end{center}
 \end{frame}
 
 % ---------------------------------------------------------------
-\begin{frame}{The agent keeps a memory and acts from it}
+\begin{frame}[shrink=6]{Setting}
 \begin{center}
 \begin{tikzpicture}[>={Stealth[length=2.5mm]}, node distance=14mm and 24mm,
   box/.style={draw, rounded corners=3pt, minimum height=11mm, minimum width=30mm, align=center, font=\small}]
-\node[box] (world) {world\\ $e(O_{t+1}\mid h_t, A_t)$};
+\node[box] (world) {environment\\ $e(O_{t+1}\mid h_t, A_t)$};
 \node[box, right=of world] (mem) {memory\\ $M_t = f(M_{t-1}, A_{t-1}, O_t)$};
 \node[box, right=of mem] (pol) {policy\\ $A_t \sim \pi(\cdot \mid M_t)$};
 \draw[->, thick] (world) -- node[above, font=\small] {$O_t$} (mem);
@@ -44,236 +43,276 @@
 \end{center}
 \vspace{2mm}
 \begin{itemize}
-\item History $h_t = (O_{1:t}, A_{1:t-1})$. The reward is one component of $O_t$.
-\item The world may depend on the whole history. No Markov assumption. A changing world is one such law.
-\item The memory is a function of the history, $M_t = \phi_t(h_t)$; the action depends on $h_t$ only through $M_t$.
+\item History $h_t = (O_{1:t}, A_{1:t-1})$. The reward $R_t$ is one component of the observation $O_t$.
+\item The environment may depend on the whole history; no Markov assumption. A changing environment is one such law.
+\item The memory is a deterministic function of the history, $M_t = \phi_t(h_t)$, and the action depends on $h_t$ only through $M_t$.
+\item Finite observation and action sets, finite horizon $T$. All probabilities are under the distribution induced by the three boxes.
 \end{itemize}
 \vspace{2mm}
-\textbf{Question.} When is the memory \emph{enough}?
+Question: when does the memory contain everything needed to predict the consequences of actions?
 \end{frame}
 
 % ---------------------------------------------------------------
-\begin{frame}{``Enough'' is one number}
-\begin{block}{State defect}
+\begin{frame}{Definition: state defect}
+\begin{block}{}
 \[
 D_t \;=\; I\big(h_t;\, O_{t+1} \,\big|\, M_t, A_t\big)
 \]
 \end{block}
 \vspace{1mm}
-In words: once you know the memory and the action, how much does the history still tell you about what comes next?
+Given the memory and the action, how much information about the next observation is still contained in the history?
 \vspace{3mm}
 \begin{itemize}
-\item $D_t = 0$ \;$\Longleftrightarrow$\; two histories with the same memory give the same law of $O_{t+1}$, for every action the agent takes.
-\item Then we call $M$ a \textbf{sufficient predictive state}.
-\item It is a statement about the pairs $(h_t, a)$ that actually occur, not about all histories and actions.
+\item $D_t = 0$ if and only if any two histories with the same memory value give the same distribution of $O_{t+1}$, for every action the agent takes there.
+\item If $D_t = 0$ for all $t$, we call $M$ a \textbf{sufficient predictive state}.
+\item The condition concerns the pairs $(h_t, a)$ that occur under the agent's own behaviour, not all histories and all actions.
 \end{itemize}
 \end{frame}
 
 % ---------------------------------------------------------------
-\begin{frame}{Why $D_t = 0$ gives the best return}
+\begin{frame}{Sufficiency for control}
 \begin{enumerate}
-\item The reward is inside $O_{t+1}$, and $M_{t+1} = f(M_t, A_t, O_{t+1})$.\\
-  So if $O_{t+1}$ does not depend on $h_t$ given $(M_t, A_t)$, neither does $(R_{t+1}, M_{t+1})$:
+\item The reward is a component of $O_{t+1}$, and $M_{t+1} = f(M_t, A_t, O_{t+1})$. If $O_{t+1}$ is independent of $h_t$ given $(M_t, A_t)$, so is any function of $(M_t, A_t, O_{t+1})$:
   \[
   \Pr(R_{t+1}, M_{t+1} \mid h_t, A_t) = \Pr(R_{t+1}, M_{t+1} \mid M_t, A_t) .
   \]
-\item So (reward, next memory) is a Markov decision process on memory values. Bellman on memory, time by time:
+\item Hence (reward, next memory) evolves as a Markov decision process on memory values, and the Bellman recursion can be written on memory, time by time:
   \[
-  q^*_t(m, a) = \sum_{r, m'} \Pr(r, m' \mid m, a)\,[\,r + \gamma\, v^*_{t+1}(m')\,], \qquad v^*_t(m) = \max_{a \text{ taken at } m} q^*_t(m, a).
+  q^*_t(m, a) = \sum_{r, m'} \Pr(r, m' \mid m, a)\,[\,r + \gamma\, v^*_{t+1}(m')\,], \qquad v^*_t(m) = \max_{a:\ \pi_t(a \mid m) > 0} q^*_t(m, a).
   \]
-\item $v^*_t(M_t)$ is the best return over \emph{all} behaviours that use the actions the agent takes; if every action keeps positive probability, $q^*_t(M_t, a) = Q^*_t(h_t, a)$ and greedy on $q^*$ is optimal.
+\item $v^*_t(M_t)$ equals the best return over all behaviours, history-dependent or not, that use only actions the agent takes. If every action has positive probability, $q^*_t(M_t, a) = Q^*_t(h_t, a)$ and the greedy policy is optimal.
 \end{enumerate}
 \vspace{2mm}
-\gray{Existence only: an optimal policy reading $M_t$ exists. Whether PPO finds it is a different question.}
+This is an existence statement: an optimal policy that reads $M_t$ exists. Whether a learning algorithm finds it is a separate question.
 \end{frame}
 
 % ---------------------------------------------------------------
-\begin{frame}{One example before the theory: matching pennies}
-A fair coin is shown. Reward $1$ if the action matches it. Uniform policy.
+\begin{frame}{Example: matching pennies}
+A fair coin $C_t$ is shown at each step. The agent acts $A_t \in \{0, 1\}$ uniformly at random. Reward $R_{t+1} = 1$ if $A_t = C_t$, else $0$. The next observation is $O_{t+1} = (C_{t+1}, R_{t+1})$. The memory is constant: $M_t = 0$.
 \vspace{2mm}
-\begin{center}\small
-\begin{tabular}{lcc}
- & memory $=$ nothing & memory $=$ the coin \\ \hline
-predicts the stream without the action & perfectly (two fair coins) & perfectly \\
-knows what the action does to the reward & no & yes \\
-$D_t$ & $1$ bit & $0$ \\
-\end{tabular}
-\end{center}
-\vspace{3mm}
-\textbf{Lesson.} A memory can predict everything it will see and still be useless for control.\\
-The missing bit is exactly the \emph{empowerment} the memory fails to see. The rest of the talk makes this exact.
-\end{frame}
-
-% ---------------------------------------------------------------
-\begin{frame}{Abel's two flows, read in two places}
-\begin{columns}
+\begin{columns}[T]\small
 \column{0.5\textwidth}
-\textbf{Empowerment}: the action changes what comes next
+\textbf{Prediction without the action}
+\begin{align*}
+H(O_{t+1} \mid M_t) &= H(C_{t+1}) + H(R_{t+1}) = 1 + 1 \\
+H(O_{t+1} \mid h_t) &= H(C_{t+1}) + H(R_{t+1} \mid C_t) = 1 + 1
+\end{align*}
+$R_{t+1}$ is a fair coin even given $C_t$, because $A_t$ is uniform. So
 \[
-E_t = I(A_t;\, O_{t+1} \mid h_t)
-\]
-read from the memory instead of the history:
-\[
-E_t(M) = I(A_t;\, O_{t+1} \mid M_t)
+D^0_t = I(h_t; O_{t+1} \mid M_t) = 0 .
 \]
 \column{0.5\textwidth}
-\textbf{Plasticity}: the new observation changes the next action
+\textbf{Prediction with the action}
+\begin{align*}
+H(O_{t+1} \mid M_t, A_t) &= 1 + H(R_{t+1} \mid A_t) = 1 + 1 \\
+H(O_{t+1} \mid h_t, A_t) &= 1 + H(R_{t+1} \mid C_t, A_t) = 1 + 0
+\end{align*}
+Given the action and the coin, the reward is determined. So
 \[
-P_{t+1} = I(O_{t+1};\, A_{t+1} \mid h_t, A_t)
-\]
-read from the memory:
-\[
-P_{t+1}(M) = I(O_{t+1};\, A_{t+1} \mid M_t, A_t)
+D_t = I(h_t; O_{t+1} \mid M_t, A_t) = 1 \text{ bit}.
 \]
 \end{columns}
-\vspace{4mm}
-\begin{itemize}
-\item Nothing new is defined: the second row is the first with the history replaced by the memory.
-\item The agent can only compute the memory versions. The history versions are the ideal.
-\item We never ask for a large or small amount of either. We ask: \textbf{how much does the memory misread them?}
-\end{itemize}
+\vspace{3mm}
+The constant memory predicts the observation stream as well as the full history does, yet it is not a sufficient state: it cannot tell what the action does to the reward. With $M_t = C_t$, both defects are zero.
 \end{frame}
 
 % ---------------------------------------------------------------
-\begin{frame}{Empowerment mismatch, every step}
-Write each information as a difference of two entropies:
+\begin{frame}{Plasticity and empowerment, at the history and at the memory}
+Abel et al.\ (2025) define, in one-step form,
+\begin{columns}[T]
+\column{0.5\textwidth}
+empowerment, the action's effect on the next observation,
+\[
+E_t = I(A_t;\, O_{t+1} \mid h_t),
+\]
+\column{0.5\textwidth}
+plasticity, the observation's effect on the next action,
+\[
+P_{t+1} = I(O_{t+1};\, A_{t+1} \mid h_t, A_t).
+\]
+\end{columns}
+\vspace{3mm}
+The agent cannot condition on the full history. The same quantities computed from the memory are
+\[
+E_t(M) = I(A_t;\, O_{t+1} \mid M_t), \qquad P_{t+1}(M) = I(O_{t+1};\, A_{t+1} \mid M_t, A_t).
+\]
+\vspace{1mm}
+We study the two mismatches
+\[
+\dE_t = E_t - E_t(M), \qquad \dP_t = P_{t+1}(M) - P_{t+1},
+\]
+not the absolute values of $E$ or $P$.
+\end{frame}
+
+% ---------------------------------------------------------------
+\begin{frame}{Empowerment mismatch}
+Each mutual information is a difference of conditional entropies:
 \begin{align*}
 E_t &= H(A_t \mid h_t) \;-\; H(A_t \mid h_t, O_{t+1}) \\
 E_t(M) &= H(A_t \mid M_t) \;-\; H(A_t \mid M_t, O_{t+1})
 \end{align*}
-The action depends on the history only through the memory, so
+The action is drawn from $\pi(\cdot \mid M_t)$, so given $M_t$ it is independent of $h_t$:
 \[
-H(A_t \mid h_t) = H(A_t \mid M_t) .
+H(A_t \mid h_t) = H(A_t \mid M_t).
 \]
-Subtract; the first terms cancel:
+Subtracting, the first terms cancel:
 \[
-\dE_t \;=\; E_t - E_t(M) \;=\; H(A_t \mid M_t, O_{t+1}) - H(A_t \mid h_t, O_{t+1}) .
+\dE_t = H(A_t \mid M_t, O_{t+1}) - H(A_t \mid h_t, O_{t+1}).
 \]
-Because $M_t$ is a function of $h_t$, conditioning on $h_t$ is conditioning on $(h_t, M_t)$, so the difference is a mutual information:
+Since $M_t$ is a function of $h_t$, $H(A_t \mid h_t, O_{t+1}) = H(A_t \mid h_t, M_t, O_{t+1})$, and a difference $H(X \mid Z) - H(X \mid Y, Z)$ is the mutual information $I(Y; X \mid Z)$:
 \[
 \boxed{\;\dE_t = I(h_t;\, A_t \mid M_t, O_{t+1}) \;\ge\; 0\;}
 \]
-\textbf{Meaning.} Once the result is seen, the forgotten history still explains the action. A memory can only \emph{under}-read empowerment.
+Interpretation: after the outcome is observed, the discarded part of the history still carries information about the action. The memory can only under-estimate empowerment.
 \end{frame}
 
 % ---------------------------------------------------------------
-\begin{frame}{Plasticity mismatch, every step}
-Four entropy terms:
+\begin{frame}{Plasticity mismatch}
 \begin{align*}
 P_{t+1} &= H(A_{t+1} \mid h_t, A_t) \;-\; H(A_{t+1} \mid h_t, A_t, O_{t+1}) \\
 P_{t+1}(M) &= H(A_{t+1} \mid M_t, A_t) \;-\; H(A_{t+1} \mid M_t, A_t, O_{t+1})
 \end{align*}
-Both second terms are the same number, $H(A_{t+1} \mid M_{t+1})$:
+The two second terms are equal:
 \begin{itemize}
-\item $(h_t, A_t, O_{t+1}) = h_{t+1}$, and the next action depends on $h_{t+1}$ only through $M_{t+1}$;
-\item $(M_t, A_t, O_{t+1})$ determines $M_{t+1} = f(M_t, A_t, O_{t+1})$, and the next action depends only on $M_{t+1}$.
+\item $(h_t, A_t, O_{t+1}) = h_{t+1}$, and $A_{t+1}$ depends on $h_{t+1}$ only through $M_{t+1}$, so the first is $H(A_{t+1} \mid M_{t+1})$;
+\item $(M_t, A_t, O_{t+1})$ determines $M_{t+1} = f(M_t, A_t, O_{t+1})$, and $A_{t+1}$ depends only on $M_{t+1}$, so the second is also $H(A_{t+1} \mid M_{t+1})$.
 \end{itemize}
-Subtract; the second terms cancel:
+Subtracting, these cancel:
 \begin{align*}
 \dP_t \;=\; P_{t+1}(M) - P_{t+1} &\;=\; H(A_{t+1} \mid M_t, A_t) - H(A_{t+1} \mid h_t, A_t) \\
 &\;=\; \boxed{\; I(h_t;\, A_{t+1} \mid M_t, A_t) \;\ge\; 0 \;}
 \end{align*}
-\textbf{Meaning.} The forgotten history still predicts the agent's own next move. A memory can only \emph{over}-read plasticity.
+Interpretation: the discarded part of the history still predicts the agent's next action. The memory can only over-estimate plasticity.
 \end{frame}
 
 % ---------------------------------------------------------------
-\begin{frame}{The decomposition, every step}
-Take the information that history and action together carry about what comes next, beyond the memory, and expand it in both orders.
+\begin{frame}{Two facts about mutual information used next}
+\textbf{Chain rule.} For any random variables $X, Y, Z, W$, the information that the pair $(X, Y)$ carries about $Z$ given $W$ can be accumulated in either order:
+\[
+I(X, Y;\, Z \mid W) \;=\; I(X;\, Z \mid W) + I(Y;\, Z \mid W, X) \;=\; I(Y;\, Z \mid W) + I(X;\, Z \mid W, Y).
+\]
+\vspace{1mm}
+\textbf{Data processing.} If, given $W$, the variable $Z$ depends on $X$ only through $Y$ (a chain $X \to Y \to Z$), then
+\[
+I(X;\, Z \mid W) \;\le\; I(X;\, Y \mid W).
+\]
+\vspace{1mm}
+\textbf{A convention.} When $M_t$ is a function of $h_t$, conditioning on $(h_t, M_t)$ is the same as conditioning on $h_t$.
+\end{frame}
+
+% ---------------------------------------------------------------
+\begin{frame}{Decomposition of the state defect}
+Apply the chain rule to $I(h_t, A_t;\, O_{t+1} \mid M_t)$ with $X = h_t$, $Y = A_t$, $Z = O_{t+1}$, $W = M_t$.
 \begin{align*}
-I(h_t, A_t;\, O_{t+1} \mid M_t) &= \underbrace{I(h_t; O_{t+1} \mid M_t)}_{D^0_t\ \text{(prediction without the action)}} + \underbrace{I(A_t; O_{t+1} \mid M_t, h_t)}_{=\,E_t\ \text{(given $h_t$, $M_t$ adds nothing)}} \\[1mm]
-I(h_t, A_t;\, O_{t+1} \mid M_t) &= \underbrace{I(A_t; O_{t+1} \mid M_t)}_{E_t(M)} + \underbrace{I(h_t; O_{t+1} \mid M_t, A_t)}_{D_t}
+\text{history first:}\quad I(h_t, A_t;\, O_{t+1} \mid M_t) &= \underbrace{I(h_t; O_{t+1} \mid M_t)}_{D^0_t} + \underbrace{I(A_t; O_{t+1} \mid M_t, h_t)}_{=\,I(A_t; O_{t+1} \mid h_t)\,=\,E_t} \\[1mm]
+\text{action first:}\quad I(h_t, A_t;\, O_{t+1} \mid M_t) &= \underbrace{I(A_t; O_{t+1} \mid M_t)}_{E_t(M)} + \underbrace{I(h_t; O_{t+1} \mid M_t, A_t)}_{D_t}
 \end{align*}
-Equate the two right-hand sides, $D^0_t + E_t = E_t(M) + D_t$:
+Here $D^0_t = I(h_t; O_{t+1} \mid M_t)$ is the defect of prediction that ignores the action. Equating, $D^0_t + E_t = E_t(M) + D_t$, so
 \[
 \boxed{\;D_t \;=\; D^0_t \;+\; \dE_t\;}
 \]
-For plasticity: given $(M_t, A_t)$, $h_t \to O_{t+1} \to M_{t+1} \to A_{t+1}$ is a chain, so by data processing
+For plasticity, given $(M_t, A_t)$ the variables form the chain $h_t \to O_{t+1} \to M_{t+1} \to A_{t+1}$; data processing gives
 \[
 \boxed{\;0 \;\le\; \dP_t \;\le\; D_t\;}
 \]
 \end{frame}
 
 % ---------------------------------------------------------------
-\begin{frame}{What the two boxes say}
-\begin{block}{A memory is a sufficient predictive state if and only if}
-it predicts the next observation as well as the history does \emph{without} the action \;($D^0_t = 0$)\\
-\textbf{and} it loses no empowerment \;($\dE_t = 0$).
+\begin{frame}{Consequences}
+\begin{block}{Theorem}
+$M$ is a sufficient predictive state ($D_t = 0$) if and only if $D^0_t = 0$ and $\dE_t = 0$: it predicts the next observation without the action as well as the history does, \emph{and} it loses no empowerment.
 \end{block}
 \vspace{2mm}
 \begin{itemize}
-\item Empowerment is the half of the defect that action-free prediction cannot see.\\ Pennies, constant memory: $D^0_t = 0$, $\dE_t = D_t = 1$ bit.
-\item Plasticity is not a third half. It is a \textbf{lower bound}: an excess read from the agent's own next move proves something was forgotten. It needs no model of the world.
-\item Plasticity alone cannot certify a state: a policy that ignores its memory has $\dP_t = 0$ for every memory (pennies again: $\dP_t = 0$, $D_t = 1$ bit).
+\item Prediction of the observation stream alone is not sufficient. In the pennies example $D^0_t = 0$ while $D_t = 1$ bit; the missing bit is $\dE_t$, the empowerment the constant memory does not see.
+\item The plasticity mismatch is not a third term. It is a lower bound: $\dP_t > 0$ proves that the memory is insufficient, and this is read from the agent's own actions without any model of the environment.
+\item $\dP_t = 0$ proves nothing. Under a policy that ignores its memory (uniform, as in the pennies example), $\dP_t = 0$ for every memory while $D_t = 1$ bit.
 \end{itemize}
 \end{frame}
 
 % ---------------------------------------------------------------
-\begin{frame}{From the whole history to a window the agent can keep}
-During training the agent keeps a window of its own trajectory, $W_t = (O_{t-k:t}, A_{t-k:t-1})$, and compares $M_t$ with $M^+_t = (M_t, W_t)$.
+\begin{frame}[shrink=5]{Finite-window approximation}
+The identities above condition on the full history $h_t$, which is not available. During training the agent stores a window of its own trajectory,
+\[
+W_t = (O_{t-k:t}, A_{t-k:t-1}), \qquad M^+_t = (M_t, W_t),
+\]
+and compares predictions from $M_t$ with predictions from $M^+_t$:
 \begin{align*}
-L^*_O &= H(O_{t+1} \mid M_t) - H(O_{t+1} \mid M^+_t) && \text{how much the window helps predict} \\
-L^*_E &= H(A_t \mid M_t, O_{t+1}) - H(A_t \mid M^+_t, O_{t+1}) && \text{how much it helps the inverse model} \\
-L^*_P &= H(A_{t+1} \mid M_t, A_t) - H(A_{t+1} \mid M^+_t, A_t) && \text{how much it helps predict the next action}
+L^*_O &= H(O_{t+1} \mid M_t) - H(O_{t+1} \mid M^+_t), \\
+L^*_E &= H(A_t \mid M_t, O_{t+1}) - H(A_t \mid M^+_t, O_{t+1}), \\
+L^*_P &= H(A_{t+1} \mid M_t, A_t) - H(A_{t+1} \mid M^+_t, A_t).
 \end{align*}
-Same chain rules with $W_t$ in place of $h_t$:
+The same chain-rule argument with $W_t$ in place of $h_t$ gives
 \begin{align*}
-L^*_O + L^*_E &= I(W_t; O_{t+1} \mid M_t, A_t) =: D^{(k)}_t, \qquad 0 \le L^*_P \le D^{(k)}_t \le D_t, \\
+L^*_O + L^*_E &= I(W_t;\, O_{t+1} \mid M_t, A_t) =: D^{(k)}_t, \qquad 0 \le L^*_P \le D^{(k)}_t \le D_t, \\
 D_t - D^{(k)}_t &= I(h_t;\, O_{t+1} \mid M_t, A_t, W_t).
 \end{align*}
-\vspace{1mm}
-\textbf{The residual is what lies outside the window.} Reward that follows the action taken three steps ago, window of one step, constant memory: all window losses are $0$, yet $D_t = 1$ bit.\\
-\gray{Zero window mismatch does not certify a state. Nothing computed from finite interaction can.}
+The last term is the predictive information older than the window. Example: reward determined by the action taken three steps earlier, window of one step, constant memory: all three window gaps are $0$, but $D_t = 1$ bit.
 \end{frame}
 
 % ---------------------------------------------------------------
-\begin{frame}[shrink=12]{The algorithm, in one picture}
+\begin{frame}{Estimating the quantities from data}
+A conditional entropy is estimated with a predictor trained by maximum likelihood. For $H(O_{t+1} \mid M_t)$:
+\begin{itemize}
+\item train a network $q_1(o \mid M_t)$ to predict the next observation from the memory, by minimising the average of $-\log q_1(O_{t+1} \mid M_t)$ over the stored transitions;
+\item this average is the cross-entropy; it is $\ge H(O_{t+1} \mid M_t)$, with equality when $q_1$ has learned the true conditional distribution.
+\end{itemize}
+For $H(O_{t+1} \mid M^+_t)$ train a second network $q_2(o \mid M_t, W_t)$ with the window as extra input. Then
+\[
+\hat L_O \;=\; \text{mean}\big[-\log q_1(O_{t+1} \mid M_t)\big] \;-\; \text{mean}\big[-\log q_2(O_{t+1} \mid M_t, W_t)\big] .
+\]
+The randomness of the environment appears in both terms and cancels; only what the window adds remains.
+\vspace{2mm}
+Likewise $\hat L_E$ from two inverse models $q(a \mid M_t, O_{t+1})$ and $q(a \mid M_t, W_t, O_{t+1})$, and $\hat L_P$ from two next-action predictors $q(a' \mid M_t, A_t)$ and $q(a' \mid M_t, W_t, A_t)$.
+\vspace{2mm}
+These are estimates: exact only when both networks have learned the true conditional laws. A weak second network biases the estimate toward zero.
+\end{frame}
+
+% ---------------------------------------------------------------
+\begin{frame}[shrink=12]{Training procedure}
 \begin{center}
 \begin{tikzpicture}[>={Stealth[length=2mm]}, node distance=3mm and 10mm,
   box/.style={draw, rounded corners=3pt, minimum height=7mm, minimum width=24mm, align=center, font=\scriptsize},
   dim/.style={box, dashed, draw=black!60, text=black!60}]
 \node[box] (mem) {memory $f_\theta$\\ $M_t$};
-\node[box, above right=of mem] (ho) {head: $O_{t+1}$ from $M_t$\\ loss $\ell_O$};
-\node[box, right=of mem] (he) {head: $A_t$ from $M_t, O_{t+1}$\\ loss $\ell_E$};
+\node[box, above right=of mem] (ho) {predictor of $O_{t+1}$ from $M_t$\\ loss $\ell_O$};
+\node[box, right=of mem] (he) {inverse model: $A_t$ from $M_t, O_{t+1}$\\ loss $\ell_E$};
 \node[box, below right=of mem] (pi) {policy $\pi_\nu$, value $V_\nu$\\ PPO on $\sg[M_t]$};
-\node[dim, right=of ho] (hop) {same head from $(M_t, W_t)$\\ readout $\ell_O - \ell_{O^+}$};
-\node[dim, right=of he] (hep) {same head from $(M_t, W_t)$\\ readout $\ell_E - \ell_{E^+}$};
-\node[dim, right=of pi] (hp) {next-action heads\\ readout $\ell_P - \ell_{P^+}$};
+\node[dim, right=of ho] (hop) {same predictor from $(M_t, W_t)$\\ estimate $\hat L_O$};
+\node[dim, right=of he] (hep) {same inverse model from $(M_t, W_t)$\\ estimate $\hat L_E$};
+\node[dim, right=of pi] (hp) {next-action predictors\\ estimate $\hat L_P$};
 \draw[->, thick] (mem) -- (ho); \draw[->, thick] (mem) -- (he); \draw[->, thick] (mem) -- (pi);
 \draw[->, dashed, black!60] (ho) -- (hop); \draw[->, dashed, black!60] (he) -- (hep); \draw[->, dashed, black!60] (pi) -- (hp);
 \end{tikzpicture}
 \end{center}
 \begin{itemize}\small
-\item The memory learns from $\ell_O + \lambda\,\ell_E$, the two halves of the defect; the policy never shapes the memory.
-\item The dashed heads see a longer window; their differences estimate $L^*_O, L^*_E, L^*_P$ and change no gradient: readouts.
-\item Honest consequence: the memory objective is ordinary prediction; the theory says \emph{what} it does, and adds two readouts.
+\item The memory parameters $\theta$ are trained on $\ell_O + \lambda\,\ell_E$, the two terms of the decomposition $D_t = D^0_t + \dE_t$. Gradients from the policy do not reach the memory ($\sg$ stops them).
+\item The dashed networks receive the window in addition. Their losses are subtracted from $\ell_O, \ell_E, \ell_P$ to form the estimates $\hat L_O, \hat L_E, \hat L_P$; they do not contribute gradients to $\theta$.
+\item In population, with networks that have learned the true laws, $\E[\ell_O + \ell_E] = \text{const} + D_t + I(h_t; A_t \mid M_t)$ on the training data: the memory objective is the state defect plus a term that is zero at the memory that generated the data. This is the same objective as action-conditioned prediction of $O_{t+1}$; the decomposition identifies its two parts and provides the estimates.
 \end{itemize}
 \end{frame}
 
 % ---------------------------------------------------------------
-\begin{frame}{Proved, and open}
+\begin{frame}{Summary}
 \begin{columns}[T]
 \column{0.5\textwidth}
-\textbf{Proved}
+\textbf{Established}
 \begin{itemize}
-\item $D_t = 0$ $\Rightarrow$ Bellman on memory is exact; optimal when every action is tried.
-\item $\dE_t = I(h_t; A_t \mid M_t, O_{t+1}) \ge 0$, \; $\dP_t = I(h_t; A_{t+1} \mid M_t, A_t) \ge 0$.
-\item $D_t = D^0_t + \dE_t$, \; $0 \le \dP_t \le D_t$.
-\item Window versions: same identities; the residual is what the window cannot see.
-\item Action-conditioned prediction already targets $D_t$; the memory loss of the algorithm equals it on the data, up to an inertia term.
+\item $D_t = 0$ implies that the Bellman recursion on memory is exact; with every action tried, it gives $Q^*$.
+\item $\dE_t = I(h_t; A_t \mid M_t, O_{t+1}) \ge 0$ and $\dP_t = I(h_t; A_{t+1} \mid M_t, A_t) \ge 0$.
+\item $D_t = D^0_t + \dE_t$ and $0 \le \dP_t \le D_t$.
+\item The window versions satisfy the same identities; the difference from $D_t$ is the information older than the window.
+\item Action-conditioned prediction already minimises $D_t$ on the data; the proposed memory loss coincides with it up to an inertia term.
 \end{itemize}
 \column{0.5\textwidth}
 \textbf{Open}
 \begin{itemize}
-\item Does training actually reach $D_t = 0$?
-\item Do the readouts track the gaps with finite data and imperfect heads?
-\item Do the inverse and next-action heads help beyond one action-conditioned predictor? (Test on worlds where both halves are known exactly.)
-\item How fast does the memory recover after the world changes?
+\item Whether gradient training reaches $D_t = 0$.
+\item Whether the estimates $\hat L_O, \hat L_E, \hat L_P$ track the true gaps with finite data and imperfect networks.
+\item Whether the inverse and next-action predictors improve learning relative to a single action-conditioned predictor. This can be tested on small environments where both parts of the defect are known exactly.
+\item Recovery time after the environment changes.
 \end{itemize}
 \end{columns}
-\vspace{4mm}
-\begin{center}
-\textbf{One line.} Information-flow mismatches characterise a sufficient state and give candidate training signals; whether they beat plain prediction in continual RL is the question to test.
-\end{center}
 \end{frame}
 
 \end{document}
