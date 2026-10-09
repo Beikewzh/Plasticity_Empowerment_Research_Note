@@ -251,7 +251,7 @@ The last term is the predictive information older than the window. Example: rewa
 \end{frame}
 
 % ---------------------------------------------------------------
-\begin{frame}{Estimating the quantities from data}
+\begin{frame}[shrink=8]{Estimating the quantities from data}
 A conditional entropy is estimated with a predictor trained by maximum likelihood. For $H(O_{t+1} \mid M_t)$:
 \begin{itemize}
 \item train a network $q_1(o \mid M_t)$ to predict the next observation from the memory, by minimising the average of $-\log q_1(O_{t+1} \mid M_t)$ over the stored transitions;
@@ -265,7 +265,9 @@ The randomness of the environment appears in both terms and cancels; only what t
 \vspace{2mm}
 Likewise $\hat L_E$ from two inverse models $q(a \mid M_t, O_{t+1})$ and $q(a \mid M_t, W_t, O_{t+1})$, and $\hat L_P$ from two next-action predictors $q(a' \mid M_t, A_t)$ and $q(a' \mid M_t, W_t, A_t)$.
 \vspace{2mm}
-These are estimates: exact only when both networks have learned the true conditional laws. A weak second network biases the estimate toward zero.
+These are estimates: exact only when both networks have learned the true conditional laws. A weak second network biases the estimate toward zero, so a positive estimate is evidence of a real gap.
+\vspace{2mm}
+Cost. The memory itself is trained without any second network (the window networks add no gradient). The second networks are trained offline on the stored buffer, can be small, and can take as input the stored memory state from $k$ steps earlier together with the actions and observations since, which truncated backpropagation stores anyway.
 \end{frame}
 
 % ---------------------------------------------------------------
