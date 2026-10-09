@@ -98,3 +98,40 @@ differ from it by precisely the predictive information outside the window, which
 certify. The resulting training objective coincides with action-conditioned prediction; what the mismatches add
 is a characterisation and a pair of estimators, not a new minimiser, and whether they help learning beyond direct
 prediction is open.
+
+## Prior-work search (2026-10-08): has someone already proved this?
+
+Short answer: the surrounding pieces are known; the specific bridge (Abel's plasticity and empowerment read at the
+memory versus the history, and the exact decomposition of the state defect) was not found. The search was not
+exhaustive. Read directly: Rakelly et al. (PDF text), Baltieri et al., Bastankhah et al., Csaky, Abel et al.
+(HTML); the rest from abstracts.
+
+Known, not ours:
+- Recursive + predictive statistic => sufficient for control: Subramanian et al. 2022; Ni et al. 2024; causal states of
+  the epsilon-transducer (Barnett & Crutchfield); predictive state representations.
+- States defined only on the support of the realised interaction: Baltieri, Torresan, Zhang, Boyd, Rosas, "World
+  models of environment, agent and joint agent-environment systems", arXiv:2608.20401 (July 2026). Canonical
+  support-restricted environment AND agent models via computational mechanics; infinite unrestricted vs finite
+  support-restricted example; cites Abel et al.; no information quantities, no control result. CLOSEST structural
+  neighbour; the natural group to write the information-theoretic version.
+- Forward sufficient, state-only and inverse each insufficient (observed-state MDPs): Rakelly et al. 2021. They do NOT
+  state the chain-rule identity linking the three objectives (checked in the PDF text). Inverse + density ratio =>
+  Markov abstraction: Allen et al. 2021.
+- Empowerment and representations: InfoPower (2022); Bastankhah, Broderick, Eysenbach (ICML 2026): empowerment
+  maximisation induces control-centric representations in MDPs; Csaky, "Prediction and Empowerment", arXiv:2605.06346
+  (May 2026): history-based agent with recursive memory, prediction / compression / empowerment can be separated
+  arbitrarily, cites Abel et al. CLOSEST thematic neighbour; no decomposition identity.
+- Plasticity: Abel et al. 2025 Sec. 5.1 names the agent-state formulation as future work, no results; Lucas & Precup,
+  "A Bellman Optimality Equation for Plasticity", arXiv:2609.10776 (Sept 2026): optimising plasticity in MDPs.
+- Practice: AD-WM, arXiv:2609.30264 (Sept 2026): world models with low prediction error that distinguish actions
+  poorly; inverse-dynamics regulariser motivated by conditional mutual information.
+
+Not found:
+- D_t = D^0_t + (E_t - E_t(M)) for a history-based agent with a recursive memory, in Abel's quantities.
+- "A memory can only under-read empowerment and over-read plasticity."
+- The plasticity mismatch I(h_t; A_{t+1} | M_t, A_t) and its bound by D_t.
+- The finite-window identities with the exact residual I(h; O' | M, A, W).
+
+Consequence for the claim: novelty is the arrangement and the reading, not the difficulty (every proof is the chain
+rule or data processing). Two 2026 papers already sit next to it and cite Abel et al., so this is a place where
+someone else can arrive soon.
