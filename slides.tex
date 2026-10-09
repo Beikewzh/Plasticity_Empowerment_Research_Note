@@ -87,36 +87,18 @@ This is an existence statement: an optimal policy that reads $M_t$ exists. Wheth
 \end{frame}
 
 % ---------------------------------------------------------------
-\begin{frame}{Example: matching pennies}
-A fair coin $C_t$ is shown at each step. The agent acts $A_t \in \{0, 1\}$ uniformly at random. Reward $R_{t+1} = 1$ if $A_t = C_t$, else $0$. The next observation is $O_{t+1} = (C_{t+1}, R_{t+1})$. The memory is constant: $M_t = 0$.
-\vspace{2mm}
-\begin{columns}[T]\small
-\column{0.5\textwidth}
-\textbf{Prediction without the action}
-\begin{align*}
-H(O_{t+1} \mid M_t) &= H(C_{t+1}) + H(R_{t+1}) = 1 + 1 \\
-H(O_{t+1} \mid h_t) &= H(C_{t+1}) + H(R_{t+1} \mid C_t) = 1 + 1
-\end{align*}
-$R_{t+1}$ is a fair coin even given $C_t$, because $A_t$ is uniform. So
-\[
-D^0_t = I(h_t; O_{t+1} \mid M_t) = 0 .
-\]
-\column{0.5\textwidth}
-\textbf{Prediction with the action}
-\begin{align*}
-H(O_{t+1} \mid M_t, A_t) &= 1 + H(R_{t+1} \mid A_t) = 1 + 1 \\
-H(O_{t+1} \mid h_t, A_t) &= 1 + H(R_{t+1} \mid C_t, A_t) = 1 + 0
-\end{align*}
-Given the action and the coin, the reward is determined. So
-\[
-D_t = I(h_t; O_{t+1} \mid M_t, A_t) = 1 \text{ bit}.
-\]
-\end{columns}
+\begin{frame}[shrink=8]{Example: matching pennies}
+\begin{itemize}\setlength{\itemsep}{6pt}
+\item Each step a fair coin is shown. The agent guesses heads or tails and is paid $1$ if the guess matches the coin.
+\item Suppose the agent remembers nothing from one step to the next, and guesses at random.
+\item Ask it to predict what it will see next. A fresh coin: fifty--fifty. A reward: also fifty--fifty, because its guess is random. It predicts this perfectly, and knowing the whole past would not improve the prediction at all.
+\item Now ask it: ``if you guess heads right now, what will the reward be?'' It cannot say. The answer depends on the coin it has already forgotten. An agent that remembered the coin would answer with certainty.
+\item So this memory passes every prediction test and still cannot support a better policy. What it lacks is knowledge of what its own action does: the empowerment it has lost.
+\end{itemize}
 \vspace{3mm}
-The constant memory predicts the observation stream as well as the full history does, yet it is not a sufficient state: it cannot tell what the action does to the reward. With $M_t = C_t$, both defects are zero.
+The next slides make this exact: the gap between ``predicts the future'' and ``is a sufficient state'' is precisely the empowerment the memory fails to see. The numbers for this example are on the last slide.
 \end{frame}
 
-% ---------------------------------------------------------------
 \begin{frame}{Plasticity and empowerment, at the history and at the memory}
 Abel et al.\ (2025) define, in one-step form,
 \begin{columns}[T]
@@ -315,6 +297,30 @@ Cost. The memory itself is trained without any second network (the window networ
 \item Recovery time after the environment changes.
 \end{itemize}
 \end{columns}
+\end{frame}
+
+% ---------------------------------------------------------------
+\begin{frame}{Backup: matching pennies in numbers}
+Coin $C_t$ fair, action $A_t$ uniform, reward $R_{t+1} = 1$ if $A_t = C_t$, observation $O_{t+1} = (C_{t+1}, R_{t+1})$, constant memory $M_t = 0$.
+\vspace{2mm}
+\begin{columns}[T]\small
+\column{0.5\textwidth}
+\textbf{Prediction without the action}
+\begin{align*}
+H(O_{t+1} \mid M_t) &= H(C_{t+1}) + H(R_{t+1}) = 1 + 1 \\
+H(O_{t+1} \mid h_t) &= H(C_{t+1}) + H(R_{t+1} \mid C_t) = 1 + 1
+\end{align*}
+$R_{t+1}$ is a fair coin even given $C_t$, because $A_t$ is uniform. So $D^0_t = I(h_t; O_{t+1} \mid M_t) = 0$.
+\column{0.5\textwidth}
+\textbf{Prediction with the action}
+\begin{align*}
+H(O_{t+1} \mid M_t, A_t) &= 1 + H(R_{t+1} \mid A_t) = 1 + 1 \\
+H(O_{t+1} \mid h_t, A_t) &= 1 + H(R_{t+1} \mid C_t, A_t) = 1 + 0
+\end{align*}
+Given the action and the coin, the reward is determined. So $D_t = I(h_t; O_{t+1} \mid M_t, A_t) = 1$ bit.
+\end{columns}
+\vspace{3mm}
+Empowerment: $E_t = H(O_{t+1} \mid h_t) - H(O_{t+1} \mid h_t, A_t) = 2 - 1 = 1$ bit at the history; $E_t(M) = 2 - 2 = 0$ at the memory; $\dE_t = 1$ bit $= D_t - D^0_t$. Plasticity mismatch: $\dP_t = 0$, since the uniform policy ignores its memory. With $M_t = C_t$ all defects vanish.
 \end{frame}
 
 \end{document}
