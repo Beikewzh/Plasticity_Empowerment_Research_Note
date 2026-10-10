@@ -213,26 +213,35 @@ $M$ is a sufficient predictive state ($D_t = 0$) if and only if $D^0_t = 0$ and 
 \end{frame}
 
 % ---------------------------------------------------------------
-\begin{frame}[shrink=6]{Plasticity under regime identifiability}
-\textbf{Assumption.} Within a memory class $m$ and action $a$, the histories the memory has merged fall into finitely many \emph{regimes} $c$, each with its own next-observation law $p_c(\cdot \mid m, a)$; the policy's responses to them,
-\[
-K_{m,a}\, p_c, \qquad K_{m,a}(a' \mid o') = \pi_{t+1}\big(a' \mid f(m, a, o')\big) \ \ \text{(the policy composed with the memory update)},
-\]
-are linearly independent. In words: \emph{the agent behaves differently in different regimes}. This needs as many actions as regimes, not as many actions as observations.
+\begin{frame}[shrink=10]{Plasticity as a certificate}
+\textbf{The situation.} The memory has merged two regimes with different rules (the door opens / the door is stuck), so $D_t > 0$. Can the agent's own behaviour reveal the merge?
 \vspace{2mm}
-\begin{block}{Theorem (sandwich)}
-Let $\sigma$ be the smallest singular value of $K_{m,a}$ on the differences of regime laws and $\rho$ the smallest probability of a next observation in the class. Then, in nats,
+\textbf{Condition: a responsive agent.} The agent reacts differently to the merged regimes: its next-action distributions under them are linearly independent. Possible as soon as there are at least as many actions as regimes.
+\vspace{2mm}
+\begin{block}{Theorem}
+Under this condition,
 \[
-\Delta P_t \;\le\; D_t \;=\; D^0_t + \Delta E_t \;\le\; \frac{2}{\rho\,\sigma^2}\, \Delta P_t .
+\Delta P_t \;\le\; D_t \;\le\; C\,\Delta P_t, \qquad C = \frac{2}{\rho\,\sigma^2},
 \]
+where $\sigma$ measures how distinctly the agent reacts to the regimes and $\rho$ how rare the rarest next observation is. The same holds inside a window, with $D^{(k)}_t$ and $L^*_P$.
 \end{block}
-Proof of the right side: $\mathrm{KL} \le \chi^2 \le \|p - \bar p\|_2^2/\rho \le \|K(p - \bar p)\|_2^2/(\rho\sigma^2) \le 2\,\mathrm{KL}(Kp \,\|\, K\bar p)/(\rho\sigma^2)$ (Pinsker), averaged over the class. The left side and the equality are unconditional.
 \vspace{2mm}
 \begin{itemize}
-\item $\sigma$ measures how differently the agent acts across regimes; $K$ is the agent's own policy and memory update, so $\sigma$ is computable by the agent once the regime directions are known. $\rho$ is read from data.
-\item Exact checks ($t = 2$): W1, policy reacts to the last reward: $\Delta P = 0.019 \le D = 0.120 \le 61 \times 0.019$. W11, policy plays the last reward: $0.29 \le 0.36 \le 4.3$. The constant is loose by a factor $5$ to $50$.
-\item The assumption is needed: W11 with a random policy, and W3s with a policy that reacts only to the merged class, have $\sigma = 0$: $\Delta P_t = 0$ while $D_t > 0$. A policy that does not act on a distinction cannot reveal that the memory lost it.
+\item Reading: the plasticity mismatch is zero exactly when the memory is sufficient, small when it nearly is, from actions alone.
+\item The condition is needed: an agent that does not act on a distinction cannot reveal that its memory lost it (random policy: $\Delta P_t = 0$, $D_t = 0.44$ nats).
+\item Exact check, W1, agent reacting to its last reward: $0.019 \le 0.120 \le 61 \times 0.019$ nats; the constant is loose.
 \end{itemize}
+\end{frame}
+
+% ---------------------------------------------------------------
+\begin{frame}{The objective}
+\textbf{Memory: minimise} \quad $\ell_O + \lambda\,\ell_E$ \quad (next-observation prediction and inverse model, the two terms of $D_t = D^0_t + \Delta E_t$). This builds the state.
+\vspace{3mm}
+\textbf{Plasticity: do not minimise it, read it.} A memory that forgets makes the agent's behaviour easy to predict, so the plasticity loss can be driven to zero by forgetting. Used as a loss on the memory it collapses. Used as a readout it is a certificate: when the agent is responsive, $\ell_P \approx 0$ means $D_t \approx 0$; when $\ell_P$ rises, the memory has lost something the agent acts on.
+\vspace{3mm}
+\textbf{Policy: PPO on the memory, kept responsive.} Exploration that keeps distinct reactions to distinct memory values ($\eta$-soft, or an entropy term over memory values) keeps the certificate valid.
+\vspace{3mm}
+\textbf{In a changing world.} A regime change makes the agent react to things its memory no longer separates: $\ell_P$ rises first, from actions alone, and triggers relearning of the memory through $\ell_O + \lambda\,\ell_E$. Nothing in this loop needs counterfactual data; what it cannot see is information older than the window.
 \end{frame}
 
 % ---------------------------------------------------------------
