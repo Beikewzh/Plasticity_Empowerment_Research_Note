@@ -250,7 +250,7 @@ where $\sigma$ measures how distinctly the agent reacts to the regimes and $\rho
 \end{frame}
 
 % ---------------------------------------------------------------
-\begin{frame}[shrink=8]{Where plasticity lives: on the policy, as the exposure of the state defect}
+\begin{frame}[shrink=16]{Where plasticity lives: on the policy, as the exposure of the state defect}
 Fix the data (histories, actions, next observations). Let $\pi_\lambda = (1-\lambda)\,\mathrm{Unif} + \lambda\,\pi$, $\lambda \in [0,1]$: the same policy, more or less responsive to its memory.
 \begin{block}{Theorem}
 \begin{enumerate}
@@ -276,7 +276,7 @@ $D \approx 0.12$ throughout.
 \column{0.5\textwidth}
 \small \textbf{Reading.} The defect belongs to the memory; how much of it the agent's actions reveal belongs to the policy, and grows with its plasticity.
 
-\textbf{Objective.} Memory: minimise $\ell_O + \lambda_E \ell_E$ (empowerment and prediction build the state). Policy: maximise return $+\ \beta\,P(M)$, react to the memory; this exposes the defect to the cheap readout, keeps action variety for the inverse model, and is what a changing world demands. The two are tied by $W_t \ge P_t(M)$: a more plastic policy needs a memory that writes more.
+\textbf{Objective.} Memory: minimise $\ell_O + \lambda_E \ell_E$ (empowerment and prediction build the state). Policy: maximise return $+\ \beta\,P(M)$, react to the memory: this exposes the defect to the cheap readout, keeps action variety for the inverse model, and is what a changing world demands. Tied by $W_t \ge P_t(M)$: a more plastic policy needs a memory that writes more.
 \end{columns}
 \end{frame}
 
