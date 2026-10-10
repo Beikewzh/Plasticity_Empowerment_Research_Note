@@ -215,9 +215,11 @@ $M$ is a sufficient predictive state ($D_t = 0$) if and only if $D^0_t = 0$ and 
 % ---------------------------------------------------------------
 \begin{frame}[shrink=10]{Plasticity as a certificate}
 \textbf{The situation.} The memory has merged two regimes with different rules (the door opens / the door is stuck), so $D_t > 0$. Can the agent's own behaviour reveal the merge?
-\vspace{2mm}
+
+\medskip
 \textbf{Condition: a responsive agent.} The agent reacts differently to the merged regimes: its next-action distributions under them are linearly independent. Possible as soon as there are at least as many actions as regimes.
-\vspace{2mm}
+
+\medskip
 \begin{block}{Theorem}
 Under this condition,
 \[
@@ -235,12 +237,15 @@ where $\sigma$ measures how distinctly the agent reacts to the regimes and $\rho
 
 % ---------------------------------------------------------------
 \begin{frame}{The objective}
-\textbf{Memory: minimise} \quad $\ell_O + \lambda\,\ell_E$ \quad (next-observation prediction and inverse model, the two terms of $D_t = D^0_t + \Delta E_t$). This builds the state.
-\vspace{3mm}
-\textbf{Plasticity: do not minimise it, read it.} A memory that forgets makes the agent's behaviour easy to predict, so the plasticity loss can be driven to zero by forgetting. Used as a loss on the memory it collapses. Used as a readout it is a certificate: when the agent is responsive, $\ell_P \approx 0$ means $D_t \approx 0$; when $\ell_P$ rises, the memory has lost something the agent acts on.
-\vspace{3mm}
+\textbf{Memory: minimise} $\ell_O + \lambda\,\ell_E$, next-observation prediction and inverse model, the two terms of $D_t = D^0_t + \Delta E_t$. This builds the state.
+
+\medskip
+\textbf{Plasticity: do not minimise it, read it.} A memory that forgets makes the agent's behaviour easy to predict, so the plasticity loss can be driven to zero by forgetting; as a loss on the memory it collapses. As a readout it is a certificate: when the agent is responsive, $\ell_P \approx 0$ means $D_t \approx 0$, and a rise in $\ell_P$ means the memory has lost something the agent acts on.
+
+\medskip
 \textbf{Policy: PPO on the memory, kept responsive.} Exploration that keeps distinct reactions to distinct memory values ($\eta$-soft, or an entropy term over memory values) keeps the certificate valid.
-\vspace{3mm}
+
+\medskip
 \textbf{In a changing world.} A regime change makes the agent react to things its memory no longer separates: $\ell_P$ rises first, from actions alone, and triggers relearning of the memory through $\ell_O + \lambda\,\ell_E$. Nothing in this loop needs counterfactual data; what it cannot see is information older than the window.
 \end{frame}
 
