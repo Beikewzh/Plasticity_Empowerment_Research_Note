@@ -213,6 +213,29 @@ $M$ is a sufficient predictive state ($D_t = 0$) if and only if $D^0_t = 0$ and 
 \end{frame}
 
 % ---------------------------------------------------------------
+\begin{frame}[shrink=6]{Plasticity under regime identifiability}
+\textbf{Assumption.} Within a memory class $m$ and action $a$, the histories the memory has merged fall into finitely many \emph{regimes} $c$, each with its own next-observation law $p_c(\cdot \mid m, a)$; the policy's responses to them,
+\[
+K_{m,a}\, p_c, \qquad K_{m,a}(a' \mid o') = \pi_{t+1}\big(a' \mid f(m, a, o')\big) \ \ \text{(the policy composed with the memory update)},
+\]
+are linearly independent. In words: \emph{the agent behaves differently in different regimes}. This needs as many actions as regimes, not as many actions as observations.
+\vspace{2mm}
+\begin{block}{Theorem (sandwich)}
+Let $\sigma$ be the smallest singular value of $K_{m,a}$ on the differences of regime laws and $\rho$ the smallest probability of a next observation in the class. Then, in nats,
+\[
+\Delta P_t \;\le\; D_t \;=\; D^0_t + \Delta E_t \;\le\; \frac{2}{\rho\,\sigma^2}\, \Delta P_t .
+\]
+\end{block}
+Proof of the right side: $\mathrm{KL} \le \chi^2 \le \|p - \bar p\|_2^2/\rho \le \|K(p - \bar p)\|_2^2/(\rho\sigma^2) \le 2\,\mathrm{KL}(Kp \,\|\, K\bar p)/(\rho\sigma^2)$ (Pinsker), averaged over the class. The left side and the equality are unconditional.
+\vspace{2mm}
+\begin{itemize}
+\item $\sigma$ measures how differently the agent acts across regimes; $K$ is the agent's own policy and memory update, so $\sigma$ is computable by the agent once the regime directions are known. $\rho$ is read from data.
+\item Exact checks ($t = 2$): W1, policy reacts to the last reward: $\Delta P = 0.019 \le D = 0.120 \le 61 \times 0.019$. W11, policy plays the last reward: $0.29 \le 0.36 \le 4.3$. The constant is loose by a factor $5$ to $50$.
+\item The assumption is needed: W11 with a random policy, and W3s with a policy that reacts only to the merged class, have $\sigma = 0$: $\Delta P_t = 0$ while $D_t > 0$. A policy that does not act on a distinction cannot reveal that the memory lost it.
+\end{itemize}
+\end{frame}
+
+% ---------------------------------------------------------------
 \begin{frame}[shrink=5]{Finite-window approximation}
 The identities above condition on the full history $h_t$, which is not available. During training the agent stores a window of its own trajectory,
 \[

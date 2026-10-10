@@ -1,0 +1,16 @@
+W1, policy reacts to last reward, memory = last reward: t=2  D = 0.1204 nats, dP = 0.0191 nats, ratio D/dP = 6.30, worst constant C = 61.3
+    class m=0 a=0: regimes span dim 1, sigma 0.784, rho 0.098, C = 2/(rho sigma^2) = 33.2; D_ma 0.0995 <= C dP_ma = 0.5379
+    class m=0 a=1: regimes span dim 1, sigma 0.786, rho 0.053, C = 2/(rho sigma^2) = 60.5; D_ma 0.1432 <= C dP_ma = 1.3630
+    class m=1 a=0: regimes span dim 1, sigma 0.784, rho 0.101, C = 2/(rho sigma^2) = 32.2; D_ma 0.0954 <= C dP_ma = 0.5000
+    class m=1 a=1: regimes span dim 1, sigma 0.786, rho 0.053, C = 2/(rho sigma^2) = 61.3; D_ma 0.1385 <= C dP_ma = 1.3247
+W3s, policy reacts to the class, memory = class: t=2  D = 0.0574 nats, dP = -0.0000 nats, ratio D/dP = inf, worst constant C = inf
+    class m=0 a=0: regimes span dim 1, sigma 0.000, rho 0.142, C = 2/(rho sigma^2) = inf; D_ma 0.0167 <= C dP_ma = inf
+    class m=0 a=1: regimes span dim 1, sigma 0.000, rho 0.045, C = 2/(rho sigma^2) = inf; D_ma 0.3634 <= C dP_ma = inf
+    class m=1 a=0: regimes span dim 0, sigma inf, rho 0.020, C = 2/(rho sigma^2) = inf; D_ma 0.0000 <= C dP_ma = inf
+    class m=1 a=1: regimes span dim 0, sigma inf, rho 0.050, C = 2/(rho sigma^2) = inf; D_ma 0.0000 <= C dP_ma = inf
+W11, policy plays last reward, memory = last reward: t=2  D = 0.3571 nats, dP = 0.2924 nats, ratio D/dP = 1.22, worst constant C = 14.7
+    class m=0 a=0: regimes span dim 1, sigma 1.131, rho 0.106, C = 2/(rho sigma^2) = 14.7; D_ma 0.3571 <= C dP_ma = 4.3103
+    class m=1 a=1: regimes span dim 1, sigma 1.131, rho 0.106, C = 2/(rho sigma^2) = 14.7; D_ma 0.3571 <= C dP_ma = 4.3103
+W11, uniform policy, constant memory (counterexample): t=2  D = 0.4407 nats, dP = 0.0000 nats, ratio D/dP = inf, worst constant C = inf
+    class m=0 a=0: regimes span dim 1, sigma 0.000, rho 0.130, C = 2/(rho sigma^2) = inf; D_ma 0.4407 <= C dP_ma = inf
+    class m=0 a=1: regimes span dim 1, sigma 0.000, rho 0.130, C = 2/(rho sigma^2) = inf; D_ma 0.4407 <= C dP_ma = inf
