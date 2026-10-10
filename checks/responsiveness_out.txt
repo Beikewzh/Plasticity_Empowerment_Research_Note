@@ -1,0 +1,8 @@
+W1, memory = last reward (insufficient): the agent's responsiveness vs the plasticity certificate (nats, t = 2)
+  p0=0.50 p1=0.50 |p1-p0|=0.00: P(M) 0.0000 | sigma 0.000 | C     inf | D 0.1216 dP -0.0000 | C*dP -inf >= D: False
+  p0=0.45 p1=0.55 |p1-p0|=0.10: P(M) 0.0048 | sigma 0.121 | C  2558.9 | D 0.1213 dP 0.0004 | C*dP 1.145 >= D: True
+  p0=0.40 p1=0.60 |p1-p0|=0.20: P(M) 0.0193 | sigma 0.241 | C   641.4 | D 0.1210 dP 0.0018 | C*dP 1.147 >= D: True
+  p0=0.30 p1=0.70 |p1-p0|=0.40: P(M) 0.0793 | sigma 0.483 | C   161.2 | D 0.1202 dP 0.0072 | C*dP 1.154 >= D: True
+  p0=0.20 p1=0.85 |p1-p0|=0.65: P(M) 0.2226 | sigma 0.784 | C    61.3 | D 0.1204 dP 0.0191 | C*dP 1.172 >= D: True
+  p0=0.10 p1=0.90 |p1-p0|=0.80: P(M) 0.3590 | sigma 0.965 | C    40.7 | D 0.1183 dP 0.0290 | C*dP 1.180 >= D: True
+  p0=0.02 p1=0.98 |p1-p0|=0.96: P(M) 0.5834 | sigma 1.158 | C    28.3 | D 0.1175 dP 0.0422 | C*dP 1.197 >= D: True

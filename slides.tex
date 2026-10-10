@@ -250,6 +250,37 @@ where $\sigma$ measures how distinctly the agent reacts to the regimes and $\rho
 \end{frame}
 
 % ---------------------------------------------------------------
+\begin{frame}[shrink=8]{Where plasticity lives: on the policy, as the exposure of the state defect}
+Fix the data (histories, actions, next observations). Let $\pi_\lambda = (1-\lambda)\,\mathrm{Unif} + \lambda\,\pi$, $\lambda \in [0,1]$: the same policy, more or less responsive to its memory.
+\begin{block}{Theorem}
+\begin{enumerate}
+\item[(i)] $D_t = D^0_t + \Delta E_t$: the memory's defect, a property of the memory. \hfill (unconditional)
+\item[(ii)] $0 \le \Delta P_t \le D_t$, and $\Delta P_t = 0$ for a policy that ignores its memory. \hfill (unconditional)
+\item[(iii)] Along $\pi_\lambda$, the agent's plasticity $P_{t+1}(M)(\lambda)$ and the exposed defect $\Delta P_t(\lambda)$ are convex and non-decreasing in $\lambda$, zero at $\lambda = 0$; the response gap is $\sigma(\lambda) = \lambda\,\sigma(1)$, so the certificate constant is $C(1)/\lambda^2$. \hfill (KL is jointly convex; the laws are affine in $\lambda$)
+\item[(iv)] In a sufficient state $\Delta P_t = 0$, hence $P_{t+1}(M) = P_{t+1}$: all plasticity is spent on real distinctions, none on re-reading what was forgotten.
+\end{enumerate}
+\end{block}
+\begin{columns}[T]
+\column{0.5\textwidth}
+\small W1, memory = last reward, $t = 2$, nats:
+
+\begin{tabular}{ccccc}
+responsiveness & $P(M)$ & $\sigma$ & $C$ & $\Delta P$ \\ \hline
+0.00 & 0.000 & 0.00 & $\infty$ & 0.000 \\
+0.20 & 0.019 & 0.24 & 641 & 0.002 \\
+0.65 & 0.223 & 0.78 & 61 & 0.019 \\
+0.96 & 0.583 & 1.16 & 28 & 0.042 \\
+\end{tabular}
+
+$D \approx 0.12$ throughout.
+\column{0.5\textwidth}
+\small \textbf{Reading.} The defect belongs to the memory; how much of it the agent's actions reveal belongs to the policy, and grows with its plasticity.
+
+\textbf{Objective.} Memory: minimise $\ell_O + \lambda_E \ell_E$ (empowerment and prediction build the state). Policy: maximise return $+\ \beta\,P(M)$, react to the memory; this exposes the defect to the cheap readout, keeps action variety for the inverse model, and is what a changing world demands. The two are tied by $W_t \ge P_t(M)$: a more plastic policy needs a memory that writes more.
+\end{columns}
+\end{frame}
+
+% ---------------------------------------------------------------
 \begin{frame}[shrink=5]{Finite-window approximation}
 The identities above condition on the full history $h_t$, which is not available. During training the agent stores a window of its own trajectory,
 \[
