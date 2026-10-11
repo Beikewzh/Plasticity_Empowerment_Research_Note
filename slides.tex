@@ -250,21 +250,26 @@ where $\sigma$ measures how distinctly the agent reacts to the regimes and $\rho
 \end{frame}
 
 % ---------------------------------------------------------------
-\begin{frame}[shrink=12]{Where plasticity lives: on the policy, as the exposure of the state defect}
-Fix the data (histories, actions, next observations). Let $\pi_\lambda = (1-\lambda)\,\mathrm{Unif} + \lambda\,\pi$, $\lambda \in [0,1]$: the same policy, more or less responsive to its memory.
+\begin{frame}[shrink=6]{Plasticity and optimal control}
+Let $a^*_t$ be the best action at $h_t$, unique, and $\mathrm{past}_t$ everything before the newest observation $O_t$.
 \begin{block}{Theorem}
 \begin{enumerate}
-\item[(i)] $D_t = D^0_t + \Delta E_t$: the memory's defect, a property of the memory. \hfill (unconditional)
-\item[(ii)] $0 \le \Delta P_t \le D_t$, and $\Delta P_t = 0$ for a policy that ignores its memory. \hfill (unconditional)
-\item[(iii)] Along $\pi_\lambda$, the agent's plasticity $P_{t+1}(M)(\lambda)$ and the exposed defect $\Delta P_t(\lambda)$ are convex and non-decreasing in $\lambda$, zero at $\lambda = 0$; the response gap is $\sigma(\lambda) = \lambda\,\sigma(1)$, so the certificate constant is $C(1)/\lambda^2$. \hfill (KL is jointly convex; the laws are affine in $\lambda$)
-\item[(iv)] In a sufficient state $\Delta P_t = 0$, hence $P_{t+1}(M) = P_{t+1}$: all plasticity is spent on real distinctions, none on re-reading what was forgotten.
+\item[(i)] An optimal agent is deterministic, its empowerment is $0$, and its plasticity is exactly
+\[
+P^*_t \;=\; H\big(a^*_t \,\big|\, \mathrm{past}_t\big),
+\]
+the part of the best action that the past does not already decide.
+\item[(ii)] Any agent that takes a wrong action with probability $\epsilon_t$ has $P_t \;\ge\; H(a^*_t \mid \mathrm{past}_t) - \Phi(\epsilon_t)$, with $\Phi(\epsilon) = h_b(\epsilon) + \epsilon \log(|\mathcal{A}| - 1)$.
+\item[(iii)] Its memory writes at least that: $W_t \ge P_t(M) \ge P_t$. A memory with $K$ values ($W_t \le \log K$) cannot bring the error below $\Phi^{-1}\big(H(a^*_t \mid \mathrm{past}_t) - \log K\big)$.
 \end{enumerate}
 \end{block}
-\medskip
-\textbf{Two levers.} With the data fixed, $D_t$ is determined by the memory map alone (i): the policy cannot change it, and the memory changes it only through prediction and empowerment mismatch. $\Delta P_t$ is determined by the policy's response to the memory (ii, iii): a memory that ignores its observations has $\Delta P_t = 0$ under every policy, so plasticity cannot be a memory objective, while a more responsive policy exposes more of the fixed defect.
+Proofs: a deterministic policy has $P_t = H(A_t \mid \mathrm{past}_t)$ and the optimal one plays $a^*_t$; (ii) is Fano, since $a^*_t$ is a function of $(\mathrm{past}_t, O_t)$; (iii) is data processing through the memory.
 
 \medskip
-\textbf{Objective.} Memory: minimise $\ell_O + \lambda_E\,\ell_E$. Policy: maximise return $+\ \beta\,P(M)$, react to the memory; this exposes the defect to the actions-only readout, keeps the action variety the inverse model needs, and is what a changing world demands. Tie: $W_t \ge P_t(M)$, a more plastic policy needs a memory that writes more.
+\textbf{In words.} Plasticity is the part of a decision that has to wait for the newest observation. The task fixes how much of it optimal control has; no agent can have less without erring; and the memory must take in at least that much. A policy that is greedy on a sufficient memory has this plasticity automatically, so it is not something to reward. (Matching it is not sufficient: a policy that always picks the opposite action has the same plasticity.)
+
+\medskip
+\textbf{Two levers.} With the data fixed, $D_t$ is set by the memory alone; the policy decides only how much of it shows in its actions ($\Delta P_t$, zero for an indifferent policy, larger for a more responsive one). Empowerment builds the state and is spent on the way; plasticity is what remains at the optimum, equal to the task's demand.
 \end{frame}
 
 % ---------------------------------------------------------------
@@ -314,20 +319,19 @@ Cost. The memory itself is trained without any second network (the window networ
   box/.style={draw, rounded corners=3pt, minimum height=7mm, minimum width=24mm, align=center, font=\scriptsize},
   dim/.style={box, dashed, draw=black!60, text=black!60}]
 \node[box] (mem) {memory $f_\theta$\\ $M_t$};
-\node[box, above right=of mem] (ho) {predictor of $O_{t+1}$ from $M_t$\\ loss $\ell_O$};
-\node[box, right=of mem] (he) {inverse model: $A_t$ from $M_t, O_{t+1}$\\ loss $\ell_E$};
+\node[box, above right=of mem] (hd) {predictor of $O_{t+1}$ from $(M_t, A_t)$\\ loss $\ell_D$, trains the memory};
+\node[dim, right=of mem] (ho) {readouts: $O_{t+1}$ from $M_t$; $A_t$ from $M_t, O_{t+1}$\\ estimates of $D^0_t$ and $\Delta E_t$};
 \node[box, below right=of mem] (pi) {policy $\pi_\nu$, value $V_\nu$\\ PPO on $\sg[M_t]$};
-\node[dim, right=of ho] (hop) {same predictor from $(M_t, W_t)$\\ estimate $\hat L_O$};
-\node[dim, right=of he] (hep) {same inverse model from $(M_t, W_t)$\\ estimate $\hat L_E$};
-\node[dim, right=of pi] (hp) {next-action predictors\\ estimate $\hat L_P$};
-\draw[->, thick] (mem) -- (ho); \draw[->, thick] (mem) -- (he); \draw[->, thick] (mem) -- (pi);
-\draw[->, dashed, black!60] (ho) -- (hop); \draw[->, dashed, black!60] (he) -- (hep); \draw[->, dashed, black!60] (pi) -- (hp);
+\node[dim, right=of ho] (hop) {same readouts from $(M_t, W_t)$\\ window gaps $\hat L_O, \hat L_E$};
+\node[dim, right=of pi] (hp) {next-action predictors\\ $\hat L_P$};
+\draw[->, thick] (mem) -- (hd); \draw[->, dashed, black!60] (mem) -- (ho); \draw[->, thick] (mem) -- (pi);
+\draw[->, dashed, black!60] (ho) -- (hop); \draw[->, dashed, black!60] (pi) -- (hp);
 \end{tikzpicture}
 \end{center}
 \begin{itemize}\small
-\item The memory parameters $\theta$ are trained on $\ell_O + \lambda\,\ell_E$, the two terms of the decomposition $D_t = D^0_t + \dE_t$. Gradients from the policy do not reach the memory ($\sg$ stops them).
-\item The dashed networks receive the window in addition. Their losses are subtracted from $\ell_O, \ell_E, \ell_P$ to form the estimates $\hat L_O, \hat L_E, \hat L_P$; they do not contribute gradients to $\theta$.
-\item In population, with networks that have learned the true laws, $\E[\ell_O + \ell_E] = \text{const} + D_t + I(h_t; A_t \mid M_t)$ on the training data: the memory objective is the state defect plus a term that is zero at the memory that generated the data. This is the same objective as action-conditioned prediction of $O_{t+1}$; the decomposition identifies its two parts and provides the estimates.
+\item The memory parameters $\theta$ are trained on $\ell_D = -\log q(O_{t+1} \mid M_t, A_t)$ only; with a head that has learned the true law its value is $H(O_{t+1} \mid h_t, A_t) + D_t$, a constant plus the defect.
+\item All dashed networks take detached inputs and send no gradient to $\theta$; they estimate the two halves of the defect and the window gaps.
+\item The policy never shapes the memory ($\sg$). Exploration: $\eta$-soft. No plasticity term anywhere.
 \end{itemize}
 \end{frame}
 
@@ -341,7 +345,7 @@ Cost. The memory itself is trained without any second network (the window networ
 \item $\dE_t = I(h_t; A_t \mid M_t, O_{t+1}) \ge 0$ and $\dP_t = I(h_t; A_{t+1} \mid M_t, A_t) \ge 0$.
 \item $D_t = D^0_t + \dE_t$ and $0 \le \dP_t \le D_t$.
 \item The window versions satisfy the same identities; the difference from $D_t$ is the information older than the window.
-\item Action-conditioned prediction already minimises $D_t$ on the data; the proposed memory loss coincides with it up to an inertia term.
+\item Action-conditioned prediction minimises $D_t$ on the data; the action-free and inverse heads measure its two halves, and their sum used as a loss carries an inertia term.
 \end{itemize}
 \column{0.5\textwidth}
 \textbf{Open}
