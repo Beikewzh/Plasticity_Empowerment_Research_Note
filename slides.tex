@@ -236,7 +236,7 @@ where $\sigma$ measures how distinctly the agent reacts to the regimes and $\rho
 \end{frame}
 
 % ---------------------------------------------------------------
-\begin{frame}{The objective}
+\begin{frame}[shrink=8]{The objective}
 \textbf{Memory: minimise} $-\log q(O_{t+1} \mid M_t, A_t)$, action-conditioned prediction. With a head that has learned the true law its value is $H(O_{t+1} \mid h_t, A_t) + D_t$, a constant plus the defect. The action-free head and the inverse model are the readouts of the two halves $D^0_t$ and $\Delta E_t$; used as a loss instead, their sum carries an extra term $H(A_t \mid M_t)$, an inertia toward the memory that generated the data.
 
 \medskip
@@ -246,7 +246,7 @@ where $\sigma$ measures how distinctly the agent reacts to the regimes and $\rho
 \textbf{Policy: PPO on the memory, kept responsive.} Exploration that keeps distinct reactions to distinct memory values ($\eta$-soft, or an entropy term over memory values) keeps the certificate valid.
 
 \medskip
-\textbf{In a changing world.} A regime change makes the agent react to things its memory no longer separates: $\ell_P$ rises first, from actions alone, and triggers relearning of the memory through $\ell_O + \lambda\,\ell_E$. Nothing in this loop needs counterfactual data; what it cannot see is information older than the window.
+\textbf{In a changing world.} A regime change makes the agent react to things its memory no longer separates: $\ell_P$ rises first, from actions alone, and the memory relearns through its prediction loss. Nothing in this loop needs counterfactual data; what it cannot see is information older than the window.
 \end{frame}
 
 % ---------------------------------------------------------------
