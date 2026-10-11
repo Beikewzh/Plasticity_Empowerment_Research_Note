@@ -237,7 +237,7 @@ where $\sigma$ measures how distinctly the agent reacts to the regimes and $\rho
 
 % ---------------------------------------------------------------
 \begin{frame}{The objective}
-\textbf{Memory: minimise} $\ell_O + \lambda\,\ell_E$, next-observation prediction and inverse model, the two terms of $D_t = D^0_t + \Delta E_t$. This builds the state.
+\textbf{Memory: minimise} $-\log q(O_{t+1} \mid M_t, A_t)$, action-conditioned prediction. With a head that has learned the true law its value is $H(O_{t+1} \mid h_t, A_t) + D_t$, a constant plus the defect. The action-free head and the inverse model are the readouts of the two halves $D^0_t$ and $\Delta E_t$; used as a loss instead, their sum carries an extra term $H(A_t \mid M_t)$, an inertia toward the memory that generated the data.
 
 \medskip
 \textbf{Plasticity: do not minimise it, read it.} A memory that forgets makes the agent's behaviour easy to predict, so the plasticity loss can be driven to zero by forgetting; as a loss on the memory it collapses. As a readout it is a certificate: when the agent is responsive, $\ell_P \approx 0$ means $D_t \approx 0$, and a rise in $\ell_P$ means the memory has lost something the agent acts on.

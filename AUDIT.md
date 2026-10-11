@@ -135,3 +135,13 @@ Not found:
 Consequence for the claim: novelty is the arrangement and the reading, not the difficulty (every proof is the chain
 rule or data processing). Two 2026 papers already sit next to it and cite Abel et al., so this is a place where
 someone else can arrive soon.
+
+## Update 2026-10-11 (after a second external critique)
+- Memory objective corrected: Algorithm 1 now trains the memory on action-conditioned prediction
+  l_D = -log q(O' | M, A), whose population value is H(O' | h, A) + D_t. The pair l_O + l_E is NOT the memory
+  loss (its value carries the inertia term H(A | M)); the action-free and inverse heads are readouts of the two
+  halves D^0 and Delta E.
+- The proposed "PPO stall test" via the Fano floor with the memory's greedy action was vacuous (the inequality
+  holds for every policy); withdrawn. An actor-critic gap G_t = E[max_a q - sum_a pi q] is the right monitor.
+- Optimal-plasticity theorem (P* = H(a* | past); P >= P* - Phi(eps); W >= P(M) >= P) kept as the policy-level
+  statement; it is not an optimisation objective. W1 check: P_2 = 0.732 = H(a*_2 | past_2) bits.
