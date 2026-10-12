@@ -240,13 +240,13 @@ where $\sigma$ measures how distinctly the agent reacts to the regimes and $\rho
 \textbf{Memory: minimise} $-\log q(O_{t+1} \mid M_t, A_t)$, action-conditioned prediction. With a head that has learned the true law its value is $H(O_{t+1} \mid h_t, A_t) + D_t$, a constant plus the defect. The action-free head and the inverse model are the readouts of the two halves $D^0_t$ and $\Delta E_t$; used as a loss instead, their sum carries an extra term $H(A_t \mid M_t)$, an inertia toward the memory that generated the data.
 
 \medskip
-\textbf{Plasticity: do not minimise it, read it.} A memory that forgets makes the agent's behaviour easy to predict, so the plasticity loss can be driven to zero by forgetting; as a loss on the memory it collapses. As a readout it is a certificate: when the agent is responsive, $\ell_P \approx 0$ means $D_t \approx 0$, and a rise in $\ell_P$ means the memory has lost something the agent acts on.
+\textbf{Plasticity: do not minimise it, read it.} A memory that forgets makes the agent's behaviour easy to predict, so the plasticity loss can be driven to zero by forgetting; as a loss on the memory it collapses. As a readout it is a certificate: when the agent is responsive, $\hat L_P \approx 0$ means $D^{(k)}_t \approx 0$ (the defect within the window), and a rise in $\hat L_P$ means the memory has lost something the agent acts on.
 
 \medskip
 \textbf{Policy: PPO on the memory, kept responsive.} Exploration that keeps distinct reactions to distinct memory values ($\eta$-soft, or an entropy term over memory values) keeps the certificate valid.
 
 \medskip
-\textbf{In a changing world.} A regime change makes the agent react to things its memory no longer separates: $\ell_P$ rises first, from actions alone, and the memory relearns through its prediction loss. Nothing in this loop needs counterfactual data; what it cannot see is information older than the window.
+\textbf{In a changing world.} A regime change makes the agent react to things its memory no longer separates: $\hat L_P$ rises first, from actions alone, and the memory relearns through its prediction loss. Nothing in this loop needs counterfactual data; what it cannot see is information older than the window.
 \end{frame}
 
 % ---------------------------------------------------------------
@@ -336,7 +336,7 @@ Cost. The memory itself is trained without any second network (the window networ
 \end{frame}
 
 % ---------------------------------------------------------------
-\begin{frame}{Summary}
+\begin{frame}[shrink=8]{Summary}
 \begin{columns}[T]
 \column{0.5\textwidth}
 \textbf{Established}
@@ -345,6 +345,8 @@ Cost. The memory itself is trained without any second network (the window networ
 \item $\dE_t = I(h_t; A_t \mid M_t, O_{t+1}) \ge 0$ and $\dP_t = I(h_t; A_{t+1} \mid M_t, A_t) \ge 0$.
 \item $D_t = D^0_t + \dE_t$ and $0 \le \dP_t \le D_t$.
 \item The window versions satisfy the same identities; the difference from $D_t$ is the information older than the window.
+\item For a responsive agent (linearly independent reactions to the merged regimes), $\Delta P_t \le D_t \le C\,\Delta P_t$: plasticity certifies the state.
+\item Optimal control: $P^*_t = H(a^*_t \mid \mathrm{past}_t)$, $P_t \ge P^*_t - \Phi(\epsilon_t)$, and $W_t \ge P_t(M) \ge P_t$.
 \item Action-conditioned prediction minimises $D_t$ on the data; the action-free and inverse heads measure its two halves, and their sum used as a loss carries an inertia term.
 \end{itemize}
 \column{0.5\textwidth}
