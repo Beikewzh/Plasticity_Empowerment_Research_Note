@@ -336,7 +336,7 @@ Cost. The memory itself is trained without any second network (the window networ
 \end{frame}
 
 % ---------------------------------------------------------------
-\begin{frame}[shrink=8]{Summary}
+\begin{frame}[shrink=15]{Summary}
 \begin{columns}[T]
 \column{0.5\textwidth}
 \textbf{Established}
@@ -347,7 +347,7 @@ Cost. The memory itself is trained without any second network (the window networ
 \item The window versions satisfy the same identities; the difference from $D_t$ is the information older than the window.
 \item For a responsive agent (linearly independent reactions to the merged regimes), $\Delta P_t \le D_t \le C\,\Delta P_t$: plasticity certifies the state.
 \item Optimal control: $P^*_t = H(a^*_t \mid \mathrm{past}_t)$, $P_t \ge P^*_t - \Phi(\epsilon_t)$, and $W_t \ge P_t(M) \ge P_t$.
-\item Action-conditioned prediction minimises $D_t$ on the data; the action-free and inverse heads measure its two halves, and their sum used as a loss carries an inertia term.
+\item Action-conditioned prediction minimises $D_t$ on the data; the action-free and inverse heads measure its two halves.
 \end{itemize}
 \column{0.5\textwidth}
 \textbf{Open}
