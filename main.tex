@@ -57,7 +57,7 @@ The environment $e(O_{t+1}\mid h_t,A_t)$ may depend on the whole history. No Mar
 \end{assumption}
 
 \begin{assumption}[Memory]\label{as:mem}
-The memory is updated recursively, $M_{t+1}=f(X_t)$ with $X_t=(M_t,A_t,O_{t+1})$. Hence $M_t$ is a deterministic function of $h_t$.
+The memory is updated recursively, $M_{t+1}=f(M_t,A_t,O_{t+1})$. Hence $M_t$ is a deterministic function of $h_t$.
 \end{assumption}
 
 \begin{assumption}[Policy]\label{as:pol}
@@ -119,43 +119,137 @@ $D^0_t$ is what the next observation reveals about the dropped part of the histo
 
 \section{From one step to the return}
 
-\paragraph{Step 1: the reward part of one step.}
-Since $R_{t+1}$ is a component of $O_{t+1}$, the chain rule gives $D_t=D^R_t+I(h_t;O_{t+1}\mid M_t,A_t,R_{t+1})$ with $D^R_t=I(h_t;R_{t+1}\mid M_t,A_t)$. For every $(m,a)$,
-\[
-\E\Big[\big|\E[R_{t+1}\mid h_t,a]-\E[R_{t+1}\mid m,a]\big|\ \Big|\ M_t=m\Big]\le\Delta R\sqrt{\tfrac12\,I(h_t;R_{t+1}\mid M_t=m,A_t=a)},
-\]
-by $|\E_PR-\E_QR|\le\Delta R\,\mathrm{TV}(P,Q)$, Pinsker's inequality and Jensen's inequality.
+Throughout this section we use three facts.
+\begin{itemize}
+\item[(F1)] $h_{t+1}=(h_t,A_t,O_{t+1})$, and $M_t$ is a function of $h_t$ (Assumption~\ref{as:mem}).
+\item[(F2)] $M_{t+1}=f(M_t,A_t,O_{t+1})$ is a function of $(M_t,A_t,O_{t+1})$ (Assumption~\ref{as:mem}).
+\item[(F3)] $A_{t+1}$ depends on the past only through $M_{t+1}$ (Assumption~\ref{as:pol}).
+\end{itemize}
+From (F2) and (F3), for any variables $V$ from the past,
+\begin{equation}\label{eq:action-zero}
+I(V;A_{t+1}\mid M_t,A_t,O_{t+1})=0,
+\end{equation}
+because given $(M_t,A_t,O_{t+1})$ the memory $M_{t+1}$ is fixed and $A_{t+1}$ is drawn from $\pi(\cdot\mid M_{t+1})$ with independent randomness.
 
-\paragraph{Step 2: two steps.}
-\[
-I(h_t;O_{t+1},A_{t+1},O_{t+2}\mid M_t,A_t)=D_t+I(h_t;O_{t+2}\mid X_t,A_{t+1}).
-\]
-The action term vanishes as in Proposition~\ref{prop:mismatch}. We call the last term the old part at $t+1$: what the history up to $t$ still tells about step $t+2$, beyond the memory at $t$ and everything seen and done since.
+\subsection{Step 1: the reward part of one step}
 
-\paragraph{Step 3: the next defect.}
-Since $h_{t+1}$ and $(h_t,X_t)$ determine each other and $M_{t+1}$ is a function of $X_t$,
+The reward $R_{t+1}$ is a component of $O_{t+1}$, so $O_{t+1}$ and $(R_{t+1},O_{t+1})$ carry the same information. By the chain rule,
 \[
-D_{t+1}=\underbrace{I(X_t;O_{t+2}\mid M_{t+1},A_{t+1})}_{\text{dropped by the update } f}+\underbrace{I(h_t;O_{t+2}\mid X_t,A_{t+1})}_{\text{old part at } t+1}.
+D_t=I(h_t;R_{t+1},O_{t+1}\mid M_t,A_t)=\underbrace{I(h_t;R_{t+1}\mid M_t,A_t)}_{D^R_t}+I(h_t;O_{t+1}\mid M_t,A_t,R_{t+1}).
 \]
-% TODO: check against the literature.
+Fix a memory value $m$ and an action $a$. The expected reward the agent can estimate at $(m,a)$ is the average over the histories behind $m$,
+\[
+\E[R_{t+1}\mid M_t=m,A_t=a]=\sum_h P(h_t=h\mid M_t=m)\,\E[R_{t+1}\mid h_t=h,A_t=a],
+\]
+where we used $P(h_t=h\mid M_t=m,A_t=a)=P(h_t=h\mid M_t=m)$ (Assumption~\ref{as:pol}). For one history $h$ behind $m$, write $P_h=P(R_{t+1}\mid h_t=h,A_t=a)$ and $Q=P(R_{t+1}\mid M_t=m,A_t=a)$. Then:
+\begin{enumerate}
+\item $|\E_{P_h}R-\E_QR|\le\Delta R\cdot\mathrm{TV}(P_h,Q)$, since $\E_{P_h}R-\E_QR=\sum_r(P_h(r)-Q(r))(r-c)$ for the midpoint $c$ of the reward range, and $|r-c|\le\Delta R/2$.
+\item $\mathrm{TV}(P_h,Q)\le\sqrt{\mathrm{KL}(P_h\|Q)/2}$ (Pinsker's inequality).
+\item Averaging over $h$ and using Jensen's inequality, $\E_h\sqrt{\mathrm{KL}(P_h\|Q)/2}\le\sqrt{\E_h\mathrm{KL}(P_h\|Q)/2}$, and $\E_h\mathrm{KL}(P_h\|Q)=I(h_t;R_{t+1}\mid M_t=m,A_t=a)$.
+\end{enumerate}
+Together,
+\[
+\E\Big[\big|\E[R_{t+1}\mid h_t,a]-\E[R_{t+1}\mid m,a]\big|\ \Big|\ M_t=m\Big]\le\Delta R\sqrt{\tfrac12\,I(h_t;R_{t+1}\mid M_t=m,A_t=a)} .
+\]
+So the reward part $D^R_t$ of the defect controls how wrong the agent's estimate of the next reward can be.
 
-\paragraph{Step 4: two routes to a later reward.}
-By Step 2 and Proposition~\ref{prop:splits},
-\[
-I(h_t;R_{t+2}\mid M_t,A_t)\le\dP_t+D^+_t+I(h_t;O_{t+2}\mid X_t,A_{t+1}).
-\]
-The history reaches the reward at $t+2$ through the environment ($D^+_t$ and the old part) and through the agent's own next action ($\dP_t$).
+\subsection{Step 2: two steps}
 
-\paragraph{Step 5: the infinite horizon.}
-Let $\gamma<1$ and write $Z_{t,k}$ for $(M_t,A_t)$ and everything seen and done from $t+1$ to $t+k$, including $A_{t+k}$. Then
+We ask how much the history up to $t$ tells about the next two steps, $O_{t+1},A_{t+1},O_{t+2}$, beyond $(M_t,A_t)$. The chain rule in the order $O_{t+1}$, $A_{t+1}$, $O_{t+2}$ gives three terms:
+\begin{align*}
+I(h_t;O_{t+1},A_{t+1},O_{t+2}\mid M_t,A_t)
+&=I(h_t;O_{t+1}\mid M_t,A_t)\\
+&\quad+I(h_t;A_{t+1}\mid M_t,A_t,O_{t+1})\\
+&\quad+I(h_t;O_{t+2}\mid M_t,A_t,O_{t+1},A_{t+1}).
+\end{align*}
+\begin{itemize}
+\item The first term is $D_t$.
+\item The second term is zero by \eqref{eq:action-zero} with $V=h_t$.
+\item The third term we call the \emph{old part at $t+1$}:
 \[
-I(h_t;O_{t+1},A_{t+1},\dots,O_{t+n}\mid M_t,A_t)=\sum_{k=0}^{n-1}I(h_t;O_{t+k+1}\mid Z_{t,k})\le\sum_{k=0}^{n-1}D_{t+k},
+L_{t+1}=I(h_t;O_{t+2}\mid M_t,A_t,O_{t+1},A_{t+1}).
 \]
-and, with $q_\pi(M_t,a)=\E_\pi[q_\pi(h_t,a)\mid M_t]$,
+\end{itemize}
+Hence
 \[
-\E\big|q_\pi(h_t,A_t)-q_\pi(M_t,A_t)\big|\le\Delta R\sum_{k\ge0}\gamma^k\sqrt{\tfrac12\sum_{j=0}^{k}D_{t+j}}\le\frac{\Delta R}{(1-\gamma)^{3/2}}\sqrt{\tfrac12\sup_jD_{t+j}} .
+I(h_t;O_{t+1},A_{t+1},O_{t+2}\mid M_t,A_t)=D_t+L_{t+1}.
 \]
-The equality is the chain rule with vanishing action terms; each summand is the old part of Step~3 at $t+k$; the value bound applies Step~1 to every reward, Jensen's inequality, and $\sum_k\gamma^k\sqrt{k+1}\le(1-\gamma)^{-3/2}$. This has the structure of the approximate information state of \citet{subramanian2022approximate}.
+The conditioning variables in $L_{t+1}$ are the memory at $t$ and what the agent did and saw after it: $A_t$, $O_{t+1}$, $A_{t+1}$. They are not $h_{t+1}$: conditioning on $h_{t+1}=(h_t,A_t,O_{t+1})$ would include $h_t$ itself and make the term zero. $L_{t+1}$ is what the part of $h_t$ that the memory $M_t$ had already dropped still tells about $O_{t+2}$.
+
+\subsection{Step 3: the next defect splits into recent and old losses}
+
+By definition $D_{t+1}=I(h_{t+1};O_{t+2}\mid M_{t+1},A_{t+1})$.
+\begin{enumerate}
+\item By (F1), $h_{t+1}=(h_t,A_t,O_{t+1})$ and $M_t$ is a function of $h_t$, so $h_{t+1}$ carries the same information as $(h_t,M_t,A_t,O_{t+1})$:
+\[
+D_{t+1}=I(h_t,\,M_t,A_t,O_{t+1};\,O_{t+2}\mid M_{t+1},A_{t+1}).
+\]
+\item Chain rule, first $(M_t,A_t,O_{t+1})$, then $h_t$:
+\[
+D_{t+1}=I(M_t,A_t,O_{t+1};\,O_{t+2}\mid M_{t+1},A_{t+1})+I(h_t;\,O_{t+2}\mid M_{t+1},A_{t+1},M_t,A_t,O_{t+1}).
+\]
+\item By (F2), $M_{t+1}$ is a function of $(M_t,A_t,O_{t+1})$, which are already in the condition of the second term, so $M_{t+1}$ can be removed from it. The second term is then $L_{t+1}$.
+\end{enumerate}
+Therefore
+\[
+D_{t+1}=\underbrace{I(M_t,A_t,O_{t+1};\,O_{t+2}\mid M_{t+1},A_{t+1})}_{\text{lost by the update } f \text{ at } t+1}+\underbrace{L_{t+1}}_{\text{lost before } t+1}.
+\]
+The first term is what the update $f$ discards from its own input $(M_t,A_t,O_{t+1})$ that still predicts $O_{t+2}$; the second is what the memory had already lost by time $t$ and still predicts $O_{t+2}$. In particular $L_{t+1}\le D_{t+1}$.
+% TODO: check this split against the literature.
+
+\subsection{Step 4: two routes from the history to the reward two steps later}
+
+\begin{enumerate}
+\item $R_{t+2}$ is a component of $O_{t+2}$, hence a function of $(O_{t+1},A_{t+1},O_{t+2})$. By data processing,
+\[
+I(h_t;R_{t+2}\mid M_t,A_t)\le I(h_t;O_{t+1},A_{t+1},O_{t+2}\mid M_t,A_t).
+\]
+\item By Step 2 the right-hand side equals $D_t+L_{t+1}$.
+\item By Proposition~\ref{prop:splits}, $D_t=\dP_t+D^+_t$.
+\end{enumerate}
+Therefore
+\[
+I(h_t;R_{t+2}\mid M_t,A_t)\le\dP_t+D^+_t+L_{t+1}.
+\]
+In this bound the history reaches the reward two steps later through the environment ($D^+_t$ and $L_{t+1}$) and through the agent's own next action ($\dP_t$).
+
+\subsection{Step 5: $n$ steps and the infinite horizon}
+
+Let $Z_{t,k}=(M_t,A_t,O_{t+1},A_{t+1},\dots,O_{t+k},A_{t+k})$: the memory at $t$ and everything the agent saw and did from $t$ to $t+k$. Applying (F2) $k$ times, $M_{t+k}$ is a function of $(M_t,A_t,O_{t+1},\dots,A_{t+k-1},O_{t+k})$.
+
+\paragraph{(a) The information about $n$ steps.}
+The chain rule over $O_{t+1},A_{t+1},O_{t+2},\dots,O_{t+n}$ gives observation terms and action terms. Each action term $I(h_t;A_{t+k}\mid Z_{t,k-1},O_{t+k})$ is zero, because $M_{t+k}$ is fixed by the conditioning variables and $A_{t+k}$ depends only on $M_{t+k}$. Hence
+\[
+I(h_t;O_{t+1},A_{t+1},\dots,O_{t+n}\mid M_t,A_t)=\sum_{k=0}^{n-1}L_{t+k},\qquad L_{t+k}=I(h_t;O_{t+k+1}\mid Z_{t,k}),
+\]
+with $L_t=D_t$.
+
+\paragraph{(b) Each term is at most the defect at that time.}
+Repeat Step 3 at time $t+k$: $h_{t+k}$ carries the same information as $(h_t,Z_{t,k-1},O_{t+k})$, the chain rule splits $D_{t+k}$ into what the updates from $t$ to $t+k$ lost and $L_{t+k}$, and both parts are nonnegative. So $L_{t+k}\le D_{t+k}$ and
+\[
+I(h_t;O_{t+1},A_{t+1},\dots,O_{t+n}\mid M_t,A_t)\le\sum_{k=0}^{n-1}D_{t+k}.
+\]
+
+\paragraph{(c) The value.}
+Let $\gamma<1$, $q_\pi(h,a)=\E\big[\sum_{k\ge0}\gamma^kR_{t+k+1}\mid h_t=h,A_t=a\big]$, and $q_\pi(m,a)=\E[q_\pi(h_t,a)\mid M_t=m]$, the action value a critic on the memory can learn. Then
+\[
+q_\pi(h,a)-q_\pi(m,a)=\sum_{k\ge0}\gamma^k\Big(\E[R_{t+k+1}\mid h_t=h,A_t=a]-\E[R_{t+k+1}\mid M_t=m,A_t=a]\Big).
+\]
+Take absolute values and the triangle inequality, bound each term as in Step~1 with $I(h_t;R_{t+k+1}\mid M_t=m,A_t=a)$, average over $(M_t,A_t)$ and use Jensen's inequality once more. Since $R_{t+k+1}$ is a function of $(O_{t+1},A_{t+1},\dots,O_{t+k+1})$, data processing and (b) give $I(h_t;R_{t+k+1}\mid M_t,A_t)\le\sum_{j=0}^{k}D_{t+j}$. Therefore
+\[
+\E\big|q_\pi(h_t,A_t)-q_\pi(M_t,A_t)\big|\le\Delta R\sum_{k\ge0}\gamma^k\sqrt{\tfrac12\sum_{j=0}^{k}D_{t+j}} .
+\]
+
+\paragraph{(d) A uniform bound.}
+If $D_{t+j}\le\bar D$ for all $j$, then $\sum_{j=0}^{k}D_{t+j}\le(k+1)\bar D$, and the right-hand side is at most $\Delta R\sqrt{\bar D/2}\,\sum_k\gamma^k\sqrt{k+1}$. By the Cauchy--Schwarz inequality,
+\[
+\sum_{k\ge0}\gamma^k\sqrt{k+1}=\sum_{k\ge0}\gamma^{k/2}\cdot\gamma^{k/2}\sqrt{k+1}\le\sqrt{\sum_{k\ge0}\gamma^k}\,\sqrt{\sum_{k\ge0}\gamma^k(k+1)}=\sqrt{\frac{1}{1-\gamma}\cdot\frac{1}{(1-\gamma)^2}}=(1-\gamma)^{-3/2}.
+\]
+So
+\[
+\E\big|q_\pi(h_t,A_t)-q_\pi(M_t,A_t)\big|\le\frac{\Delta R}{(1-\gamma)^{3/2}}\sqrt{\bar D/2} .
+\]
+The discount makes the infinite sum finite. The result has the structure of the approximate information state of \citet{subramanian2022approximate}.
 
 \section{Open questions}
 
