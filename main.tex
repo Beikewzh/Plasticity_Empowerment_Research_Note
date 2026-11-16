@@ -170,116 +170,139 @@ $D^0_t$ is the information about the history in the next observation when the ac
 
 \section{Every term with the reward separated}
 
-Since $O_{t+1}=(R_{t+1},\Ob_{t+1})$, (I1) splits every term in which $O_{t+1}$ is the predicted variable. The terms $\dE_t$ and $\dP_t$ predict an action, and we split them by applying (I1) to a joint quantity in two orders.
+Write $O_{t+1}=(R_{t+1},\Ob_{t+1})$, the reward and the rest of the observation. Throughout this section $h=h_t$, $M=M_t$, $A=A_t$, $A'=A_{t+1}$, $R=R_{t+1}$ and $\Ob=\Ob_{t+1}$, so that, for example, $\dE_t=I(h;A\mid M,R,\Ob)$.
 
-\paragraph{The defect, $D^0$ and $D^+$.} By (I1) with $O_{t+1}=(R_{t+1},\Ob_{t+1})$,
+\subsection{$D$, $D^0$ and $D^+$}
+In these three terms the observation is the predicted variable. By (I1) with $O_{t+1}=(R,\Ob)$,
 \begin{align*}
-D_t&=\underbrace{I(h_t;R_{t+1}\mid M_t,A_t)}_{D^R_t}+\underbrace{I(h_t;\Ob_{t+1}\mid M_t,A_t,R_{t+1})}_{D^{\Ob}_t},\\
-D^0_t&=\underbrace{I(h_t;R_{t+1}\mid M_t)}_{D^{0,R}_t}+\underbrace{I(h_t;\Ob_{t+1}\mid M_t,R_{t+1})}_{D^{0,\Ob}_t},\\
-D^+_t&=\underbrace{I(h_t;R_{t+1}\mid M_t,A_t,A_{t+1})}_{D^{+,R}_t}+\underbrace{I(h_t;\Ob_{t+1}\mid M_t,A_t,A_{t+1},R_{t+1})}_{D^{+,\Ob}_t}.
+D_t&=I(h;R\mid M,A)+I(h;\Ob\mid M,A,R),\\
+D^0_t&=I(h;R\mid M)+I(h;\Ob\mid M,R),\\
+D^+_t&=I(h;R\mid M,A,A')+I(h;\Ob\mid M,A,A',R).
 \end{align*}
+Each of the six terms is a conditional mutual information, hence nonnegative.
 
-\paragraph{$\dE$.} Define $\dE^R_t=I(h_t;A_t\mid M_t,R_{t+1})$ and $\dE^{\Ob}_t=\dE_t-\dE^R_t$.
-Apply (I1) to $I(h_t;A_t,R_{t+1}\mid M_t)$ in the two orders and use Lemma~\ref{lem:ci}(a):
-\[
-0+D^R_t=D^{0,R}_t+\dE^R_t .
-\]
-Apply (I1) to $I(h_t;A_t,\Ob_{t+1}\mid M_t,R_{t+1})$ in the two orders:
-\[
-\dE^R_t+D^{\Ob}_t=D^{0,\Ob}_t+\dE_t,\qquad\text{that is}\qquad D^{\Ob}_t=D^{0,\Ob}_t+\dE^{\Ob}_t .
-\]
+\subsection{$\dE$}
+By Proposition~\ref{prop:mismatch}, $\dE_t=I(h;A\mid M,O_{t+1})=I(h;A\mid M,R,\Ob)$.
 
-\paragraph{$\dP$.} Define $\dP^{\Ob}_t=I(h_t;A_{t+1}\mid M_t,A_t,R_{t+1})$ and $\dP^R_t=\dP_t-\dP^{\Ob}_t$.
-Apply (I1) to $I(h_t;R_{t+1},A_{t+1}\mid M_t,A_t)$ in the two orders:
+\emph{Step 1.} Apply (I1) to $I(h;A,\Ob\mid M,R)$ in the two orders:
 \[
-D^R_t+\dP^{\Ob}_t=\dP_t+D^{+,R}_t,\qquad\text{that is}\qquad D^R_t=\dP^R_t+D^{+,R}_t .
+I(h;A\mid M,R)+I(h;\Ob\mid M,R,A)=I(h;\Ob\mid M,R)+I(h;A\mid M,R,\Ob).
 \]
-Subtracting this from the second split of Proposition~\ref{prop:splits}, $D^{\Ob}_t=\dP^{\Ob}_t+D^{+,\Ob}_t$.
+The last term is $\dE_t$. Solving for it,
+\begin{equation}\label{eq:dE-full}
+\dE_t=I(h;A\mid M,R)+I(h;\Ob\mid M,A,R)-I(h;\Ob\mid M,R).
+\end{equation}
 
-\begin{proposition}[Reward-separated splits]\label{prop:table}
-Under Assumptions~\ref{as:mem} and~\ref{as:pol},
+\emph{Step 2.} The first term of \eqref{eq:dE-full} is the reward part. Apply (I1) to $I(h;A,R\mid M)$ in the two orders:
+\[
+I(h;A\mid M)+I(h;R\mid M,A)=I(h;R\mid M)+I(h;A\mid M,R).
+\]
+The first term on the left is $0$ by Lemma~\ref{lem:ci}(a). Hence
+\begin{equation}\label{eq:R-first}
+I(h;R\mid M,A)=I(h;R\mid M)+I(h;A\mid M,R).
+\end{equation}
+
+\emph{Step 3.} The remaining two terms of \eqref{eq:dE-full}, $I(h;\Ob\mid M,A,R)-I(h;\Ob\mid M,R)$, are a difference of two conditional mutual informations and can be negative.
+
+So, with the reward separated, the first split $D_t=D^0_t+\dE_t$ reads, line by line,
 \begin{align*}
-D^R_t&=D^{0,R}_t+\dE^R_t=\dP^R_t+D^{+,R}_t,\\
-D^{\Ob}_t&=D^{0,\Ob}_t+\dE^{\Ob}_t=\dP^{\Ob}_t+D^{+,\Ob}_t,
+\text{reward:}\quad &I(h;R\mid M,A)=I(h;R\mid M)+I(h;A\mid M,R),\\
+\text{rest:}\quad &I(h;\Ob\mid M,A,R)=I(h;\Ob\mid M,R)+\big[I(h;\Ob\mid M,A,R)-I(h;\Ob\mid M,R)\big],
 \end{align*}
-and $D^0_t=D^{0,R}_t+D^{0,\Ob}_t$, $\dE_t=\dE^R_t+\dE^{\Ob}_t$, $\dP_t=\dP^R_t+\dP^{\Ob}_t$, $D^+_t=D^{+,R}_t+D^{+,\Ob}_t$.
-Every part is a conditional mutual information, hence nonnegative, except $\dE^{\Ob}_t$ and $\dP^R_t$, which are differences of two conditional mutual informations:
+where the reward line is \eqref{eq:R-first}, the rest line is an identity, and adding the two lines and using \eqref{eq:dE-full} gives back $D_t=D^0_t+\dE_t$.
+
+\subsection{$\dP$}
+By Proposition~\ref{prop:mismatch}, $\dP_t=I(h;A'\mid M,A)$.
+
+\emph{Step 1.} Apply (I1) to $I(h;R,A'\mid M,A)$ in the two orders:
+\begin{equation}\label{eq:R-second}
+I(h;R\mid M,A)+I(h;A'\mid M,A,R)=I(h;A'\mid M,A)+I(h;R\mid M,A,A').
+\end{equation}
+Solving for $\dP_t$,
+\begin{equation}\label{eq:dP-full}
+\dP_t=I(h;A'\mid M,A,R)+I(h;R\mid M,A)-I(h;R\mid M,A,A').
+\end{equation}
+
+\emph{Step 2.} Apply (I1) to $I(h;\Ob,A'\mid M,A,R)$ in the two orders:
+\[
+I(h;\Ob\mid M,A,R)+I(h;A'\mid M,A,R,\Ob)=I(h;A'\mid M,A,R)+I(h;\Ob\mid M,A,A',R).
+\]
+Since $(R,\Ob)=O_{t+1}$, the second term on the left is $I(h;A'\mid M,A,O_{t+1})=0$ by Lemma~\ref{lem:ci}(b). Hence
+\begin{equation}\label{eq:Ob-second}
+I(h;\Ob\mid M,A,R)=I(h;A'\mid M,A,R)+I(h;\Ob\mid M,A,A',R).
+\end{equation}
+
+\emph{Step 3.} The first term of \eqref{eq:dP-full} is nonnegative. The other two, $I(h;R\mid M,A)-I(h;R\mid M,A,A')$, are a difference of two conditional mutual informations and can be negative.
+
+So, with the reward separated, the second split $D_t=\dP_t+D^+_t$ reads, line by line,
 \begin{align*}
-\dE^{\Ob}_t&=I(h_t;A_t\mid M_t,R_{t+1},\Ob_{t+1})-I(h_t;A_t\mid M_t,R_{t+1}),\\
-\dP^R_t&=I(h_t;R_{t+1}\mid M_t,A_t)-I(h_t;R_{t+1}\mid M_t,A_t,A_{t+1}).
+\text{reward:}\quad &I(h;R\mid M,A)=\big[I(h;R\mid M,A)-I(h;R\mid M,A,A')\big]+I(h;R\mid M,A,A'),\\
+\text{rest:}\quad &I(h;\Ob\mid M,A,R)=I(h;A'\mid M,A,R)+I(h;\Ob\mid M,A,A',R),
 \end{align*}
-\end{proposition}
+where the rest line is \eqref{eq:Ob-second}, and adding the two lines and using \eqref{eq:dP-full} gives back $D_t=\dP_t+D^+_t$.
 
-\begin{proof}
-The identities are the computations above. The expressions for $\dE^{\Ob}_t$ and $\dP^R_t$ follow from their definitions, $\dE_t=I(h_t;A_t\mid M_t,R_{t+1},\Ob_{t+1})$, and $\dP^R_t=D^R_t-D^{+,R}_t$.
-\end{proof}
-
-\paragraph{The reward parts as reward empowerment and reward plasticity.}
-Define the one-step empowerment of the action over the reward and the one-step plasticity of the next action to the reward:
-\begin{gather*}
-E^R_t=I(A_t;R_{t+1}\mid h_t),\qquad E^R_t(M)=I(A_t;R_{t+1}\mid M_t),\\
-P^R_{t+1}=I(R_{t+1};A_{t+1}\mid h_t,A_t),\qquad P^R_{t+1}(M)=I(R_{t+1};A_{t+1}\mid M_t,A_t).
-\end{gather*}
+\subsection{The reward terms as empowerment and plasticity of the reward}
 
 \begin{proposition}\label{prop:reward-pe}
 Under Assumptions~\ref{as:mem} and~\ref{as:pol},
-\[
-\dE^R_t=E^R_t-E^R_t(M),\qquad \dP^R_t=P^R_{t+1}(M)-P^R_{t+1}.
-\]
-Hence $D^R_t=D^{0,R}_t+\big(E^R_t-E^R_t(M)\big)=\big(P^R_{t+1}(M)-P^R_{t+1}\big)+D^{+,R}_t$.
+\begin{align*}
+I(h;A\mid M,R)&=I(A;R\mid h)-I(A;R\mid M),\\
+I(h;R\mid M,A)-I(h;R\mid M,A,A')&=I(R;A'\mid M,A)-I(R;A'\mid h,A).
+\end{align*}
 \end{proposition}
+The first line is the difference between the influence of the action on the reward seen from the history and from the memory; the second is the difference between the response of the next action to the reward seen from the memory and from the history.
 
 \begin{proof}
-\emph{Empowerment.} Apply (I1) to $I(A_t;R_{t+1},h_t\mid M_t)$ in the two orders:
+\emph{First line.} Apply (I1) to $I(A;R,h\mid M)$ in the two orders:
 \[
-I(A_t;R_{t+1}\mid M_t)+I(A_t;h_t\mid M_t,R_{t+1})=I(A_t;h_t\mid M_t)+I(A_t;R_{t+1}\mid M_t,h_t).
+I(A;R\mid M)+I(A;h\mid M,R)=I(A;h\mid M)+I(A;R\mid M,h).
 \]
-The left-hand side is $E^R_t(M)+\dE^R_t$. On the right, the first term is $0$ by Lemma~\ref{lem:ci}(a) and the second is $E^R_t$ by (I3).
+On the right, the first term is $0$ by Lemma~\ref{lem:ci}(a) and the second is $I(A;R\mid h)$ by (I3). Solve for $I(A;h\mid M,R)=I(h;A\mid M,R)$.
 
-\emph{Plasticity.} Apply (I1) to $I(R_{t+1};A_{t+1},h_t\mid M_t,A_t)$ in the two orders:
-\begin{multline*}
-I(R_{t+1};A_{t+1}\mid M_t,A_t)+I(R_{t+1};h_t\mid M_t,A_t,A_{t+1})\\
-=I(R_{t+1};h_t\mid M_t,A_t)+I(R_{t+1};A_{t+1}\mid M_t,A_t,h_t).
-\end{multline*}
-This reads $P^R_{t+1}(M)+D^{+,R}_t=D^R_t+P^R_{t+1}$, using (I3) for the last term. Hence $P^R_{t+1}(M)-P^R_{t+1}=D^R_t-D^{+,R}_t=\dP^R_t$.
+\emph{Second line.} Apply (I1) to $I(R;A',h\mid M,A)$ in the two orders:
+\[
+I(R;A'\mid M,A)+I(R;h\mid M,A,A')=I(R;h\mid M,A)+I(R;A'\mid M,A,h).
+\]
+The last term is $I(R;A'\mid h,A)$ by (I3). Rearrange.
 \end{proof}
 
 \paragraph{Two consequences.}
 
-\begin{remark}[Reward plasticity can be under-estimated]\label{rem:neg-p}
-For the whole observation, $\dP_t\ge0$ (Proposition~\ref{prop:mismatch}). Its proof used Lemma~\ref{lem:ci}(b), that $A_{t+1}\indep h_t$ given $(M_t,A_t,O_{t+1})$. Given only $(M_t,A_t,R_{t+1})$ this independence fails in general, because $A_{t+1}$ also depends on $\Ob_{t+1}$, and $\dP^R_t$ can be negative (Example~\ref{ex:neg-p}).
+\begin{remark}[The reward term of the second split can be negative]\label{rem:neg-p}
+For the whole observation, $\dP_t=P_{t+1}(M)-P_{t+1}\ge0$ (Proposition~\ref{prop:mismatch}); its proof used Lemma~\ref{lem:ci}(b), that $A'\indep h$ given $(M,A,O_{t+1})$. For the reward alone, $I(R;A'\mid M,A)-I(R;A'\mid h,A)=I(h;R\mid M,A)-I(h;R\mid M,A,A')$ can be negative, because $A'$ also depends on $\Ob$, which carries information about the history (Example~\ref{ex:neg-p}). It is nonnegative whenever $A'\indep h\mid M,A,R$, for example when the memory update reads only the reward from the new observation: then $I(h;A'\mid M,A,R)=0$ and \eqref{eq:dP-full} gives $I(h;R\mid M,A)-I(h;R\mid M,A,A')=\dP_t\ge0$.
 \end{remark}
 
-\begin{remark}[$\dE_t=0$ does not imply $\dE^R_t=0$]\label{rem:hidden-e}
-If $A_t$ is a component of $\Ob_{t+1}$, that is, the observation shows the action just taken, then $A_t$ is a function of $O_{t+1}$, so $\dE_t=I(h_t;A_t\mid M_t,O_{t+1})=0$. Then $\dE^{\Ob}_t=-\dE^R_t$, and $\dE^R_t$ can be positive (Example~\ref{ex:hidden-e}). The information is then counted in $D^{0,\Ob}_t$, since $D^{\Ob}_t=D^{0,\Ob}_t+\dE^{\Ob}_t\ge0$.
+\begin{remark}[$\dE_t=0$ does not imply $I(h;A\mid M,R)=0$]\label{rem:hidden-e}
+If the observation shows the action just taken, $A$ is a function of $O_{t+1}$, so $\dE_t=I(h;A\mid M,O_{t+1})=0$ by (I3) and (I2). By \eqref{eq:dE-full}, $I(h;A\mid M,R)=I(h;\Ob\mid M,R)-I(h;\Ob\mid M,A,R)$, which can be positive (Example~\ref{ex:hidden-e}).
 \end{remark}
 
-\begin{example}[$\dP^R_t=-1$ bit]\label{ex:neg-p}
-Let the dropped part of the history contain a bit $C$, uniform and independent of $(M_t,A_t)$. Let $R_{t+1}$ be a fair bit independent of $(h_t,A_t)$, let $\Ob_{t+1}=R_{t+1}\oplus C$, and let the memory and policy be such that $A_{t+1}=\Ob_{t+1}$. Then:
+\begin{example}[the reward term of the second split equals $-1$ bit]\label{ex:neg-p}
+Let the dropped part of the history contain a bit $C$, uniform and independent of $(M,A)$. Let $R$ be a fair bit independent of $(h,A)$, let $\Ob=R\oplus C$, and let the memory and policy be such that $A'=\Ob$. Then:
 \begin{itemize}
-\item $D^R_t=I(h_t;R_{t+1}\mid M_t,A_t)=0$, since $R_{t+1}$ is independent of $(h_t,M_t,A_t)$.
-\item $D^{+,R}_t=I(h_t;R_{t+1}\mid M_t,A_t,A_{t+1})=H(R_{t+1}\mid M_t,A_t,A_{t+1})-H(R_{t+1}\mid h_t,M_t,A_t,A_{t+1})$. Given $A_{t+1}=R_{t+1}\oplus C$, the bit $R_{t+1}=A_{t+1}\oplus C$ is uniform when $C$ is unknown, because $C$ is uniform and independent of $(M_t,A_t,A_{t+1})$; and it is determined when $h_t$, hence $C$, is known. So $D^{+,R}_t=\log 2-0$, one bit.
-\item $\dP^R_t=D^R_t-D^{+,R}_t=-1$ bit.
+\item $I(h;R\mid M,A)=0$, since $R$ is independent of $(h,M,A)$.
+\item $I(h;R\mid M,A,A')=H(R\mid M,A,A')-H(R\mid h,M,A,A')$. Given $A'=R\oplus C$, the bit $R=A'\oplus C$ is uniform when $C$ is unknown, because $C$ is uniform and independent of $(M,A,A')$; and it is determined when $h$, hence $C$, is known. So $I(h;R\mid M,A,A')=\log2$, one bit.
+\item Hence $I(h;R\mid M,A)-I(h;R\mid M,A,A')=-1$ bit.
 \end{itemize}
 \end{example}
 
-\begin{example}[$\dE_t=0$ and $\dE^R_t=1$ bit]\label{ex:hidden-e}
-Let $\mathcal A=\{0,1\}$, let the dropped part of the history contain a bit $C$, uniform and independent of $M_t$, let the policy at $M_t$ be uniform, and let $R_{t+1}=\mathbf 1\{A_t=C\}$. Let $\Ob_{t+1}$ contain $A_t$. Then:
+\begin{example}[$\dE_t=0$ and $I(h;A\mid M,R)=1$ bit]\label{ex:hidden-e}
+Let $\mathcal A=\{0,1\}$, let the dropped part of the history contain a bit $C$, uniform and independent of $M$, let the policy at $M$ be uniform, let $R=\mathbf 1\{A=C\}$, and let $\Ob$ contain $A$. Then:
 \begin{itemize}
-\item $D^{0,R}_t=I(h_t;R_{t+1}\mid M_t)=0$, since $P(R_{t+1}=1\mid h_t)=P(A_t=C\mid h_t)=\tfrac12$ for every $h_t$.
-\item $\dE^R_t=I(h_t;A_t\mid M_t,R_{t+1})=H(A_t\mid M_t,R_{t+1})-H(A_t\mid h_t,R_{t+1})$. Given $(M_t,R_{t+1})$, $A_t$ is uniform, because $C$ is uniform and independent of $M_t$; given $(h_t,R_{t+1})$, $A_t=C$ if $R_{t+1}=1$ and $A_t=1-C$ otherwise. So $\dE^R_t=\log 2$, one bit.
-\item $\dE_t=0$ by Remark~\ref{rem:hidden-e}, so $\dE^{\Ob}_t=-1$ bit.
+\item $I(h;R\mid M)=0$, since $P(R=1\mid h)=P(A=C\mid h)=\tfrac12$ for every $h$.
+\item $I(h;A\mid M,R)=H(A\mid M,R)-H(A\mid h,R)$. Given $(M,R)$, $A$ is uniform, because $C$ is uniform and independent of $M$; given $(h,R)$, $A=C$ if $R=1$ and $A=1-C$ otherwise. So $I(h;A\mid M,R)=\log2$, one bit, and by \eqref{eq:R-first} $I(h;R\mid M,A)=1$ bit.
+\item $\dE_t=0$ by Remark~\ref{rem:hidden-e}.
 \end{itemize}
-The same $\dE^R_t$ is obtained whether or not the observation shows the action. A measured $\dE_t\approx0$ in a world whose observation shows the agent's own move therefore says nothing about $\dE^R_t$.
+The value of $I(h;A\mid M,R)$ does not depend on whether the observation shows the action. A measured $\dE_t\approx0$ in a world whose observation shows the agent's own move therefore says nothing about $I(h;A\mid M,R)$.
 \end{example}
 
-\section{What the reward part of one step controls}
+\section{What the reward term of one step controls}
 
 \begin{proposition}\label{prop:reward-error}
 Under Assumptions~\ref{as:mem} and~\ref{as:pol},
 \[
-\E\Big|\E[R_{t+1}\mid h_t,A_t]-\E[R_{t+1}\mid M_t,A_t]\Big|\ \le\ \Delta R\sqrt{D^R_t/2},\qquad D^R_t=D^{0,R}_t+\dE^R_t=\dP^R_t+D^{+,R}_t .
+\E\Big|\E[R_{t+1}\mid h_t,A_t]-\E[R_{t+1}\mid M_t,A_t]\Big|\ \le\ \Delta R\sqrt{\tfrac12\,I(h_t;R_{t+1}\mid M_t,A_t)},
 \]
+and $I(h_t;R_{t+1}\mid M_t,A_t)=I(h_t;R_{t+1}\mid M_t)+I(h_t;A_t\mid M_t,R_{t+1})$ by \eqref{eq:R-first}.
 \end{proposition}
 
 \begin{proof}
@@ -295,16 +318,15 @@ Fix $(h,a)$ with $P(h_t=h,A_t=a)>0$ and let $m=\phi_t(h)$. Write $P_{h,a}=P(R_{t
 \[
 \E\,\Delta R\sqrt{\mathrm{KL}(P_{h_t,A_t}\|Q_{M_t,A_t})/2}\le\Delta R\sqrt{\E\,\mathrm{KL}(P_{h_t,A_t}\|Q_{M_t,A_t})/2}.
 \]
-\item $\E\,\mathrm{KL}(P_{h_t,A_t}\|Q_{M_t,A_t})=I(h_t;R_{t+1}\mid M_t,A_t)=D^R_t$, by the definition of conditional mutual information and $M_t=\phi_t(h_t)$.
+\item $\E\,\mathrm{KL}(P_{h_t,A_t}\|Q_{M_t,A_t})=I(h_t;R_{t+1}\mid M_t,A_t)$, by the definition of conditional mutual information and $M_t=\phi_t(h_t)$.
 \end{enumerate}
-The decompositions of $D^R_t$ are Proposition~\ref{prop:table}.
 \end{proof}
 
 \section{Open questions about one step}
 
 \begin{enumerate}
-\item Which of $D^{0,R}_t$, $\dE^R_t$, $\dP^R_t$, $D^{+,R}_t$ can a memory loss lower, and which are fixed by the policy? By the argument of Remark~\ref{rem:vanish}, $\dE^R_t\le H(A_t\mid M_t)$.
-\item $\dP^R_t$ can be negative. What does a negative value say about the agent, and when is $\dP^R_t\ge0$? A sufficient condition is $A_{t+1}\indep h_t\mid M_t,A_t,R_{t+1}$, for example when the memory update reads only the reward from the new observation.
+\item Which of $I(h;R\mid M)$, $I(h;A\mid M,R)$, $I(h;R\mid M,A,A')$ can a memory loss lower, and which are fixed by the policy? By the argument of Remark~\ref{rem:vanish}, $I(h;A\mid M,R)\le H(A\mid M)$.
+\item The reward term of the second split, $I(h;R\mid M,A)-I(h;R\mid M,A,A')$, can be negative. What does a negative value say about the agent?
 \item Proposition~\ref{prop:reward-error} concerns the expected reward. Which part of one step controls the error of the advantage, which subtracts the part that does not depend on the action?
 \end{enumerate}
 
