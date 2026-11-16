@@ -91,8 +91,10 @@ E_t(M)=I(A_t;O_{t+1}\mid M_t),\qquad P_{t+1}(M)=I(O_{t+1};A_{t+1}\mid M_t,A_t).
 \begin{proposition}[The two mismatches]\label{prop:mismatch}
 Under Assumptions~\ref{as:mem} and~\ref{as:pol},
 \[
-\dE_t\;=\;E_t-E_t(M)\;=\;I(h_t;A_t\mid M_t,O_{t+1})\;\ge0,\qquad
-\dP_t\;=\;P_{t+1}(M)-P_{t+1}\;=\;I(h_t;A_{t+1}\mid M_t,A_t)\;\ge0 .
+\begin{aligned}
+\dE_t&=E_t-E_t(M)=I(h_t;A_t\mid M_t,O_{t+1})\ge0,\\
+\dP_t&=P_{t+1}(M)-P_{t+1}=I(h_t;A_{t+1}\mid M_t,A_t)\ge0 .
+\end{aligned}
 \]
 \end{proposition}
 
@@ -242,9 +244,11 @@ Take absolute values and the triangle inequality, bound each term as in Step~1 w
 
 \paragraph{(d) A uniform bound.}
 If $D_{t+j}\le\bar D$ for all $j$, then $\sum_{j=0}^{k}D_{t+j}\le(k+1)\bar D$, and the right-hand side is at most $\Delta R\sqrt{\bar D/2}\,\sum_k\gamma^k\sqrt{k+1}$. By the Cauchy--Schwarz inequality,
-\[
-\sum_{k\ge0}\gamma^k\sqrt{k+1}=\sum_{k\ge0}\gamma^{k/2}\cdot\gamma^{k/2}\sqrt{k+1}\le\sqrt{\sum_{k\ge0}\gamma^k}\,\sqrt{\sum_{k\ge0}\gamma^k(k+1)}=\sqrt{\frac{1}{1-\gamma}\cdot\frac{1}{(1-\gamma)^2}}=(1-\gamma)^{-3/2}.
-\]
+\begin{align*}
+\sum_{k\ge0}\gamma^k\sqrt{k+1}&=\sum_{k\ge0}\gamma^{k/2}\cdot\gamma^{k/2}\sqrt{k+1}
+\le\sqrt{\sum_{k\ge0}\gamma^k}\,\sqrt{\sum_{k\ge0}\gamma^k(k+1)}\\
+&=\sqrt{\frac{1}{1-\gamma}\cdot\frac{1}{(1-\gamma)^2}}=(1-\gamma)^{-3/2}.
+\end{align*}
 So
 \[
 \E\big|q_\pi(h_t,A_t)-q_\pi(M_t,A_t)\big|\le\frac{\Delta R}{(1-\gamma)^{3/2}}\sqrt{\bar D/2} .
