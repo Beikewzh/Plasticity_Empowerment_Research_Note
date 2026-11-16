@@ -6,6 +6,7 @@
 \usepackage{url}
 \usepackage{booktabs}
 \usepackage{amsmath,amssymb,amsthm}
+\usepackage{cancel}
 \usepackage{microtype}
 \usepackage{xcolor}
 \usepackage{tikz}
@@ -26,7 +27,6 @@
 \newcommand{\dP}{\Delta P}
 \newcommand{\Ob}{\bar O}
 \newcommand{\indep}{\perp\!\!\!\perp}
-\newcommand{\eqby}[1]{\overset{\mathrm{(#1)}}{=}}
 
 \title{The State Defect, Plasticity and Empowerment:\\ One Step}
 
@@ -36,7 +36,7 @@
 \maketitle
 
 \begin{abstract}
-A small agent keeps a memory that merges histories. The state defect is the information the history still carries about the next observation beyond the memory and the action. We split it in two ways into four terms, show that two of the terms are the differences between plasticity and empowerment computed from the history and from the memory, and separate the reward in every term. All statements concern a single step and are proved from the chain rule and two conditional independences implied by the structure of the agent.
+A small agent keeps a memory that merges histories. The state defect is the information the history still carries about the next observation beyond the memory and the action. We split it in two ways into four terms, show that two of the terms are the differences between plasticity and empowerment computed from the history and from the memory, and separate the reward in every term. All statements concern a single step. Every term is a difference of two conditional entropies, and every proof adds such differences and cancels the entropies that two structural facts make equal.
 \end{abstract}
 
 \section{Setting}
@@ -53,357 +53,253 @@ A small agent keeps a memory that merges histories. The state defect is the info
 \end{tikzpicture}
 \end{center}
 
-\paragraph{Spaces and variables.}
-Observations take values in a finite set $\mathcal O$, actions in a finite set $\mathcal A$, and memory values in a finite set $\mathcal M$. The history at time $t$ is $h_t=(O_1,A_1,\dots,A_{t-1},O_t)$. Each observation contains the reward: $O_t=(R_t,\Ob_t)$, where $R_t$ takes values in a finite set of real numbers contained in an interval of length $\Delta R$, and $\Ob_t$ is the rest of the observation. All random variables are defined on one probability space, and their joint law is the one induced by the environment, the memory and the policy below.
+Observations, actions and memory values take values in finite sets. The history is $h_t=(O_1,A_1,\dots,A_{t-1},O_t)$. Each observation contains the reward, $O_t=(R_t,\Ob_t)$, where $\Ob_t$ is the rest of the observation and the rewards lie in an interval of length $\Delta R$.
 
 \begin{assumption}[Environment]\label{as:env}
-$P(O_{t+1}=o\mid h_t,A_t)=e(o\mid h_t,A_t)$ for a kernel $e$ that may depend on the whole history. No Markov or stationarity condition is imposed.
+$O_{t+1}\sim e(\cdot\mid h_t,A_t)$, where $e$ may depend on the whole history.
 \end{assumption}
 
 \begin{assumption}[Memory]\label{as:mem}
-$M_{t+1}=f(M_t,A_t,O_{t+1})$ for a fixed function $f$, with $M_1$ a function of $O_1$. Consequently $M_t=\phi_t(h_t)$ for a function $\phi_t$.
+$M_{t+1}=f(M_t,A_t,O_{t+1})$, so $M_t$ is a function of $h_t$.
 \end{assumption}
 
 \begin{assumption}[Policy]\label{as:pol}
-$P(A_t=a\mid h_t)=\pi(a\mid M_t)$ for every $a\in\mathcal A$ and every $t$. Equivalently, $A_t\indep h_t\mid M_t$.
+$P(A_t=a\mid h_t)=\pi(a\mid M_t)$ for every action $a$.
 \end{assumption}
 
-\paragraph{Information measures.}
-Logarithms are natural. For discrete random variables $X,Y,Z$,
-\[
-I(X;Y\mid Z)=\sum_{x,y,z}p(x,y,z)\log\frac{p(x,y\mid z)}{p(x\mid z)\,p(y\mid z)},
-\]
-summed over triples of positive probability. All quantities are taken under the law of the agent's own experience. We use four standard facts \citep[Ch.~2]{cover2006elements}.
+\paragraph{Entropies.} Logarithms are natural, and all quantities are taken under the law of the agent's own experience. We use the following standard facts \citep[Ch.~2]{cover2006elements}:
 \begin{enumerate}
-\item[(I0)] Symmetry: $I(X;Y\mid Z)=I(Y;X\mid Z)$.
-\item[(I1)] Chain rule: $I(X;Y,Z\mid W)=I(X;Y\mid W)+I(X;Z\mid W,Y)$.
-\item[(I2)] $I(X;Y\mid Z)\ge0$, with equality if and only if $X\indep Y\mid Z$; and $I(X;Y\mid Z)\le H(Y\mid Z)$.
-\item[(I3)] If $Z'$ is a function of $Z$, then $I(X;Y\mid Z,Z')=I(X;Y\mid Z)$.
+\item[(H1)] $I(X;Y\mid Z)=H(X\mid Z)-H(X\mid Y,Z)=I(Y;X\mid Z)$;
+\item[(H2)] chain rule: $H(X,Y\mid Z)=H(X\mid Z)+H(Y\mid X,Z)$;
+\item[(H3)] $I(X;Y\mid Z)\ge0$.
 \end{enumerate}
-In the proofs, an equality marked $\eqby{a}$ is the chain rule (I1), and symmetry (I0) is used without further mention; other marks are explained after each display.
+Since $M_t$ is a function of $h_t$, conditioning on $(h_t,M_t)$ is the same as conditioning on $h_t$. With (H1), every quantity of the form $I(h_t;X\mid M_t,Y)$ in this note is
+\begin{equation}\label{eq:star}
+I(h_t;X\mid M_t,Y)=H(X\mid M_t,Y)-H(X\mid h_t,Y):
+\end{equation}
+the uncertainty about $X$ given the memory, minus the uncertainty about $X$ given the history, both given $Y$.
 
-\begin{lemma}[Two conditional independences]\label{lem:ci}
+\begin{lemma}[Two equal entropies]\label{lem:ci}
 Under Assumptions~\ref{as:mem} and~\ref{as:pol},
 \begin{align*}
-&\text{(a)}\quad I(h_t;A_t\mid M_t)=0,\\
-&\text{(b)}\quad I(h_t;A_{t+1}\mid M_t,A_t,O_{t+1})=0.
+\text{(a)}\quad&H(A_t\mid h_t)=H(A_t\mid M_t),\\
+\text{(b)}\quad&H(A_{t+1}\mid h_t,A_t,O_{t+1})=H(A_{t+1}\mid M_t,A_t,O_{t+1}).
 \end{align*}
 \end{lemma}
 
 \begin{proof}
-(a) is Assumption~\ref{as:pol} with (I2).
-(b) Let $W_t=(M_t,A_t,O_{t+1})$. Since $M_t=\phi_t(h_t)$, the pair $(h_t,W_t)$ and the history $h_{t+1}=(h_t,A_t,O_{t+1})$ determine each other. Hence, for every $a'\in\mathcal A$,
-\[
-P(A_{t+1}=a'\mid h_t,W_t)=P(A_{t+1}=a'\mid h_{t+1})=\pi(a'\mid M_{t+1})=\pi\big(a'\mid f(W_t)\big),
-\]
-where the second equality is Assumption~\ref{as:pol} at time $t+1$ and the third is Assumption~\ref{as:mem}. The right-hand side depends on $(h_t,W_t)$ only through $W_t$, so $A_{t+1}\indep h_t\mid W_t$, and (b) follows from (I2).
+(a) By Assumption~\ref{as:pol}, the law of $A_t$ given $h_t$ is $\pi(\cdot\mid M_t)$, which depends on $h_t$ only through $M_t$; so it is also the law of $A_t$ given $M_t$, and the two entropies are equal.
+(b) Given $(h_t,A_t,O_{t+1})=h_{t+1}$, the law of $A_{t+1}$ is $\pi(\cdot\mid M_{t+1})$ with $M_{t+1}=f(M_t,A_t,O_{t+1})$. It depends only on $(M_t,A_t,O_{t+1})$, so it is also the law of $A_{t+1}$ given $(M_t,A_t,O_{t+1})$.
 \end{proof}
 
-\section{The state defect}
+\section{The state defect and the four terms}
 
-\begin{definition}
-The state defect at time $t$ is
+The state defect is
 \[
-D_t=I(h_t;O_{t+1}\mid M_t,A_t)=\E\left[\log\frac{P(O_{t+1}\mid h_t,A_t)}{P(O_{t+1}\mid M_t,A_t)}\right].
+D_t=I(h_t;O_{t+1}\mid M_t,A_t)=\E\left[\log\frac{P(O_{t+1}\mid h_t,A_t)}{P(O_{t+1}\mid M_t,A_t)}\right],
 \]
-\end{definition}
+the expected gain in log-likelihood from predicting the next observation with the history instead of the memory. It is zero exactly when the history and the memory give the same prediction of $O_{t+1}$ for every action the agent takes.
 
-The second expression is the definition of conditional mutual information, with $P(O_{t+1}\mid h_t,M_t,A_t)=P(O_{t+1}\mid h_t,A_t)$ because $M_t=\phi_t(h_t)$. It is the expected gain in log-likelihood from predicting the next observation with the history instead of the memory. By (I2), $D_t=0$ if and only if
-\[
-P(O_{t+1}=\cdot\mid h_t=h,A_t=a)=P(O_{t+1}=\cdot\mid M_t=\phi_t(h),A_t=a)
-\]
-for every pair $(h,a)$ with $P(h_t=h,A_t=a)>0$, that is, on the histories the agent reaches and the actions it takes there.
+All four terms below have the form \eqref{eq:star}; they differ only in what is predicted and what is given:
 
-\section{Plasticity and empowerment at the history and at the memory}
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+term & predicted & given (besides $M_t$ or $h_t$)\\
+\midrule
+$D_t=I(h_t;O_{t+1}\mid M_t,A_t)$ & next observation $O_{t+1}$ & action $A_t$\\
+$D^0_t=I(h_t;O_{t+1}\mid M_t)$ & next observation $O_{t+1}$ & nothing\\
+$\dE_t=I(h_t;A_t\mid M_t,O_{t+1})$ & action $A_t$ & next observation $O_{t+1}$\\
+$\dP_t=I(h_t;A_{t+1}\mid M_t,A_t)$ & next action $A_{t+1}$ & action $A_t$\\
+$D^+_t=I(h_t;O_{t+1}\mid M_t,A_t,A_{t+1})$ & next observation $O_{t+1}$ & both actions $A_t,A_{t+1}$\\
+\bottomrule
+\end{tabular}
+\end{center}
 
-One-step analogues of the empowerment and plasticity of \citet{abel2025plasticity} are the influence of the action on the next observation and the response of the next action to the next observation:
-\[
-E_t=I(A_t;O_{t+1}\mid h_t),\qquad P_{t+1}=I(O_{t+1};A_{t+1}\mid h_t,A_t).
-\]
-The same quantities computed from the memory are
-\[
-E_t(M)=I(A_t;O_{t+1}\mid M_t),\qquad P_{t+1}(M)=I(O_{t+1};A_{t+1}\mid M_t,A_t).
-\]
-
-\begin{proposition}[The two mismatches]\label{prop:mismatch}
-Under Assumptions~\ref{as:mem} and~\ref{as:pol},
-\begin{align*}
-\dE_t&:=E_t-E_t(M)=I(h_t;A_t\mid M_t,O_{t+1})\ \ge 0,\\
-\dP_t&:=P_{t+1}(M)-P_{t+1}=I(h_t;A_{t+1}\mid M_t,A_t)\ \ge 0 .
-\end{align*}
+\begin{proposition}[Two splits]\label{prop:splits}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol}, $D_t=D^0_t+\dE_t=\dP_t+D^+_t$.
 \end{proposition}
 
 \begin{proof}
-For empowerment,
+Write each term with \eqref{eq:star}, collect the memory terms and the history terms, and apply the chain rule (H2):
 \begin{align*}
-E_t(M)+I(h_t;A_t\mid M_t,O_{t+1})
-&\eqby{a}I(A_t;O_{t+1},h_t\mid M_t)\\
-&\eqby{a}I(A_t;h_t\mid M_t)+I(A_t;O_{t+1}\mid M_t,h_t)\\
-&\eqby{b}I(A_t;O_{t+1}\mid M_t,h_t)\\
-&\eqby{c}I(A_t;O_{t+1}\mid h_t)=E_t,
+D^0_t+\dE_t
+&=\big[H(O_{t+1}\mid M_t)-H(O_{t+1}\mid h_t)\big]\\
+&\quad+\big[H(A_t\mid M_t,O_{t+1})-H(A_t\mid h_t,O_{t+1})\big]\\
+&=H(O_{t+1},A_t\mid M_t)-H(O_{t+1},A_t\mid h_t)\\
+&=\big[\cancel{H(A_t\mid M_t)}+H(O_{t+1}\mid M_t,A_t)\big]\\
+&\quad-\big[\cancel{H(A_t\mid h_t)}+H(O_{t+1}\mid h_t,A_t)\big]\\
+&=D_t .
 \end{align*}
-where (b) is Lemma~\ref{lem:ci}(a) with (I0), and (c) is (I3) with $M_t=\phi_t(h_t)$. For plasticity,
+The two cancelled entropies are equal by Lemma~\ref{lem:ci}(a). In the same way,
 \begin{align*}
-P_{t+1}(M)
-&\eqby{b}I(A_{t+1};O_{t+1}\mid M_t,A_t)+I(A_{t+1};h_t\mid M_t,A_t,O_{t+1})\\
-&\eqby{a}I(A_{t+1};O_{t+1},h_t\mid M_t,A_t)\\
-&\eqby{a}I(A_{t+1};h_t\mid M_t,A_t)+I(A_{t+1};O_{t+1}\mid M_t,A_t,h_t)\\
-&\eqby{c}I(h_t;A_{t+1}\mid M_t,A_t)+P_{t+1},
+\dP_t+D^+_t
+&=\big[H(A_{t+1}\mid M_t,A_t)-H(A_{t+1}\mid h_t,A_t)\big]\\
+&\quad+\big[H(O_{t+1}\mid M_t,A_t,A_{t+1})-H(O_{t+1}\mid h_t,A_t,A_{t+1})\big]\\
+&=H(A_{t+1},O_{t+1}\mid M_t,A_t)-H(A_{t+1},O_{t+1}\mid h_t,A_t)\\
+&=\big[H(O_{t+1}\mid M_t,A_t)+\cancel{H(A_{t+1}\mid M_t,A_t,O_{t+1})}\big]\\
+&\quad-\big[H(O_{t+1}\mid h_t,A_t)+\cancel{H(A_{t+1}\mid h_t,A_t,O_{t+1})}\big]\\
+&=D_t,
 \end{align*}
-where (b) is Lemma~\ref{lem:ci}(b) with (I0), and (c) is (I0) for the first term and (I3) for the second. Both differences are conditional mutual informations, hence nonnegative by (I2).
+where the two cancelled entropies are equal by Lemma~\ref{lem:ci}(b).
 \end{proof}
 
-The memory can therefore only under-estimate empowerment and over-estimate plasticity.
+\section{$\dE$ and $\dP$ are mismatches of empowerment and plasticity}
 
-\begin{remark}[When the mismatches vanish]\label{rem:vanish}
-By (I2), $\dE_t\le H(A_t\mid M_t,O_{t+1})\le H(A_t\mid M_t)$, so $\dE_t=0$ whenever the policy at $M_t$ puts all probability on one action. Since $P_{t+1}\ge0$, $\dP_t\le P_{t+1}(M)$, so $\dP_t=0$ whenever $A_{t+1}\indep O_{t+1}\mid M_t,A_t$, for example under the uniform policy.
-\end{remark}
+One-step analogues of the empowerment and plasticity of \citet{abel2025plasticity} are the influence of the action on the next observation and the response of the next action to the next observation, computed from the history or from the memory:
+\begin{gather*}
+E_t=I(A_t;O_{t+1}\mid h_t),\qquad E_t(M)=I(A_t;O_{t+1}\mid M_t),\\
+P_{t+1}=I(O_{t+1};A_{t+1}\mid h_t,A_t),\qquad P_{t+1}(M)=I(O_{t+1};A_{t+1}\mid M_t,A_t).
+\end{gather*}
 
-\section{Two splits of the defect}
-
-\begin{proposition}[Four terms]\label{prop:splits}
-Under Assumptions~\ref{as:mem} and~\ref{as:pol},
-\[
-D_t=\underbrace{I(h_t;O_{t+1}\mid M_t)}_{D^0_t}+\dE_t=\dP_t+\underbrace{I(h_t;O_{t+1}\mid M_t,A_t,A_{t+1})}_{D^+_t}.
-\]
+\begin{proposition}\label{prop:mismatch}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol}, $\dE_t=E_t-E_t(M)$ and $\dP_t=P_{t+1}(M)-P_{t+1}$.
 \end{proposition}
 
 \begin{proof}
-For the first split,
+By (H1),
 \begin{align*}
-D_t
-&\eqby{b}I(h_t;A_t\mid M_t)+I(h_t;O_{t+1}\mid M_t,A_t)\\
-&\eqby{a}I(h_t;A_t,O_{t+1}\mid M_t)\\
-&\eqby{a}I(h_t;O_{t+1}\mid M_t)+I(h_t;A_t\mid M_t,O_{t+1})=D^0_t+\dE_t,
+E_t-E_t(M)
+&=\big[\cancel{H(A_t\mid h_t)}-H(A_t\mid h_t,O_{t+1})\big]\\
+&\quad-\big[\cancel{H(A_t\mid M_t)}-H(A_t\mid M_t,O_{t+1})\big]\\
+&=H(A_t\mid M_t,O_{t+1})-H(A_t\mid h_t,O_{t+1})=\dE_t,
 \end{align*}
-where (b) is Lemma~\ref{lem:ci}(a). For the second split,
+where the cancelled entropies are equal by Lemma~\ref{lem:ci}(a) and the last step is \eqref{eq:star}. Similarly,
 \begin{align*}
-D_t
-&\eqby{b}I(h_t;O_{t+1}\mid M_t,A_t)+I(h_t;A_{t+1}\mid M_t,A_t,O_{t+1})\\
-&\eqby{a}I(h_t;O_{t+1},A_{t+1}\mid M_t,A_t)\\
-&\eqby{a}I(h_t;A_{t+1}\mid M_t,A_t)+I(h_t;O_{t+1}\mid M_t,A_t,A_{t+1})=\dP_t+D^+_t,
+P_{t+1}(M)-P_{t+1}
+&=\big[H(A_{t+1}\mid M_t,A_t)-\cancel{H(A_{t+1}\mid M_t,A_t,O_{t+1})}\big]\\
+&\quad-\big[H(A_{t+1}\mid h_t,A_t)-\cancel{H(A_{t+1}\mid h_t,A_t,O_{t+1})}\big]\\
+&=H(A_{t+1}\mid M_t,A_t)-H(A_{t+1}\mid h_t,A_t)=\dP_t,
 \end{align*}
-where (b) is Lemma~\ref{lem:ci}(b).
+where the cancelled entropies are equal by Lemma~\ref{lem:ci}(b).
 \end{proof}
 
-$D^0_t$ is the information about the history in the next observation when the action is not given, and $\dE_t$ the additional information obtained when the next observation is read together with the action. $\dP_t$ is the information about the history in the next action, and $D^+_t$ the information in the next observation once both actions are given.
+Both mismatches are nonnegative by (H3): the memory can only under-estimate empowerment and over-estimate plasticity. By (H1) and (H3), $\dE_t\le H(A_t\mid M_t)$, so $\dE_t=0$ when the policy at $M_t$ is deterministic; and $\dP_t\le P_{t+1}(M)$, so $\dP_t=0$ when the next action does not depend on the next observation given $(M_t,A_t)$, for example under the uniform policy.
 
 \section{The reward in each term}
 
-Recall $O_{t+1}=(R_{t+1},\Ob_{t+1})$. Since $O_{t+1}$ and the pair $(R_{t+1},\Ob_{t+1})$ are the same random variable, we may replace one by the other inside any information quantity.
+Write $O_{t+1}=(R_{t+1},\Ob_{t+1})$ and split empowerment and plasticity into the part concerning the reward and the part concerning the rest of the observation:
 
-\subsection{The terms that predict the observation}
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+from the history & from the memory\\
+\midrule
+$E^R_t=I(A_t;R_{t+1}\mid h_t)$ & $E^R_t(M)=I(A_t;R_{t+1}\mid M_t)$\\
+$E^{\Ob}_t=I(A_t;\Ob_{t+1}\mid h_t,R_{t+1})$ & $E^{\Ob}_t(M)=I(A_t;\Ob_{t+1}\mid M_t,R_{t+1})$\\
+$P^R_{t+1}=I(R_{t+1};A_{t+1}\mid h_t,A_t)$ & $P^R_{t+1}(M)=I(R_{t+1};A_{t+1}\mid M_t,A_t)$\\
+$P^{\Ob}_{t+1}=I(\Ob_{t+1};A_{t+1}\mid h_t,A_t,R_{t+1})$ & $P^{\Ob}_{t+1}(M)=I(\Ob_{t+1};A_{t+1}\mid M_t,A_t,R_{t+1})$\\
+\bottomrule
+\end{tabular}
+\end{center}
+The rows are, in order, the empowerment over the reward, the empowerment over the rest of the observation given the reward, the plasticity to the reward, and the plasticity to the rest of the observation given the reward.
 
-\begin{proposition}\label{prop:obs-terms}
+\begin{proposition}[Each term with the reward separated]\label{prop:reward}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol},
 \begin{align*}
-D_t&=I(h_t;R_{t+1}\mid M_t,A_t)+I(h_t;\Ob_{t+1}\mid M_t,A_t,R_{t+1}),\\
 D^0_t&=I(h_t;R_{t+1}\mid M_t)+I(h_t;\Ob_{t+1}\mid M_t,R_{t+1}),\\
+\dE_t&=\big[E^R_t-E^R_t(M)\big]+\big[E^{\Ob}_t-E^{\Ob}_t(M)\big],\\
+\dP_t&=\big[P^R_{t+1}(M)-P^R_{t+1}\big]+\big[P^{\Ob}_{t+1}(M)-P^{\Ob}_{t+1}\big],\\
 D^+_t&=I(h_t;R_{t+1}\mid M_t,A_t,A_{t+1})+I(h_t;\Ob_{t+1}\mid M_t,A_t,A_{t+1},R_{t+1}).
 \end{align*}
 \end{proposition}
 
 \begin{proof}
-Write $O_{t+1}=(R_{t+1},\Ob_{t+1})$ in each definition and apply (I1).
+Each line is the chain rule applied to $O_{t+1}=(R_{t+1},\Ob_{t+1})$. For example, $E_t=I(A_t;R_{t+1},\Ob_{t+1}\mid h_t)=I(A_t;R_{t+1}\mid h_t)+I(A_t;\Ob_{t+1}\mid h_t,R_{t+1})=E^R_t+E^{\Ob}_t$, and in the same way $E_t(M)=E^R_t(M)+E^{\Ob}_t(M)$, $P_{t+1}=P^R_{t+1}+P^{\Ob}_{t+1}$ and $P_{t+1}(M)=P^R_{t+1}(M)+P^{\Ob}_{t+1}(M)$. Subtract and use Proposition~\ref{prop:mismatch}.
 \end{proof}
 
-\subsection{$\dE$}
-
-\begin{proposition}\label{prop:dE}
+\begin{proposition}[Signs]\label{prop:signs}
 Under Assumptions~\ref{as:mem} and~\ref{as:pol},
-\begin{align}
-\dE_t&=I(h_t;A_t\mid M_t,R_{t+1})\notag\\
-&\quad+I(h_t;\Ob_{t+1}\mid M_t,A_t,R_{t+1})-I(h_t;\Ob_{t+1}\mid M_t,R_{t+1}),\label{eq:dE-full}\\
-I(h_t;R_{t+1}\mid M_t,A_t)&=I(h_t;R_{t+1}\mid M_t)+I(h_t;A_t\mid M_t,R_{t+1}).\label{eq:R-first}
-\end{align}
+\begin{align*}
+E^R_t-E^R_t(M)&=I(h_t;A_t\mid M_t,R_{t+1})\ge0,\\
+P^{\Ob}_{t+1}(M)-P^{\Ob}_{t+1}&=I(h_t;A_{t+1}\mid M_t,A_t,R_{t+1})\ge0 .
+\end{align*}
+The other two parts, $E^{\Ob}_t-E^{\Ob}_t(M)$ and $P^R_{t+1}(M)-P^R_{t+1}$, can be negative (Examples~\ref{ex:hidden-e} and~\ref{ex:neg-p}).
 \end{proposition}
 
 \begin{proof}
-By Proposition~\ref{prop:mismatch}, $\dE_t=I(h_t;A_t\mid M_t,R_{t+1},\Ob_{t+1})$. Then
+By (H1),
 \begin{align*}
-I(h_t;\Ob_{t+1}\mid M_t,R_{t+1})+\dE_t
-&\eqby{a}I(h_t;\Ob_{t+1},A_t\mid M_t,R_{t+1})\\
-&\eqby{a}I(h_t;A_t\mid M_t,R_{t+1})+I(h_t;\Ob_{t+1}\mid M_t,R_{t+1},A_t),
+E^R_t-E^R_t(M)&=\big[\cancel{H(A_t\mid h_t)}-H(A_t\mid h_t,R_{t+1})\big]\\
+&\quad-\big[\cancel{H(A_t\mid M_t)}-H(A_t\mid M_t,R_{t+1})\big]\\
+&=H(A_t\mid M_t,R_{t+1})-H(A_t\mid h_t,R_{t+1}),
 \end{align*}
-and subtracting $I(h_t;\Ob_{t+1}\mid M_t,R_{t+1})$ from both sides gives \eqref{eq:dE-full}. For \eqref{eq:R-first},
+with the cancellation by Lemma~\ref{lem:ci}(a), and the result is $I(h_t;A_t\mid M_t,R_{t+1})$ by \eqref{eq:star}. Since $(R_{t+1},\Ob_{t+1})=O_{t+1}$,
 \begin{align*}
-I(h_t;R_{t+1}\mid M_t,A_t)
-&\eqby{b}I(h_t;A_t\mid M_t)+I(h_t;R_{t+1}\mid M_t,A_t)\\
-&\eqby{a}I(h_t;A_t,R_{t+1}\mid M_t)\\
-&\eqby{a}I(h_t;R_{t+1}\mid M_t)+I(h_t;A_t\mid M_t,R_{t+1}),
+P^{\Ob}_{t+1}(M)-P^{\Ob}_{t+1}&=\big[H(A_{t+1}\mid M_t,A_t,R_{t+1})-\cancel{H(A_{t+1}\mid M_t,A_t,O_{t+1})}\big]\\
+&\quad-\big[H(A_{t+1}\mid h_t,A_t,R_{t+1})-\cancel{H(A_{t+1}\mid h_t,A_t,O_{t+1})}\big]\\
+&=H(A_{t+1}\mid M_t,A_t,R_{t+1})-H(A_{t+1}\mid h_t,A_t,R_{t+1}),
 \end{align*}
-where (b) is Lemma~\ref{lem:ci}(a).
+with the cancellation by Lemma~\ref{lem:ci}(b), and the result is $I(h_t;A_{t+1}\mid M_t,A_t,R_{t+1})$ by \eqref{eq:star}. Both are nonnegative by (H3).
 \end{proof}
 
-In \eqref{eq:dE-full}, $I(h_t;A_t\mid M_t,R_{t+1})\ge0$ is the reward part of $\dE_t$; the remaining two terms are a difference of two conditional mutual informations and can be negative.
-
-\begin{corollary}[First split with the reward separated]\label{cor:first}
+\begin{corollary}[The two splits for the reward]\label{cor:reward-splits}
 Under Assumptions~\ref{as:mem} and~\ref{as:pol},
 \begin{align*}
-I(h_t;R_{t+1}\mid M_t,A_t)&=I(h_t;R_{t+1}\mid M_t)+I(h_t;A_t\mid M_t,R_{t+1}),\\
-I(h_t;\Ob_{t+1}\mid M_t,A_t,R_{t+1})&=I(h_t;\Ob_{t+1}\mid M_t,R_{t+1})+\big[\dE_t-I(h_t;A_t\mid M_t,R_{t+1})\big].
+I(h_t;R_{t+1}\mid M_t,A_t)&=I(h_t;R_{t+1}\mid M_t)+\big[E^R_t-E^R_t(M)\big]\\
+&=\big[P^R_{t+1}(M)-P^R_{t+1}\big]+I(h_t;R_{t+1}\mid M_t,A_t,A_{t+1}).
 \end{align*}
-Adding the two lines gives $D_t=D^0_t+\dE_t$.
 \end{corollary}
 
 \begin{proof}
-The first line is \eqref{eq:R-first}; the second is \eqref{eq:dE-full} rearranged. Their sum is $D_t=D^0_t+\dE_t$ by Proposition~\ref{prop:obs-terms}.
+The first line is the proof of Proposition~\ref{prop:splits} with $R_{t+1}$ in place of $O_{t+1}$: the same cancellation of $H(A_t\mid M_t)$ and $H(A_t\mid h_t)$ gives $I(h_t;R_{t+1}\mid M_t)+I(h_t;A_t\mid M_t,R_{t+1})=I(h_t;R_{t+1}\mid M_t,A_t)$, and the second term is $E^R_t-E^R_t(M)$ by Proposition~\ref{prop:signs}. For the second line, by (H1),
+\begin{align*}
+P^R_{t+1}(M)-P^R_{t+1}
+&=\big[H(R_{t+1}\mid M_t,A_t)-H(R_{t+1}\mid M_t,A_t,A_{t+1})\big]\\
+&\quad-\big[H(R_{t+1}\mid h_t,A_t)-H(R_{t+1}\mid h_t,A_t,A_{t+1})\big]\\
+&=\big[H(R_{t+1}\mid M_t,A_t)-H(R_{t+1}\mid h_t,A_t)\big]\\
+&\quad-\big[H(R_{t+1}\mid M_t,A_t,A_{t+1})-H(R_{t+1}\mid h_t,A_t,A_{t+1})\big]\\
+&=I(h_t;R_{t+1}\mid M_t,A_t)-I(h_t;R_{t+1}\mid M_t,A_t,A_{t+1}),
+\end{align*}
+by regrouping and \eqref{eq:star}; nothing cancels here.
 \end{proof}
 
-\subsection{$\dP$}
+So the reward part of the defect is the reward part of $D^0_t$ plus the empowerment mismatch over the reward, and it is also the plasticity mismatch to the reward plus the reward part of $D^+_t$.
 
-\begin{proposition}\label{prop:dP}
-Under Assumptions~\ref{as:mem} and~\ref{as:pol},
-\begin{align}
-\dP_t&=I(h_t;A_{t+1}\mid M_t,A_t,R_{t+1})\notag\\
-&\quad+I(h_t;R_{t+1}\mid M_t,A_t)-I(h_t;R_{t+1}\mid M_t,A_t,A_{t+1}),\label{eq:dP-full}\\
-I(h_t;\Ob_{t+1}\mid M_t,A_t,R_{t+1})&=I(h_t;A_{t+1}\mid M_t,A_t,R_{t+1})\notag\\
-&\quad+I(h_t;\Ob_{t+1}\mid M_t,A_t,A_{t+1},R_{t+1}).\label{eq:Ob-second}
-\end{align}
-\end{proposition}
-
-\begin{proof}
-By Proposition~\ref{prop:mismatch}, $\dP_t=I(h_t;A_{t+1}\mid M_t,A_t)$. Then
-\begin{align*}
-\dP_t+I(h_t;R_{t+1}\mid M_t,A_t,A_{t+1})
-&\eqby{a}I(h_t;A_{t+1},R_{t+1}\mid M_t,A_t)\\
-&\eqby{a}I(h_t;R_{t+1}\mid M_t,A_t)+I(h_t;A_{t+1}\mid M_t,A_t,R_{t+1}),
-\end{align*}
-and subtracting $I(h_t;R_{t+1}\mid M_t,A_t,A_{t+1})$ gives \eqref{eq:dP-full}. For \eqref{eq:Ob-second},
-\begin{align*}
-I(h_t;\Ob_{t+1}\mid M_t,A_t,R_{t+1})
-&\eqby{b}I(h_t;\Ob_{t+1}\mid M_t,A_t,R_{t+1})+I(h_t;A_{t+1}\mid M_t,A_t,R_{t+1},\Ob_{t+1})\\
-&\eqby{a}I(h_t;\Ob_{t+1},A_{t+1}\mid M_t,A_t,R_{t+1})\\
-&\eqby{a}I(h_t;A_{t+1}\mid M_t,A_t,R_{t+1})+I(h_t;\Ob_{t+1}\mid M_t,A_t,R_{t+1},A_{t+1}),
-\end{align*}
-where (b) is Lemma~\ref{lem:ci}(b), since $(R_{t+1},\Ob_{t+1})=O_{t+1}$.
-\end{proof}
-
-In \eqref{eq:dP-full}, $I(h_t;A_{t+1}\mid M_t,A_t,R_{t+1})\ge0$; the remaining two terms are a difference of two conditional mutual informations and can be negative.
-
-\begin{corollary}[Second split with the reward separated]\label{cor:second}
-Under Assumptions~\ref{as:mem} and~\ref{as:pol},
-\begin{align*}
-I(h_t;R_{t+1}\mid M_t,A_t)&=\big[\dP_t-I(h_t;A_{t+1}\mid M_t,A_t,R_{t+1})\big]\\
-&\quad+I(h_t;R_{t+1}\mid M_t,A_t,A_{t+1}),\\
-I(h_t;\Ob_{t+1}\mid M_t,A_t,R_{t+1})&=I(h_t;A_{t+1}\mid M_t,A_t,R_{t+1})\\
-&\quad+I(h_t;\Ob_{t+1}\mid M_t,A_t,A_{t+1},R_{t+1}).
-\end{align*}
-Adding the two lines gives $D_t=\dP_t+D^+_t$.
-\end{corollary}
-
-\begin{proof}
-The first line is \eqref{eq:dP-full} rearranged; the second is \eqref{eq:Ob-second}. Their sum is $D_t=\dP_t+D^+_t$ by Proposition~\ref{prop:obs-terms}.
-\end{proof}
-
-\subsection{The reward terms as empowerment and plasticity of the reward}
-
-\begin{proposition}\label{prop:reward-pe}
-Under Assumptions~\ref{as:mem} and~\ref{as:pol},
-\begin{align*}
-&I(h_t;A_t\mid M_t,R_{t+1})=I(A_t;R_{t+1}\mid h_t)-I(A_t;R_{t+1}\mid M_t),\\
-&I(h_t;R_{t+1}\mid M_t,A_t)-I(h_t;R_{t+1}\mid M_t,A_t,A_{t+1})\\
-&\qquad=I(R_{t+1};A_{t+1}\mid M_t,A_t)-I(R_{t+1};A_{t+1}\mid h_t,A_t).
-\end{align*}
-\end{proposition}
-
-The first line is the influence of the action on the reward seen from the history minus that seen from the memory. The second is the response of the next action to the reward seen from the memory minus that seen from the history.
-
-\begin{proof}
-For the first line,
-\begin{align*}
-I(A_t;R_{t+1}\mid M_t)+I(h_t;A_t\mid M_t,R_{t+1})
-&\eqby{a}I(A_t;R_{t+1},h_t\mid M_t)\\
-&\eqby{a}I(A_t;h_t\mid M_t)+I(A_t;R_{t+1}\mid M_t,h_t)\\
-&\eqby{b}I(A_t;R_{t+1}\mid h_t),
-\end{align*}
-where the first equality also uses (I0), and (b) is Lemma~\ref{lem:ci}(a) for the first term and (I3) for the second. For the second line,
-\begin{align*}
-&I(R_{t+1};A_{t+1}\mid M_t,A_t)+I(h_t;R_{t+1}\mid M_t,A_t,A_{t+1})\\
-&\quad\eqby{a}I(R_{t+1};A_{t+1},h_t\mid M_t,A_t)\\
-&\quad\eqby{a}I(R_{t+1};h_t\mid M_t,A_t)+I(R_{t+1};A_{t+1}\mid M_t,A_t,h_t)\\
-&\quad\eqby{c}I(h_t;R_{t+1}\mid M_t,A_t)+I(R_{t+1};A_{t+1}\mid h_t,A_t),
-\end{align*}
-where (I0) is used in the first and last equalities, and (c) uses (I3) for the second term. Rearranging gives the second line.
-\end{proof}
-
-\subsection{Two consequences}
-
-\begin{remark}[The reward line of the second split can be negative]\label{rem:neg-p}
-For the whole observation, $\dP_t\ge0$ (Proposition~\ref{prop:mismatch}); its proof used Lemma~\ref{lem:ci}(b), that $A_{t+1}\indep h_t$ given $(M_t,A_t,O_{t+1})$. The reward term $I(h_t;R_{t+1}\mid M_t,A_t)-I(h_t;R_{t+1}\mid M_t,A_t,A_{t+1})$ in Corollary~\ref{cor:second} can be negative, because given only $(M_t,A_t,R_{t+1})$ the next action can still depend on the history through $\Ob_{t+1}$ (Example~\ref{ex:neg-p}). If $A_{t+1}\indep h_t\mid M_t,A_t,R_{t+1}$, for example when the memory update reads only the reward from the new observation, then $I(h_t;A_{t+1}\mid M_t,A_t,R_{t+1})=0$ and, by \eqref{eq:dP-full}, the reward term equals $\dP_t\ge0$.
-\end{remark}
-
-\begin{remark}[$\dE_t=0$ does not imply $I(h_t;A_t\mid M_t,R_{t+1})=0$]\label{rem:hidden-e}
-If the observation shows the action just taken, then $A_t$ is a function of $O_{t+1}$, so $\dE_t\le H(A_t\mid M_t,O_{t+1})=0$ by (I2). By \eqref{eq:dE-full},
-\[
-I(h_t;A_t\mid M_t,R_{t+1})=I(h_t;\Ob_{t+1}\mid M_t,R_{t+1})-I(h_t;\Ob_{t+1}\mid M_t,A_t,R_{t+1}),
-\]
-which can be positive (Example~\ref{ex:hidden-e}).
-\end{remark}
+\paragraph{Two consequences.}
+\begin{enumerate}
+\item \emph{The plasticity mismatch to the reward can be negative.} For the whole observation, the cancellation in Proposition~\ref{prop:mismatch} used Lemma~\ref{lem:ci}(b), which conditions on all of $O_{t+1}$. In the second line of Corollary~\ref{cor:reward-splits} only $R_{t+1}$ is given, nothing cancels, and the difference can be negative, because the next action can also depend on $\Ob_{t+1}$ (Example~\ref{ex:neg-p}). It is nonnegative when the memory update reads only the reward from the new observation.
+\item \emph{$\dE_t=0$ does not imply $E^R_t=E^R_t(M)$.} If the observation shows the action just taken, then $A_t$ is a function of $O_{t+1}$, so $\dE_t\le H(A_t\mid M_t,O_{t+1})=0$. Then $E^{\Ob}_t-E^{\Ob}_t(M)=-(E^R_t-E^R_t(M))$, and the reward part can be positive (Example~\ref{ex:hidden-e}).
+\end{enumerate}
 
 \begin{example}\label{ex:neg-p}
-Let $C$ be a bit that is a function of $h_t$, uniform and independent of $(M_t,A_t)$. Let $R_{t+1}$ be a uniform bit independent of $(h_t,A_t)$, let $\Ob_{t+1}=R_{t+1}\oplus C$, and let the memory and the policy be such that $A_{t+1}=\Ob_{t+1}$. Then:
-\begin{itemize}
-\item $I(h_t;R_{t+1}\mid M_t,A_t)=0$, since $R_{t+1}$ is independent of $(h_t,A_t)$ and $M_t=\phi_t(h_t)$.
-\item $A_{t+1}=R_{t+1}\oplus C$ is a uniform bit independent of $(C,M_t,A_t)$, so $C$ is uniform and independent of $(M_t,A_t,A_{t+1})$. Hence, by (I3) for the second entropy,
-\begin{align*}
-I(h_t;R_{t+1}\mid M_t,A_t,A_{t+1})&=H(R_{t+1}\mid M_t,A_t,A_{t+1})-H(R_{t+1}\mid h_t,A_t,A_{t+1})\\
-&=\log2-0,
-\end{align*}
-because $R_{t+1}=A_{t+1}\oplus C$ is uniform given $(M_t,A_t,A_{t+1})$ and determined given $(h_t,A_{t+1})$.
-\item The reward term of Corollary~\ref{cor:second} equals $0-\log2$, that is, $-1$ bit.
-\end{itemize}
+Let $C$ be a bit that is a function of $h_t$, uniform and independent of $(M_t,A_t)$. Let $R_{t+1}$ be a uniform bit independent of $(h_t,A_t)$, let $\Ob_{t+1}=R_{t+1}\oplus C$, and let the memory and the policy be such that $A_{t+1}=\Ob_{t+1}$. Then $I(h_t;R_{t+1}\mid M_t,A_t)=0$, since $R_{t+1}$ is independent of $(h_t,A_t)$. Next, $A_{t+1}=R_{t+1}\oplus C$ is uniform and independent of $(C,M_t,A_t)$, so given $(M_t,A_t,A_{t+1})$ the bit $R_{t+1}=A_{t+1}\oplus C$ is uniform, while given $(h_t,A_t,A_{t+1})$ it is determined. By \eqref{eq:star}, $I(h_t;R_{t+1}\mid M_t,A_t,A_{t+1})=\log2-0$. By Corollary~\ref{cor:reward-splits}, $P^R_{t+1}(M)-P^R_{t+1}=0-\log2$, that is, $-1$ bit.
 \end{example}
 
 \begin{example}\label{ex:hidden-e}
-Let $\mathcal A=\{0,1\}$, let $C$ be a bit that is a function of $h_t$, uniform and independent of $M_t$, let $\pi(\cdot\mid M_t)$ be uniform, let $R_{t+1}=\mathbf 1\{A_t=C\}$, and let $\Ob_{t+1}$ contain $A_t$. Then:
-\begin{itemize}
-\item $I(h_t;R_{t+1}\mid M_t)=0$, since $P(R_{t+1}=1\mid h_t)=P(A_t=C\mid h_t)=\tfrac12$ for every $h_t$.
-\item By (I3) for the second entropy,
-\[
-I(h_t;A_t\mid M_t,R_{t+1})=H(A_t\mid M_t,R_{t+1})-H(A_t\mid h_t,R_{t+1})=\log2-0,
-\]
-because $A_t$ is uniform given $(M_t,R_{t+1})$, as $C$ is uniform and independent of $M_t$, and $A_t=C$ if $R_{t+1}=1$ and $A_t=1-C$ otherwise.
-\item $\dE_t=0$ by Remark~\ref{rem:hidden-e}, while $I(h_t;A_t\mid M_t,R_{t+1})=1$ bit and, by \eqref{eq:R-first}, $I(h_t;R_{t+1}\mid M_t,A_t)=1$ bit.
-\end{itemize}
-The value of $I(h_t;A_t\mid M_t,R_{t+1})$ does not depend on whether the observation shows the action. A measured $\dE_t\approx0$ in a world whose observation shows the agent's own move therefore says nothing about $I(h_t;A_t\mid M_t,R_{t+1})$.
+Let there be two actions $\{0,1\}$, let $C$ be a bit that is a function of $h_t$, uniform and independent of $M_t$, let $\pi(\cdot\mid M_t)$ be uniform, let $R_{t+1}=\mathbf 1\{A_t=C\}$, and let $\Ob_{t+1}$ contain $A_t$. Given $(M_t,R_{t+1})$, $A_t$ is uniform, because $C$ is uniform and independent of $M_t$; given $(h_t,R_{t+1})$, $A_t=C$ if $R_{t+1}=1$ and $A_t=1-C$ otherwise. By Proposition~\ref{prop:signs} and \eqref{eq:star}, $E^R_t-E^R_t(M)=\log2-0$, one bit, while $\dE_t=0$ because the observation shows the action. This value does not depend on whether the observation shows the action, so a measured $\dE_t\approx0$ in a world whose observation shows the agent's own move says nothing about $E^R_t-E^R_t(M)$.
 \end{example}
 
-\section{What the reward term of one step controls}
+\section{What the reward part controls}
 
 \begin{proposition}\label{prop:reward-error}
 Under Assumptions~\ref{as:mem} and~\ref{as:pol},
 \[
-\E\Big|\E[R_{t+1}\mid h_t,A_t]-\E[R_{t+1}\mid M_t,A_t]\Big|\ \le\ \Delta R\sqrt{\tfrac12\,I(h_t;R_{t+1}\mid M_t,A_t)},
+\E\Big|\E[R_{t+1}\mid h_t,A_t]-\E[R_{t+1}\mid M_t,A_t]\Big|\ \le\ \Delta R\sqrt{\tfrac12\,I(h_t;R_{t+1}\mid M_t,A_t)} .
 \]
-and $I(h_t;R_{t+1}\mid M_t,A_t)=I(h_t;R_{t+1}\mid M_t)+I(h_t;A_t\mid M_t,R_{t+1})$ by \eqref{eq:R-first}.
 \end{proposition}
 
 \begin{proof}
-Fix $(h,a)$ with $P(h_t=h,A_t=a)>0$ and let $m=\phi_t(h)$. Write $P_{h,a}=P(R_{t+1}=\cdot\mid h_t=h,A_t=a)$ and $Q_{m,a}=P(R_{t+1}=\cdot\mid M_t=m,A_t=a)$.
+Fix $(h,a)$ that the agent reaches, let $m$ be the memory value of $h$, and let $P=P(R_{t+1}\mid h_t=h,A_t=a)$ and $Q=P(R_{t+1}\mid M_t=m,A_t=a)$.
 \begin{enumerate}
-\item Let $c$ be the midpoint of an interval of length $\Delta R$ that contains the rewards. Since $\sum_r(P_{h,a}(r)-Q_{m,a}(r))=0$,
-\begin{align*}
-\big|\E_{P_{h,a}}R-\E_{Q_{m,a}}R\big|&=\Big|\sum_r\big(P_{h,a}(r)-Q_{m,a}(r)\big)(r-c)\Big|\\
-&\le\frac{\Delta R}{2}\sum_r\big|P_{h,a}(r)-Q_{m,a}(r)\big|=\Delta R\,\mathrm{TV}(P_{h,a},Q_{m,a}).
-\end{align*}
-\item By Pinsker's inequality, $\mathrm{TV}(P_{h,a},Q_{m,a})\le\sqrt{\mathrm{KL}(P_{h,a}\,\|\,Q_{m,a})/2}$.
-\item Taking the expectation over $(h_t,A_t)$ and using Jensen's inequality for the concave square root,
-\[
-\E\,\Delta R\sqrt{\mathrm{KL}(P_{h_t,A_t}\|Q_{M_t,A_t})/2}\le\Delta R\sqrt{\E\,\mathrm{KL}(P_{h_t,A_t}\|Q_{M_t,A_t})/2}.
-\]
-\item $\E\,\mathrm{KL}(P_{h_t,A_t}\|Q_{M_t,A_t})=I(h_t;R_{t+1}\mid M_t,A_t)$, by the definition of conditional mutual information and $M_t=\phi_t(h_t)$.
+\item With $c$ the midpoint of the reward interval and $\sum_r(P(r)-Q(r))=0$,
+$|\E_PR-\E_QR|=|\sum_r(P(r)-Q(r))(r-c)|\le\frac{\Delta R}2\sum_r|P(r)-Q(r)|=\Delta R\,\mathrm{TV}(P,Q)$.
+\item Pinsker's inequality: $\mathrm{TV}(P,Q)\le\sqrt{\mathrm{KL}(P\|Q)/2}$.
+\item Average over $(h_t,A_t)$ and use Jensen's inequality for the square root; the average of $\mathrm{KL}(P\|Q)$ is $I(h_t;R_{t+1}\mid M_t,A_t)$.
 \end{enumerate}
 \end{proof}
+
+By Corollary~\ref{cor:reward-splits}, the quantity under the root is $I(h_t;R_{t+1}\mid M_t)+\big[E^R_t-E^R_t(M)\big]$.
 
 \section{Open questions about one step}
 
 \begin{enumerate}
-\item Which of $I(h_t;R_{t+1}\mid M_t)$, $I(h_t;A_t\mid M_t,R_{t+1})$ and $I(h_t;R_{t+1}\mid M_t,A_t,A_{t+1})$ can a memory loss lower, and which are fixed by the policy? As in Remark~\ref{rem:vanish}, $I(h_t;A_t\mid M_t,R_{t+1})\le H(A_t\mid M_t)$.
-\item The reward term $I(h_t;R_{t+1}\mid M_t,A_t)-I(h_t;R_{t+1}\mid M_t,A_t,A_{t+1})$ can be negative. What does a negative value say about the agent?
+\item Which parts of the reward line can a memory loss lower, and which are set by the policy? For instance $E^R_t-E^R_t(M)\le H(A_t\mid M_t)$, which is zero for a deterministic policy.
+\item What does a negative plasticity mismatch to the reward, $P^R_{t+1}(M)-P^R_{t+1}<0$, say about the agent?
 \item Proposition~\ref{prop:reward-error} concerns the expected reward. Which part of one step controls the error of the advantage, which subtracts the part that does not depend on the action?
 \end{enumerate}
 
-\paragraph{Note.} The multi-step derivation is set aside in \texttt{archive/multistep\_draft\_2026-11-16.tex} until the one-step results are settled. None of the reward-separated statements has been checked against the literature.
+\paragraph{Note.} The multi-step derivation is set aside in \texttt{archive/multistep\_draft\_2026-11-16.tex}. None of the reward-separated statements has been checked against the literature.
 
 \bibliographystyle{plainnat}
 \bibliography{references}
