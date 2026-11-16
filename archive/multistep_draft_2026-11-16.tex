@@ -1,0 +1,57 @@
+% Multi-step part of main.tex, set aside on 2026-11-16 to settle the one-step results first.
+% It depends on labels and macros of main.tex at commit 099cbd3.
+
+\section{From the reward parts to the return}
+
+We use three facts: (F1) $h_{t+1}=(h_t,A_t,O_{t+1})$ and $M_t$ is a function of $h_t$; (F2) $M_{t+1}=f(M_t,A_t,O_{t+1})$; (F3) $A_{t+1}$ depends on the past only through $M_{t+1}$. From (F2) and (F3), for any variables $V$ from the past,
+\begin{equation}\label{eq:action-zero}
+I(V;A_{t+1}\mid M_t,A_t,O_{t+1})=0 .
+\end{equation}
+
+\subsection{Step 1: the next reward}
+
+Fix $(m,a)$. The expected next reward the agent can estimate is the average over the histories behind $m$, $\E[R_{t+1}\mid M_t=m,A_t=a]=\sum_hP(h_t=h\mid M_t=m)\,\E[R_{t+1}\mid h_t=h,A_t=a]$, using (F3). For one history $h$, let $P_h=P(R_{t+1}\mid h_t=h,A_t=a)$ and $Q=P(R_{t+1}\mid M_t=m,A_t=a)$.
+\begin{enumerate}
+\item $|\E_{P_h}R-\E_QR|\le\Delta R\cdot\mathrm{TV}(P_h,Q)$, since $\E_{P_h}R-\E_QR=\sum_r(P_h(r)-Q(r))(r-c)$ for the midpoint $c$ of the reward range.
+\item $\mathrm{TV}(P_h,Q)\le\sqrt{\mathrm{KL}(P_h\|Q)/2}$ (Pinsker).
+\item Average over $h$ behind $m$ and over $(M_t,A_t)$ with Jensen's inequality; the average of $\mathrm{KL}(P_h\|Q)$ is $D^R_t$.
+\end{enumerate}
+Hence, with Propositions~\ref{prop:table} and~\ref{prop:reward-pe},
+\[
+\E\big|\E[R_{t+1}\mid h_t,A_t]-\E[R_{t+1}\mid M_t,A_t]\big|\le\Delta R\sqrt{D^R_t/2},\qquad D^R_t=D^{0,R}_t+\dE^R_t=\dP^R_t+D^{+,R}_t .
+\]
+
+\subsection{Step 2: the reward two steps later}
+
+\begin{enumerate}
+\item $R_{t+2}$ is a component of $O_{t+2}$, so by data processing $I(h_t;R_{t+2}\mid M_t,A_t)\le I(h_t;O_{t+1},A_{t+1},R_{t+2}\mid M_t,A_t)$.
+\item Chain rule in the order $O_{t+1}$, $A_{t+1}$, $R_{t+2}$; the middle term is zero by \eqref{eq:action-zero}:
+\[
+I(h_t;O_{t+1},A_{t+1},R_{t+2}\mid M_t,A_t)=D_t+L^R_{t+1},
+\]
+with $L^R_{t+1}=I(h_t;R_{t+2}\mid M_t,A_t,O_{t+1},A_{t+1})$.
+\item By (F1), $h_{t+1}$ carries the same information as $(h_t,M_t,A_t,O_{t+1})$. The chain rule, first $(M_t,A_t,O_{t+1})$ and then $h_t$, and (F2) to remove $M_{t+1}$ from the second condition, give
+\[
+D^R_{t+1}=I(M_t,A_t,O_{t+1};R_{t+2}\mid M_{t+1},A_{t+1})+L^R_{t+1}.
+\]
+The first term is what the update $f$ at $t+1$ discards that still predicts $R_{t+2}$; $L^R_{t+1}$ is what was lost before. Both are nonnegative, so $L^R_{t+1}\le D^R_{t+1}$.
+\end{enumerate}
+Hence
+\[
+I(h_t;R_{t+2}\mid M_t,A_t)\le D_t+D^R_{t+1}.
+\]
+At $t+1$ only the reward part enters. At $t$ the whole defect enters, $D_t=D^R_t+D^{\bar O}_t$, because the reward at $t+2$ can depend on the rest of the observation at $t+1$, through the environment and through the next action.
+
+\subsection{Step 3: $k$ steps and the infinite horizon}
+
+Let $Z_{t,k}=(M_t,A_t,O_{t+1},A_{t+1},\dots,O_{t+k},A_{t+k})$. Repeating Step~2,
+\[
+I(h_t;R_{t+k+1}\mid M_t,A_t)\le\sum_{j=0}^{k-1}I(h_t;O_{t+j+1}\mid Z_{t,j})+I(h_t;R_{t+k+1}\mid Z_{t,k})\le\sum_{j=0}^{k-1}D_{t+j}+D^R_{t+k}.
+\]
+Every action term vanishes because $M_{t+j}$ is a function of the earlier variables in $Z_{t,j}$, and each remaining term is bounded as in Step~2(3) at the corresponding time.
+With $\gamma<1$, $q_\pi(h,a)=\E[\sum_{k\ge0}\gamma^kR_{t+k+1}\mid h_t=h,A_t=a]$ and $q_\pi(m,a)=\E[q_\pi(h_t,a)\mid M_t=m]$, writing the difference as a discounted sum of reward differences and bounding each as in Step~1,
+\[
+\E\big|q_\pi(h_t,A_t)-q_\pi(M_t,A_t)\big|\le\Delta R\sum_{k\ge0}\gamma^k\sqrt{\tfrac12\Big(\sum_{j=0}^{k-1}D_{t+j}+D^R_{t+k}\Big)} .
+\]
+If $D_{t+j}\le\bar D$ for all $j$, the bracket is at most $(k+1)\bar D$, and $\sum_{k\ge0}\gamma^k\sqrt{k+1}\le\sqrt{\sum_k\gamma^k}\sqrt{\sum_k\gamma^k(k+1)}=(1-\gamma)^{-3/2}$ (Cauchy--Schwarz), so the error is at most $\Delta R\sqrt{\bar D/2}\,(1-\gamma)^{-3/2}$. The structure is that of the approximate information state of \citet{subramanian2022approximate}. The reward-separated splits and the split of Step~2(3) have not been checked against the literature.
+
