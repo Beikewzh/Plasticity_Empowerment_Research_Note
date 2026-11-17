@@ -25,6 +25,7 @@
 \newcommand{\dE}{\Delta E}
 \newcommand{\dP}{\Delta P}
 \newcommand{\Ob}{\bar O}
+\newcommand{\KL}{\mathrm{KL}}
 \newcommand{\why}[1]{\tag*{\small(#1)}}
 
 \title{The State Defect, Empowerment and Plasticity}
@@ -806,7 +807,136 @@ In words: over $K$ steps the return gap is the discounted sum, along the agent's
 
 \paragraph{Summary.} Over $K$ steps, the history's information beyond the memory and the action at $t$ is the sum of the agent's own one-step defects at $t,\dots,t+K-1$, minus what the memory updates removed and still predicts the next observation (Proposition~\ref{prop:K}). Every term splits in the two ways of Section~\ref{sec:splits} and into a reward part and a rest part as in Section~\ref{sec:reward}, the agent's terms and the subtracted terms alike. The gap between the history's and the memory's value of the return over the same interval has the same structure (Proposition~\ref{prop:K-return}): the discounted sum of one-step comparisons of the same two predictions as each $D_{t+k}$, minus the value removed by each update.
 
-\paragraph{What is known.} The one-step empowerment and plasticity are those of \citet{abel2025plasticity}; the chain rule and the other tools are standard; the partial information decomposition is that of \citet{williams2010nonnegative}, with the conditional form of \citet{matthias2025novel} and the measure of \citet{bertschinger2014quantifying}. The terms $D^0_t$, $D^+_t$, the two splits, the reward parts and the multi-step defects and their expansions are defined and derived here; a short search did not find them elsewhere.
+\section{Information and value}\label{sec:info-value}
+
+The defects of Sections~\ref{sec:splits}--\ref{sec:K} and the return gaps of Propositions~\ref{prop:two-return} and~\ref{prop:K-return} compare the same pairs of predictions, one made from the history and one made from the memory. A defect averages the logarithm of their ratio; a return gap takes the difference of the expectations of a weight under them. This section relates the two, first by an exact identity and then by bounds. Throughout, the rewards lie in an interval of length $\Delta R$.
+
+\begin{lemma}[Information and the difference of an expectation]\label{lem:dv}
+Let $P$ and $Q$ be laws on a finite set with $P(x)>0$ only where $Q(x)>0$, let $w$ be a real function on the set, and for a real number $\lambda$ let $Q_\lambda(x)=Q(x)e^{\lambda w(x)}/\sum_yQ(y)e^{\lambda w(y)}$, the law $Q$ reweighted by $e^{\lambda w}$. Then
+\[
+\lambda\big(\E_P[w]-\E_Q[w]\big)=\KL(P\|Q)+\log\E_Q\big[e^{\lambda(w-\E_Q[w])}\big]-\KL(P\|Q_\lambda).
+\]
+\end{lemma}
+
+\begin{proof}
+Expand the last divergence:
+\begin{align*}
+\KL(P\|Q_\lambda)&=\sum_xP(x)\log\frac{P(x)}{Q_\lambda(x)}\\
+&=\sum_xP(x)\Big[\log\frac{P(x)}{Q(x)}-\lambda w(x)+\log\sum_yQ(y)e^{\lambda w(y)}\Big] \why{definition of $Q_\lambda$}\\
+&=\KL(P\|Q)-\lambda\,\E_P[w]+\log\E_Q\big[e^{\lambda w}\big] \why{$\textstyle\sum_xP(x)=1$}\\
+&=\KL(P\|Q)-\lambda\big(\E_P[w]-\E_Q[w]\big)+\log\E_Q\big[e^{\lambda(w-\E_Q[w])}\big] \why{subtract and add $\lambda\E_Q[w]$}.
+\end{align*}
+Move $\lambda(\E_P[w]-\E_Q[w])$ to the left and $\KL(P\|Q_\lambda)$ to the right.
+\end{proof}
+
+In words: $\lambda$ times the difference in value equals the information $\KL(P\|Q)$, plus a term that depends only on the memory's prediction $Q$ and the weight, minus the divergence of $P$ from $Q$ reweighted along the weight. Since the last term is nonnegative, the first two terms bound $\lambda$ times the difference in value, with equality exactly when $P=Q_\lambda$, that is, when the history's prediction differs from the memory's only along the weight. A history whose prediction differs from the memory's in directions unrelated to the weight carries information but changes the value little.
+
+The bounds below use one more standard fact \citep[Lemma~11.6.1]{cover2006elements}:
+\begin{enumerate}
+\item[(T6)] Pinsker's inequality: $\sum_x|P(x)-Q(x)|\le\sqrt{2\,\KL(P\|Q)}$.
+\end{enumerate}
+
+\begin{corollary}\label{cor:pinsker}
+If $w$ takes values in an interval of length $\ell$, then $\big|\E_P[w]-\E_Q[w]\big|\le\ell\sqrt{\KL(P\|Q)/2}$.
+\end{corollary}
+
+\begin{proof}
+Let $\bar w$ be the midpoint of the interval. Since $\sum_x(P(x)-Q(x))=0$,
+\[
+\big|\E_P[w]-\E_Q[w]\big|=\Big|\sum_x\big(P(x)-Q(x)\big)\big(w(x)-\bar w\big)\Big|\le\frac\ell2\sum_x|P(x)-Q(x)|\le\frac\ell2\sqrt{2\,\KL(P\|Q)},
+\]
+using $|w(x)-\bar w|\le\ell/2$ and (T6).
+\end{proof}
+
+Every defect in this note is an average of such divergences. For instance, by (T1), (T4) and the tower property,
+\begin{align*}
+D_t&=H(O_{t+1}\mid M_t,A_t)-H(O_{t+1}\mid h_t,A_t)=\E\Big[\log\frac{P(O_{t+1}\mid h_t,A_t)}{P(O_{t+1}\mid M_t,A_t)}\Big]\\
+&=\E\Big[\KL\big(P(O_{t+1}\mid h_t,A_t)\,\big\|\,P(O_{t+1}\mid M_t,A_t)\big)\Big],
+\end{align*}
+and $P(O_{t+1}\mid M_t,a)$ is the average of $P(O_{t+1}\mid h_t,a)$ over the histories behind $M_t$, since $P(h_t\mid M_t,A_t)=P(h_t\mid M_t)$ by Lemma~\ref{lem:action}.
+
+\begin{proposition}[The pieces of the two-step return gap]\label{prop:iv-two}
+Under Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol}, with the expectations over the agent's experience,
+\begin{align*}
+\E\big|c_t(h_t,A_t)\big|&\le(1+\gamma)\Delta R\sqrt{D_t/2},\\
+\E\big|c^R_t(h_t,A_t)\big|&\le(1+\gamma)\Delta R\sqrt{I(h_t;R_{t+1}\mid M_t,A_t)/2},\\
+\E\big|c^{\Ob}_t(h_t,A_t)\big|&\le\gamma\,\Delta R\sqrt{I(h_t;\Ob_{t+1}\mid M_t,A_t,R_{t+1})/2},\\
+\E\big|c_{t+1}(h_{t+1},A_{t+1})\big|&\le\Delta R\sqrt{I(h_{t+1};R_{t+2}\mid M_{t+1},A_{t+1})/2}\ \le\ \Delta R\sqrt{D_{t+1}/2},\\
+\E\big|u_{t+1}\big|&\le\Delta R\sqrt{I(M_t,A_t,O_{t+1};O_{t+2}\mid M_{t+1},A_{t+1})/2}.
+\end{align*}
+\end{proposition}
+
+\begin{proof}
+Each piece is, for fixed conditioning values, a difference of the expectations of a weight under two predictions, so Lemma~\ref{lem:dv} holds for it exactly and Corollary~\ref{cor:pinsker} bounds it. After the bound, average over the agent's experience and use $\E\sqrt{X}\le\sqrt{\E X}$ (Jensen's inequality, the square root being concave).
+
+$c_t$: the two predictions are $P(O_{t+1}\mid h_t,a)$ and $P(O_{t+1}\mid M_t,a)$, and the weight $r(o)+\gamma\E[R_{t+2}\mid M_t,a,o]$ lies in an interval of length $(1+\gamma)\Delta R$. The average of the divergence is $D_t$.
+
+$c^R_t$: the two predictions are $P(R_{t+1}\mid h_t,a)$ and $P(R_{t+1}\mid M_t,a)$, the weight $\rho+\gamma\E[R_{t+2}\mid M_t,a,\rho]$ has range at most $(1+\gamma)\Delta R$, and the average divergence is $I(h_t;R_{t+1}\mid M_t,A_t)$.
+
+$c^{\Ob}_t$: for each $\rho$, the inner sum is a difference of expectations of $\E[R_{t+2}\mid M_t,a,\rho,\bar o]$, of range $\Delta R$, under $P(\Ob_{t+1}\mid h_t,a,\rho)$ and $P(\Ob_{t+1}\mid M_t,a,\rho)$. So $|c^{\Ob}_t|\le\gamma\Delta R\sum_\rho P(\rho\mid h_t,a)\sqrt{\KL_\rho/2}\le\gamma\Delta R\sqrt{\sum_\rho P(\rho\mid h_t,a)\KL_\rho/2}$, with $\KL_\rho$ the divergence for $\rho$, and the average of $\sum_\rho P(\rho\mid h_t,a)\KL_\rho$ is $I(h_t;\Ob_{t+1}\mid M_t,A_t,R_{t+1})$.
+
+$c_{t+1}$: it is $\E[R_{t+2}\mid h_{t+1},a']-\E[R_{t+2}\mid M_{t+1},a']$, a difference of expectations of the reward under $P(R_{t+2}\mid h_{t+1},a')$ and $P(R_{t+2}\mid M_{t+1},a')$; the average divergence is $I(h_{t+1};R_{t+2}\mid M_{t+1},A_{t+1})$, the reward part of $D_{t+1}$ in the reward-first order, which is at most $D_{t+1}$ by Proposition~\ref{prop:xy-D}.
+
+$u_{t+1}$: it is $\E[R_{t+2}\mid M_t,A_t,O_{t+1}]-\E[R_{t+2}\mid M_{t+1}]$, a difference of expectations of the reward under $P(R_{t+2}\mid M_t,A_t,O_{t+1})$ and $P(R_{t+2}\mid M_{t+1})$; the second is the average of the first over the values of $(M_t,A_t,O_{t+1})$ behind $M_{t+1}$, because $M_{t+1}$ is a function of them. So the average divergence is $I(M_t,A_t,O_{t+1};R_{t+2}\mid M_{t+1})$. By (T2), (T3) and (T4), since $R_{t+2}$ is part of $O_{t+2}$, it is at most $I(M_t,A_t,O_{t+1};A_{t+1},O_{t+2}\mid M_{t+1})$, which equals $I(M_t,A_t,O_{t+1};O_{t+2}\mid M_{t+1},A_{t+1})$ by the first bracket in the proof of Proposition~\ref{prop:two-splits}.
+\end{proof}
+
+\begin{proposition}[The two-step return gap and the two-step defect]\label{prop:iv-two-whole}
+Under Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol}:
+\begin{enumerate}
+\item[(a)] for every $(h_t,a)$ and every real $\lambda$, with $P=P(G_{t:t+2}\mid h_t,a)$ and $Q=P(G_{t:t+2}\mid M_t,a)$,
+\begin{align*}
+\lambda\big[q_{t:t+2}(h_t,a)-q_{t:t+2}(M_t,a)\big]&=\KL(P\|Q)+\log\E_Q\big[e^{\lambda(G_{t:t+2}-q_{t:t+2}(M_t,a))}\big]\\
+&\quad-\KL(P\|Q_\lambda);
+\end{align*}
+\item[(b)] the average of $\KL(P\|Q)$ over the agent's experience is $I(h_t;G_{t:t+2}\mid M_t,A_t)$, and
+\[
+I(h_t;G_{t:t+2}\mid M_t,A_t)=D_{t:t+2}-I(h_t;O_{t+1},A_{t+1},O_{t+2}\mid M_t,A_t,G_{t:t+2});
+\]
+\item[(c)] hence
+\begin{align*}
+\E\big|q_{t:t+2}(h_t,A_t)-q_{t:t+2}(M_t,A_t)\big|&\le(1+\gamma)\Delta R\sqrt{I(h_t;G_{t:t+2}\mid M_t,A_t)/2}\\
+&\le(1+\gamma)\Delta R\sqrt{D_{t:t+2}/2}.
+\end{align*}
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+(a) Lemma~\ref{lem:dv} with $w$ the value of the return, since $\E_P[G_{t:t+2}]=q_{t:t+2}(h_t,a)$ and $\E_Q[G_{t:t+2}]=q_{t:t+2}(M_t,a)$.
+
+(b) $Q$ is the average of $P$ over the histories behind $M_t$, as in the remark after Corollary~\ref{cor:pinsker}, so the average of $\KL(P\|Q)$ is $I(h_t;G_{t:t+2}\mid M_t,A_t)$. The return is a function of $(R_{t+1},R_{t+2})$, which are parts of $(O_{t+1},O_{t+2})$, so
+\begin{align*}
+D_{t:t+2}&=I(h_t;O_{t+1},A_{t+1},O_{t+2}\mid M_t,A_t) \why{Definition~\ref{def:two}}\\
+&=I(h_t;O_{t+1},A_{t+1},O_{t+2},G_{t:t+2}\mid M_t,A_t) \why{T4}\\
+&=I(h_t;G_{t:t+2}\mid M_t,A_t)+I(h_t;O_{t+1},A_{t+1},O_{t+2}\mid M_t,A_t,G_{t:t+2}) \why{T2}.
+\end{align*}
+
+(c) Corollary~\ref{cor:pinsker} with $\ell=(1+\gamma)\Delta R$, the length of the interval of the return, Jensen's inequality as before, and (b) with (T3).
+\end{proof}
+
+In words: the information the history carries about the two-step return is the two-step defect minus what the history tells about the two steps that the return does not record. The return gap is bounded by this information, and by Proposition~\ref{prop:two} also by $(1+\gamma)\Delta R\sqrt{(D_t+D_{t+1})/2}$. Proposition~\ref{prop:iv-two} bounds the three pieces of Proposition~\ref{prop:two-return} separately: the first by $D_t$, the second only by the reward part of $D_{t+1}$, and the correction by the subtracted term of Proposition~\ref{prop:two}.
+
+\begin{proposition}[$K$ steps]\label{prop:iv-K}
+Under Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol}, let $\ell_n=\Delta R\sum_{j=0}^{t+K-n-1}\gamma^j$, the length of the interval of $G_{n:t+K}$. Then
+\begin{align*}
+\E\big|q_{t:t+K}(h_t,A_t)-q_{t:t+K}(M_t,A_t)\big|&\le\ell_t\sqrt{I(h_t;G_{t:t+K}\mid M_t,A_t)/2}\\
+&\le\ell_t\sqrt{D_{t:t+K}/2},\\
+I(h_t;G_{t:t+K}\mid M_t,A_t)&=D_{t:t+K}\\
+&\quad-I(h_t;O_{t+1:t+K},A_{t+1:t+K-1}\mid M_t,A_t,G_{t:t+K}),
+\end{align*}
+and, for the pieces of Proposition~\ref{prop:K-return}, $\E|c_n|\le\ell_n\sqrt{D_n/2}$ and
+\[
+\E|u_n|\le\ell_n\sqrt{I\big(M_{n-1},A_{n-1},O_n;\,A_{n:t+K-1},O_{n+1:t+K}\,\big|\,M_n\big)/2},
+\]
+the information the update at $n$ discarded about the rest of the interval.
+\end{proposition}
+
+\begin{proof}
+The first two lines are the proof of Proposition~\ref{prop:iv-two-whole} with $G_{t:t+K}$, a function of the rewards in $O_{t+1:t+K}$, and Definition~\ref{def:K}. For $c_n$, the weight $r(o)+\gamma\E[v_{n+1:t+K}(h_{n+1})\mid M_n,a,o]$ lies in an interval of length $\Delta R+\gamma\ell_{n+1}=\ell_n$, and the proof of Proposition~\ref{prop:iv-two} for $c_t$ applies. For $u_n$, by the tower property, $u_n=\E[G_{n:t+K}\mid M_{n-1},A_{n-1},O_n]-\E[G_{n:t+K}\mid M_n]$, a difference of expectations of $G_{n:t+K}$, of range $\ell_n$; the average divergence is $I(M_{n-1},A_{n-1},O_n;G_{n:t+K}\mid M_n)$, which is at most the stated information by (T2), (T3) and (T4), because $G_{n:t+K}$ is a function of $O_{n+1:t+K}$.
+\end{proof}
+
+So the information quantities of this note control the return gap in two ways. As a whole, the gap over an interval is controlled by the history's information about the return over that interval, which is the defect over the interval minus what the return does not record. Piece by piece, each one-step comparison is controlled by the defect of its step, the rest of the observation only through the discount factor, and each correction by what its update discarded about the rest of the interval. In each case the exact identity of Lemma~\ref{lem:dv} says what the bound leaves out: the part of the history's information that does not lie along the weight.
+
+\paragraph{What is known.} The one-step empowerment and plasticity are those of \citet{abel2025plasticity}; the chain rule, the identity of Lemma~\ref{lem:dv}, Pinsker's inequality and the other tools are standard; the partial information decomposition is that of \citet{williams2010nonnegative}, with the conditional form of \citet{matthias2025novel} and the measure of \citet{bertschinger2014quantifying}. The terms $D^0_t$, $D^+_t$, the two splits, the reward parts and the multi-step defects and their expansions are defined and derived here; a short search did not find them elsewhere.
 
 \bibliographystyle{plainnat}
 \bibliography{references}
