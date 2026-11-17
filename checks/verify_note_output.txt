@@ -35,7 +35,7 @@ Prop 5.5 D0                                                   17    0.00e+00    
 Prop 5.5 D+                                                   17    0.00e+00       0.0463  PASS
 Prop 5.5 dE                                                   17    0.00e+00       0.0311  PASS
 Prop 5.5 dP                                                   17    0.00e+00       0.0058  PASS
-Prop 5.7(d) bounds on U^R consistent                          17    0.00e+00       0.0612  PASS
+Prop 5.7(c) bounds on D^{R only} consistent                   17    0.00e+00       0.0612  PASS
 Lem 2.1 I(h_t;A_t+k|M_t,A_t,...,O_t+k)=0                      55    1.03e-13       0.0000  PASS
 Prop 6.2 two steps = D_t + D_t,1                              12    6.77e-14       0.2609  PASS
 Prop 6.3 two steps = D0+dE+D0_1+dE_1                          12    6.71e-14       0.2609  PASS

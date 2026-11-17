@@ -400,31 +400,58 @@ For $D_t$, the difference of the two reward parts above is $I(h_t;R_{t+1}\mid M_
 and each bracket is a co-information by definition. The case of $\dP_t$ is the same with $I(R_{t+1};A_{t+1}\mid\cdot)$ in place of $I(A_t;R_{t+1}\mid\cdot)$, using Proposition~\ref{prop:xy-P}. The totals do not depend on the order, so the rest parts differ by the opposite amounts.
 \end{proof}
 
-\subsection{Without an order: partial information decomposition}
+\subsection{Without an order: four parts of $D_t$}
 
-\begin{definition}
-For a target $T$ and two sources $S_1,S_2$, a partial information decomposition \citep{williams2010nonnegative} is a choice of four nonnegative numbers, the redundant information $\mathrm{Red}$, the unique informations $U_1,U_2$ and the synergistic information $\mathrm{Syn}$, such that
-\[
-I(T;S_1)=\mathrm{Red}+U_1,\qquad I(T;S_2)=\mathrm{Red}+U_2,\qquad I(T;S_1,S_2)=\mathrm{Red}+U_1+U_2+\mathrm{Syn}.
-\]
-The three equations leave one degree of freedom, which a choice of measure fixes. Given a conditioning variable, the decomposition is the average over its values of the decompositions of the conditional laws \citep[Definition~3]{matthias2025novel}. We take $T=h_t$, $S_1=R_{t+1}$, $S_2=\Ob_{t+1}$ and the conditioning variable $(M_t,A_t)$, and write $\mathrm{Red}_t,U^R_t,U^{\Ob}_t,\mathrm{Syn}_t$.
+The two orders differ in where they put two kinds of information about the history: what the reward and the rest of the observation both carry, and what they carry only together. A partial information decomposition \citep{williams2010nonnegative} gives each kind its own part instead of assigning it to the reward or to the rest.
+
+\begin{definition}[Four parts of $D_t$]\label{def:pid}
+A split of $D_t$ into four parts is a choice of four nonnegative numbers:
+\begin{itemize}
+\item $D^{\mathrm{shared}}_t$, the information about the history, beyond the memory and the action, that the reward carries and the rest of the observation also carries;
+\item $D^{R\,\mathrm{only}}_t$, the information that only the reward carries;
+\item $D^{\Ob\,\mathrm{only}}_t$, the information that only the rest of the observation carries;
+\item $D^{\mathrm{joint}}_t$, the information that the reward and the rest carry only together;
+\end{itemize}
+such that
+\begin{align*}
+I(h_t;R_{t+1}\mid M_t,A_t)&=D^{\mathrm{shared}}_t+D^{R\,\mathrm{only}}_t,\\
+I(h_t;\Ob_{t+1}\mid M_t,A_t)&=D^{\mathrm{shared}}_t+D^{\Ob\,\mathrm{only}}_t,\\
+D_t=I(h_t;R_{t+1},\Ob_{t+1}\mid M_t,A_t)&=D^{\mathrm{shared}}_t+D^{R\,\mathrm{only}}_t+D^{\Ob\,\mathrm{only}}_t+D^{\mathrm{joint}}_t.
+\end{align*}
+More precisely, the three equations are required for the conditional law given each value of $(M_t,A_t)$, and the four parts are the averages over these values \citep[Definition~3]{matthias2025novel}. The three equations leave one degree of freedom, which a choice of measure fixes. In the literature the four parts are called the redundant, the two unique, and the synergistic information.
 \end{definition}
 
-\begin{proposition}[The two orders in terms of the decomposition]\label{prop:pid}
-For any partial information decomposition:
+\begin{proposition}[The two orders in terms of the four parts]\label{prop:pid}
+For any split of $D_t$ into four parts:
 \begin{enumerate}
-\item[(a)] $D_t=\mathrm{Red}_t+U^R_t+U^{\Ob}_t+\mathrm{Syn}_t$;
-\item[(b)] the reward part of $D_t$ is $\mathrm{Red}_t+U^R_t$ in the reward-first order and $U^R_t+\mathrm{Syn}_t$ in the rest-first order;
-\item[(c)] $I(h_t;R_{t+1};\Ob_{t+1}\mid M_t,A_t)=\mathrm{Red}_t-\mathrm{Syn}_t$;
-\item[(d)] $\max\big(0,\,I(h_t;R_{t+1}\mid M_t,A_t)-I(h_t;\Ob_{t+1}\mid M_t,A_t)\big)\le U^R_t\le\min\big(I(h_t;R_{t+1}\mid M_t,A_t),\,I(h_t;R_{t+1}\mid M_t,A_t,\Ob_{t+1})\big)$.
+\item[(a)] the reward part of $D_t$ is $D^{\mathrm{shared}}_t+D^{R\,\mathrm{only}}_t$ in the reward-first order and $D^{R\,\mathrm{only}}_t+D^{\mathrm{joint}}_t$ in the rest-first order;
+\item[(b)] their difference, the co-information of Proposition~\ref{prop:orderdiff}, is $I(h_t;R_{t+1};\Ob_{t+1}\mid M_t,A_t)=D^{\mathrm{shared}}_t-D^{\mathrm{joint}}_t$;
+\item[(c)] the part that only the reward carries is bounded, whatever the measure, by
+\begin{align*}
+D^{R\,\mathrm{only}}_t&\ge\max\big(0,\ I(h_t;R_{t+1}\mid M_t,A_t)-I(h_t;\Ob_{t+1}\mid M_t,A_t)\big),\\
+D^{R\,\mathrm{only}}_t&\le\min\big(I(h_t;R_{t+1}\mid M_t,A_t),\ I(h_t;R_{t+1}\mid M_t,A_t,\Ob_{t+1})\big).
+\end{align*}
 \end{enumerate}
 \end{proposition}
 
 \begin{proof}
-Fix a value $c$ of $(M_t,A_t)$ and work with the conditional law given $C=c$. (a) is the third defining equation, with $I(h_t;R_{t+1},\Ob_{t+1}\mid C=c)$ the defect at $c$. (b) The reward-first part is $I(h_t;R_{t+1}\mid C=c)=\mathrm{Red}+U^R$, the first defining equation. For the rest-first part, (T2) gives $I(h_t;R_{t+1}\mid C=c,\Ob_{t+1})=I(h_t;R_{t+1},\Ob_{t+1}\mid C=c)-I(h_t;\Ob_{t+1}\mid C=c)$, which is the third defining equation minus the second, $U^R+\mathrm{Syn}$. (c) The co-information is the reward-first part minus the rest-first part (Proposition~\ref{prop:orderdiff}), $(\mathrm{Red}+U^R)-(U^R+\mathrm{Syn})$. (d) The first two defining equations give $U^R-U^{\Ob}=I(h_t;R_{t+1}\mid C=c)-I(h_t;\Ob_{t+1}\mid C=c)$, and $U^{\Ob}\ge0$ gives the lower bound; $\mathrm{Red}\ge0$ and $\mathrm{Syn}\ge0$ in (b) give the upper bounds. Average over $c$: the identities are linear and hold on average. The upper bounds hold on average because the average of a minimum is at most the minimum of the averages, and the lower bound because the average of $\max(0,x_c)$ is at least $\max(0,\text{average of }x_c)$.
+Fix a value $c$ of $(M_t,A_t)$ and work with the conditional law given $(M_t,A_t)=c$; write the four parts at $c$ without the index $t$.
+
+(a) The reward-first reward part is $I(h_t;R_{t+1}\mid c)$, which is $D^{\mathrm{shared}}+D^{R\,\mathrm{only}}$ by the first equation. The rest-first reward part is $I(h_t;R_{t+1}\mid c,\Ob_{t+1})$, and by (T2),
+\begin{align*}
+I(h_t;R_{t+1}\mid c,\Ob_{t+1})&=I(h_t;R_{t+1},\Ob_{t+1}\mid c)-I(h_t;\Ob_{t+1}\mid c) \why{T2}\\
+&=\big(D^{\mathrm{shared}}+D^{R\,\mathrm{only}}+D^{\Ob\,\mathrm{only}}+D^{\mathrm{joint}}\big)-\big(D^{\mathrm{shared}}+D^{\Ob\,\mathrm{only}}\big) \why{third and second equations}\\
+&=D^{R\,\mathrm{only}}+D^{\mathrm{joint}}.
+\end{align*}
+
+(b) Subtract the two results of (a): $(D^{\mathrm{shared}}+D^{R\,\mathrm{only}})-(D^{R\,\mathrm{only}}+D^{\mathrm{joint}})=D^{\mathrm{shared}}-D^{\mathrm{joint}}$. By Proposition~\ref{prop:orderdiff}, the same difference is the co-information.
+
+(c) Subtracting the second equation from the first gives $D^{R\,\mathrm{only}}-D^{\Ob\,\mathrm{only}}=I(h_t;R_{t+1}\mid c)-I(h_t;\Ob_{t+1}\mid c)$; since $D^{\Ob\,\mathrm{only}}\ge0$, $D^{R\,\mathrm{only}}$ is at least the right side, and it is at least $0$. In (a), $D^{\mathrm{shared}}\ge0$ and $D^{\mathrm{joint}}\ge0$ give the two upper bounds.
+
+Average over $c$. The identities are linear and hold for the averages. The upper bounds hold for the averages because the average of a minimum is at most the minimum of the averages, and the lower bound because the average of $\max(0,x_c)$ is at least $\max(0,\text{average of }x_c)$.
 \end{proof}
 
-So the reward-first order gives the reward the redundant part, the rest-first order gives it the synergistic part, and the part that belongs to the reward in both orders is $U^R_t$, the information about the history that only the reward carries. With the measure of \citet{bertschinger2014quantifying}, $U^R_t>0$ exactly when there is a decision problem in which seeing the reward is strictly better than seeing the rest of the observation. The same decomposition applies to $D^0_t$ and $D^+_t$ with other conditioning variables. The terms $\dE_t$ and $\dP_t$ involve an action as a third variable, and an order-free split of their reward parts would need a decomposition with three sources; we leave this open.
+So the reward-first order gives the reward the shared part, the rest-first order gives it the joint part, and the part that belongs to the reward in both orders is $D^{R\,\mathrm{only}}_t$. The difference between the orders, $D^{\mathrm{shared}}_t-D^{\mathrm{joint}}_t$, is positive when the shared part is larger and negative when the joint part is larger. With the measure of \citet{bertschinger2014quantifying}, $D^{R\,\mathrm{only}}_t>0$ exactly when there is a decision problem in which seeing the reward is strictly better than seeing the rest of the observation. The same split applies to $D^0_t$ and $D^+_t$ with other conditioning variables. The terms $\dE_t$ and $\dP_t$ involve an action as a third variable, and an order-free split of their reward parts would need a decomposition with three sources; we leave this open.
 
 \section{Two steps}\label{sec:two}
 
@@ -432,11 +459,13 @@ We now ask what the history tells, beyond the memory at $t$, about the agent's n
 
 \begin{definition}\label{def:step1}
 \begin{align*}
-D_{t,1}&=I(h_t;O_{t+2}\mid M_t,A_t,O_{t+1},A_{t+1}), & D^0_{t,1}&=I(h_t;O_{t+2}\mid M_t,A_t,O_{t+1}),\\
-\dE_{t,1}&=I(h_t;A_{t+1}\mid M_t,A_t,O_{t+1},O_{t+2}), & \dP_{t,1}&=I(h_t;A_{t+2}\mid M_t,A_t,O_{t+1},A_{t+1}),\\
+D_{t,1}&=I(h_t;O_{t+2}\mid M_t,A_t,O_{t+1},A_{t+1}),\\
+D^0_{t,1}&=I(h_t;O_{t+2}\mid M_t,A_t,O_{t+1}),\\
+\dE_{t,1}&=I(h_t;A_{t+1}\mid M_t,A_t,O_{t+1},O_{t+2}),\\
+\dP_{t,1}&=I(h_t;A_{t+2}\mid M_t,A_t,O_{t+1},A_{t+1}),\\
 D^+_{t,1}&=I(h_t;O_{t+2}\mid M_t,A_t,O_{t+1},A_{t+1},A_{t+2}).
 \end{align*}
-They are the five terms at time $t+1$ with $h_t$ in place of $h_{t+1}$ and $(M_t,A_t,O_{t+1})$ in place of $M_{t+1}$.
+They are the five terms of Definition~\ref{def:terms} at time $t+1$, with $h_t$ in place of $h_{t+1}$ and $(M_t,A_t,O_{t+1})$ in place of $M_{t+1}$. In the subscript $t,1$, the $t$ says that the history $h_t$ and the memory $M_t$ are compared, and the $1$ says that the term concerns the step after $t$.
 \end{definition}
 
 \begin{proposition}[Two steps in the order of time]\label{prop:two-time}
@@ -531,15 +560,15 @@ Subtract the second from the first:
 \end{proof}
 
 \begin{proposition}[The second-step terms and the agent's terms at $t+1$]\label{prop:two-agent}
-Under Assumptions~\ref{as:mem} and~\ref{as:pol}, with $U_{t+1}=(M_t,A_t,O_{t+1})$ the input of the update that produces $M_{t+1}$,
+Under Assumptions~\ref{as:mem} and~\ref{as:pol},
 \begin{align*}
-D_{t+1}&=D_{t,1}+I(U_{t+1};O_{t+2}\mid M_{t+1},A_{t+1}),\\
-D^0_{t+1}&=D^0_{t,1}+I(U_{t+1};O_{t+2}\mid M_{t+1}),\\
-\dE_{t+1}&=\dE_{t,1}+I(U_{t+1};A_{t+1}\mid M_{t+1},O_{t+2}),\\
-\dP_{t+1}&=\dP_{t,1}+I(U_{t+1};A_{t+2}\mid M_{t+1},A_{t+1}),\\
-D^+_{t+1}&=D^+_{t,1}+I(U_{t+1};O_{t+2}\mid M_{t+1},A_{t+1},A_{t+2}).
+D_{t+1}&=D_{t,1}+I(M_t,A_t,O_{t+1};O_{t+2}\mid M_{t+1},A_{t+1}),\\
+D^0_{t+1}&=D^0_{t,1}+I(M_t,A_t,O_{t+1};O_{t+2}\mid M_{t+1}),\\
+\dE_{t+1}&=\dE_{t,1}+I(M_t,A_t,O_{t+1};A_{t+1}\mid M_{t+1},O_{t+2}),\\
+\dP_{t+1}&=\dP_{t,1}+I(M_t,A_t,O_{t+1};A_{t+2}\mid M_{t+1},A_{t+1}),\\
+D^+_{t+1}&=D^+_{t,1}+I(M_t,A_t,O_{t+1};O_{t+2}\mid M_{t+1},A_{t+1},A_{t+2}).
 \end{align*}
-Each added term is nonnegative, so each second-step term is at most the agent's own term at $t+1$.
+Each added term is what the update $M_{t+1}=f(M_t,A_t,O_{t+1})$ removed from its input and still predicts the same variable. It is nonnegative, so each second-step term is at most the agent's own term at $t+1$.
 \end{proposition}
 
 \begin{proof}

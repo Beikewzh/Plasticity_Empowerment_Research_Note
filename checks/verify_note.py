@@ -284,7 +284,7 @@ def check_one_step(J, w, rec):
                J.CI([R1], [A1], [B1], [M, A]) - J.CI([R1], [A1], [B1], [h, A]))
         lo = max(0.0, J.I([h], [R1], [M, A]) - J.I([h], [B1], [M, A]))
         hi = min(J.I([h], [R1], [M, A]), J.I([h], [R1], [M, A, B1]))
-        rec.le('Prop 5.7(d) bounds on U^R consistent', lo, hi)
+        rec.le('Prop 5.7(c) bounds on D^{R only} consistent', lo, hi)
 
 
 def terms_k(J, t, k):
