@@ -453,8 +453,41 @@ By the tower property, $v_\pi(h)-v_\pi(m)=\sum_{k\ge0}\gamma^k\big(\E[R_{t+k+1}\
 
 So, over an infinite horizon, the state value depends on the history beyond the memory through the parts of $D^0$ and $\dE$ along the agent's path that are relevant to later rewards, and the action value through the parts of $\dP$ and $D^+$. The uniform bound has the structure of the approximate information state of \citet{subramanian2022approximate}; the exact decomposition into relevant parts has not been checked against the literature.
 
-\paragraph{Where the two orders enter.}
-The route through the next observation splits by the chain rule for co-information, $I(h_t;(R_{t+1},\Ob_{t+1});R_{t+2}\mid C)=I(h_t;R_{t+1};R_{t+2}\mid C)+I(h_t;\Ob_{t+1};R_{t+2}\mid C,R_{t+1})$ with $C=(M_t,A_t,A_{t+1})$, or in the other order. In the reward-first order, the first part is the route from the history to the later reward through the next reward: it is what an agent that sees no change in its observations, and notices a change only in its rewards, can use. In the rest-first order, the first part is the route through the rest of the observation. The two orders differ by a co-information, as in Proposition~\ref{prop:orders}.
+\subsection{Reward first or rest first, over many steps}
+
+In Proposition~\ref{prop:k-steps} the next observation enters each step as a whole. To separate the reward, we split $O_{t+j+1}$ into its two parts and place the action of that step between them, as in Section~4, where the sequence $(X,A_t,Y)$ gives the first split and $(X,A_{t+1},Y)$ the second split with the reward separated. For step $j$ write $(X_j,Y_j)=(R_{t+j+1},\Ob_{t+j+1})$ in the reward-first order and $(X_j,Y_j)=(\Ob_{t+j+1},R_{t+j+1})$ in the rest-first order.
+
+\begin{proposition}[$k$ steps with the reward separated]\label{prop:k-steps-order}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol}, for either order and $W=R_{t+k+1}$,
+\begin{align*}
+I(h_t;W\mid M_t)&=\sum_{j=0}^{k-1}\Big[I(h_t;X_j;W\mid Y_{t,j})+I(h_t;A_{t+j};W\mid Y_{t,j},X_j)\\
+&\qquad\qquad+I(h_t;Y_j;W\mid Y_{t,j},X_j,A_{t+j})\Big]+I(h_t;W\mid Y_{t,k}),\\
+I(h_t;W\mid M_t,A_t)&=\sum_{j=0}^{k-1}\Big[I(h_t;X_j;W\mid Z_{t,j})+I(h_t;A_{t+j+1};W\mid Z_{t,j},X_j)\\
+&\qquad\qquad+I(h_t;Y_j;W\mid Z_{t,j},X_j,A_{t+j+1})\Big]+I(h_t;W\mid Z_{t,k}).
+\end{align*}
+\end{proposition}
+
+\begin{proof}
+Lemma~\ref{lem:relevant} with the sequences $X_0,A_t,Y_0,X_1,A_{t+1},Y_1,\dots$ given $M_t$, and $X_0,A_{t+1},Y_0,X_1,A_{t+2},Y_1,\dots$ given $(M_t,A_t)$. After the three variables of step $j$ the conditioning variables are $Y_{t,j+1}$ and $Z_{t,j+1}$ respectively.
+\end{proof}
+
+Each step now has three routes from the history to the later reward: through the first part of the next observation, through the action, and through the second part. In the reward-first order the first route is the route through the intermediate reward; in the rest-first order the reward route comes last, after the rest of the observation and the action are given.
+
+\begin{proposition}[What the order changes]\label{prop:order-many}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol}:
+\begin{enumerate}
+\item[(a)] The left-hand sides of Proposition~\ref{prop:k-steps-order}, and therefore the value bounds of Proposition~\ref{prop:value}, do not depend on the order. Only the attribution to routes does.
+\item[(b)] If at every step the reward is a function of the action and the rest of the observation, $R_{t+j+1}=g(A_{t+j},\Ob_{t+j+1})$, then in the rest-first order every reward route is zero.
+\item[(c)] If the rest of the observation is constant, its routes are zero in both orders, and the two orders differ only in whether the action route of each step is counted after the reward route (reward first) or before it (rest first).
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+(a) The left-hand sides do not involve the order, and Proposition~\ref{prop:value} uses only them. (b) In the rest-first order the reward route of step $j$ is $I(h_t;R_{t+j+1};W\mid C)=I(h_t;R_{t+j+1}\mid C)-I(h_t;R_{t+j+1}\mid C,W)$, where $C$ contains $A_{t+j}$ and $\Ob_{t+j+1}$ (in $Y_{t,j}$ or $Z_{t,j}$, and in the variables added before $R_{t+j+1}$). Given $C$, $R_{t+j+1}$ is determined, so both mutual informations are zero. (c) If $\Ob_{t+j+1}$ is constant, conditioning on it changes nothing and its routes are zero, so the sequences of step $j$ reduce to $(R_{t+j+1},A)$ in the reward-first order and to $(A,R_{t+j+1})$ in the rest-first order, where $A$ is $A_{t+j}$ or $A_{t+j+1}$.
+\end{proof}
+
+\paragraph{Reading for continual RL.}
+The rest-first reward routes measure the information about later rewards that reaches the agent only through rewards, because the rest of the observation does not show it. By Proposition~\ref{prop:order-many}(b) they vanish in worlds where the reward can be computed from what the agent sees and does. They are positive in worlds where a change is hidden from the observation and revealed only by the rewards, such as a switch of the rewarding option that the agent does not see. The reward-first reward routes measure all the information about later rewards that the intermediate rewards carry, including what the observation also shows. The two attributions differ step by step by co-informations, as in Proposition~\ref{prop:orders}; their totals, and the value bounds, are the same.
 
 \section{Open questions}
 
