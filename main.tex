@@ -304,7 +304,55 @@ In words: the agent values an action for its return and for how much its outcome
 \item \emph{Capacity}: with $N$ values, for a given behaviour the best memory is the one with the smallest total charge $\sum_s\gamma^{s-1}C_s$ (Results~\ref{res:separate} and~\ref{res:updates}). The policy can lower the charges by actions that reveal again what was dropped (Result~\ref{res:many-policy}), so memory and exploration are chosen together.
 \end{itemize}
 
-\paragraph{What this does not settle.} The policy condition is for a stationary point with the memory fixed; for the memory we give the exact cost, not a formula for the optimiser, because the recursion couples the steps; \citet{fox2012bounded} solve a related problem, in which the agent does not influence the world, by a forward-backward algorithm. All quantities are taken under the true law of the agent's experience with its current behaviour. An agent that learns them estimates them from that experience, so information whose value appears only under a behaviour the agent has not adopted, for example after the world changes, gets no weight in its estimates. For continual reinforcement learning this is the part the objective leaves open.
+\paragraph{What this does not settle.} The policy condition is for a stationary point with the memory fixed. For the memory we give the exact cost; a stationarity condition for one update, with the others fixed, is in Section~\ref{sec:exact-opt}, but no formula for the jointly best recursive memory, because the recursion couples the steps; \citet{fox2012bounded} solve a related problem, in which the agent does not influence the world, by a forward-backward algorithm. All quantities are taken under the true law of the agent's experience with its current behaviour. An agent that learns them estimates them from that experience, so information whose value appears only under a behaviour the agent has not adopted, for example after the world changes, gets no weight in its estimates. For continual reinforcement learning this is the part the objective leaves open.
+
+\section{The best policy and memory through the exact value gap}\label{sec:exact-opt}
+
+The conditions of Sections~\ref{sec:optimal} and~\ref{sec:many} came from differentiating the objectives. Here we rewrite them with the exact value gap of Result~\ref{res:gap}. Nothing is approximated. The rewriting shows what the agent needs to compute and what the memory needs to keep.
+
+\begin{result}[The best policy needs only the memory; Proposition~\ref{prop:x-policy}]\label{res:x-policy}
+For a fixed memory, the condition of Result~\ref{res:many-policy} is
+\[
+\pi(a\mid m)\ \propto\ p(a)\exp\Big(\tfrac1\lambda\big[\alpha\,\bar q(m,a)+\bar\iota(m,a)-\lambda\bar K(m,a)\big]\Big),
+\]
+where $\bar q(m,a)$ averages over the visits to $m$ the memory's own action value $q_\pi(M_j=m,a)=\E[G_j\mid M_j=m,A_j=a]$, and $\bar\iota(m,a)$ averages in the same way the discounted sum along the path of the memory's own information gain $\log\big(P(O_{n+1}\mid M_n,A_n)/P(O_{n+1})\big)$.
+\end{result}
+
+In words: the history's value and the defect drop out of the best policy. The value gap $q_\pi(h,a)-q_\pi(m,a)$ averages to zero over the histories behind $m$, and the history's curiosity bonus minus the defect is the memory's own information gain (Result~\ref{res:opt-identity}). So the best policy for a given memory is computed from quantities the agent can estimate from its own memory and experience. One condition matters: $\bar q$ is the Monte Carlo value of the memory. A critic trained by temporal differences estimates something else, and the difference comes from the value that the memory updates discard (Result~\ref{res:value-updates}(b)).
+
+\begin{result}[What merging costs the policy; Proposition~\ref{prop:x-merge}]\label{res:x-merge}
+Hold the action values fixed, and let the policy at a history $h$ maximise $\alpha\sum_a\pi(a)\,q_\pi(h,a)-\lambda\,\mathrm{KL}(\pi\|p)$. The best policy for $h$ alone is $\pi_h\propto p\,e^{\alpha q_\pi(h,\cdot)/\lambda}$. A memory that merges $h$ into $m$ uses the best policy for $m$, $\pi_m\propto p\,e^{\alpha q_\pi(m,\cdot)/\lambda}$, at all histories behind $m$. The loss at $h$ is exactly
+\[
+\lambda\,\mathrm{KL}(\pi_m\|\pi_h)=\lambda\log\sum_a\pi_m(a)\,e^{\alpha g(h,a)/\lambda}-\alpha\sum_a\pi_m(a)\,g(h,a),
+\]
+with $g(h,a)=q_\pi(h,a)-q_\pi(m,a)=\E\big[\sum_k\gamma^kc_{t,k}\mid h_t=h,A_t=a\big]$ the value gap of Result~\ref{res:gap}. It is zero exactly when $g(h,a)$ is the same for all actions with $p(a)>0$.
+\end{result}
+
+In words: a value gap that shifts all actions by the same amount changes the value of the history but not the decision. Merging costs the policy nothing when the history and its memory value rank the actions the same way, that is, when their advantages agree. So the part of the defect the policy needs is the action-dependent part of the discounted costs $\sum_k\gamma^kc_{t,k}$; in this local setting, this answers the second open question. Averaged over the histories behind $m$, the gaps average to zero and the loss is $\lambda\,\E\big[\log\sum_a\pi_m(a)e^{\alpha g(h_t,a)/\lambda}\,\big|\,M_t=m\big]$. \citet{genewein2015bounded} derive abstractions from the same trade-off between expected utility and the cost of telling world states apart.
+
+\begin{result}[The best memory, exactly; Proposition~\ref{prop:x-memory}]\label{res:x-memory}
+Let the memory at $t$ be a randomised encoding $q_t(m\mid h)$ priced by $\mu\,I(M_t;h_t)$, with the policy and the later updates fixed. A stationary point of the objective of Section~\ref{sec:many} in $q_t$ satisfies
+\begin{align*}
+\mu\log\frac{q_t(m\mid h)}{q_t(m)}&=\mathcal V(m)-c(h)\\
+&\quad+\sum_a\pi(a\mid m)\,\E\Big[\sum_{k\ge0}\gamma^k\,\mathrm{Cov}_Z\big(L_{t,k},W_{t,k}\big)\ \Big|\ h_t=h,M_t=m,A_t=a\Big],
+\end{align*}
+where $\mathcal V(m)$ is the value of the memory value $m$ under the objective, the same for every history; $L_{t,k}$ is the likelihood ratio of Result~\ref{res:gap} on the path that starts from $m$; and the weight is
+\[
+W_{t,k}(o)=\alpha\,r(o)+\log\frac{P(O_{t+k+1}=o\mid M_{t+k},A_{t+k})}{P(O_{t+k+1}=o)}+\gamma\,\mathcal V_{t,k+1}(o):
+\]
+the reward, the memory's information gain, and the value under the objective of what follows, as seen from the memory at $t$ and the stream. Keeping only the reward in the payoff after step $t$ gives Result~\ref{res:opt-memory} with $Q=q_\pi$.
+\end{result}
+
+In words: the best memory sees a history only through one number for each memory value and action: the discounted sum, along the path, of how far the history's next observations tilt the memory's prediction in the direction of the weight $W$. The weight adds the reward and the value of what follows, with weight $\alpha$, and the information gain, with weight one. The defect measures the same tilts by $L\log L$, in every direction; the memory needs them only along $W$.
+
+\paragraph{What the memory should keep, exactly.}
+\begin{itemize}
+\item \emph{Keep} the distinctions whose next observations, along the path the memory's policy takes, tilt the memory's prediction differently along $W$. Two histories with the same discounted tilts, for every memory value and action, receive the same encoding (Result~\ref{res:x-memory}).
+\item \emph{Drop} a distinction that changes the next observations only in directions that move neither the reward, nor the information gain, nor the value of what follows, however large its defect.
+\item \emph{Later tilts count} until the observations in between resolve them, discounted by $\gamma^k$, as in Result~\ref{res:updates}.
+\item \emph{For the decision}, only the action-dependent part of the value gap matters (Result~\ref{res:x-merge}); a gap common to all actions costs the critic but not the policy.
+\end{itemize}
+These conditions are for a randomised encoding at one step with the policy and the later updates fixed, and they are stationarity conditions, not global optima. They hold under the true law of the agent's experience with its current behaviour, so the limitation stated at the end of Section~\ref{sec:many} applies: information that matters only under a behaviour the agent has not adopted gets no weight.
 
 \section{What this gives for continual reinforcement learning}
 
@@ -324,7 +372,7 @@ In words: the agent values an action for its return and for how much its outcome
 
 \begin{enumerate}
 \item How should the reward parts of $\dE_t$ and $\dP_t$, which involve an action as a third variable, be separated without choosing an order?
-\item The value results concern the value. Policy improvement uses the advantage, which removes the part that does not depend on the action. Which part of the decomposition controls the error of the advantage?
+\item The value results concern the value. Policy improvement uses the advantage, which removes the part that does not depend on the action. Result~\ref{res:x-merge} answers this for one improvement step with the values held fixed: the action-dependent part of the discounted costs. What is the answer along a sequence of improvements?
 \item Is there a setting in which weighting the reward's own part provably improves the return of a memory with fixed capacity?
 \item Result~\ref{res:updates} prices forgetting under the agent's current behaviour. How should an agent price information that matters only under a behaviour it may adopt after the world changes, and can the charges $C_s$ be estimated from experience?
 \end{enumerate}
@@ -1213,6 +1261,82 @@ For $n\ge j$, $(M_j,A_j)$ is a function of $(h_n,A_n)$, so by the tower property
 
 With only $k=0$ in $\bar B$ and $\mathcal D$ and without $\bar K$, the right-hand side is $\alpha\bar q(m,a)+\sum_jw_j(m)\big(\E[B_j(h_j,a)\mid M_j=m]-D_j(m,a)\big)-c(m)$, the condition of Proposition~\ref{prop:opt-policy} with $Q=\bar q$ and the bonus averaged over the visits to $m$. Optimising $p$ as well gives, by Proposition~\ref{prop:many-separate}, the discounted action frequencies $p(a)\propto\sum_t\gamma^{t-1}P(A_t=a)$. The derivation follows the policy gradient on the history chain with the policy tied across the histories behind each memory value; for agents without the information payoff, \citet{singh1994learning} show that the best such policy can be stochastic, and \citet{fox2015optimal} give the information-limited version averaged over time.
 
+
+\section{The best policy and memory through the exact value gap: derivations}\label{app:exact-opt}
+
+We use the notation of Appendices~\ref{app:many} and~\ref{app:many-optimal}.
+
+\begin{proposition}\label{prop:x-policy}
+In Proposition~\ref{prop:many-policy}, $\bar q(m,a)=\sum_jw_j(m)\,q_\pi(M_j=m,a)$ with $q_\pi(M_j=m,a)=\E[G_j\mid M_j=m,A_j=a]$, and $\bar B(m,a)-\mathcal D(m,a)=\bar\iota(m,a)$, where
+\[
+\bar\iota(m,a)=\Big\langle\sum_{k\ge0}\gamma^k\log\frac{P_{j+k}(O_{j+k+1}\mid M_{j+k},A_{j+k})}{P_{j+k}(O_{j+k+1})}\Big\rangle_{m,a}.
+\]
+\end{proposition}
+
+\begin{proof}
+By definition, $\bar q(m,a)=\sum_jw_j(m)\,\E[\sum_k\gamma^kR_{j+k+1}\mid M_j=m,A_j=a]=\sum_jw_j(m)\,\E[G_j\mid M_j=m,A_j=a]$. Equivalently, $\E[q_\pi(h_j,a)\mid M_j=m]=q_\pi(M_j=m,a)$, so the value gap $q_\pi(h_j,a)-q_\pi(M_j=m,a)$ averages to zero over the histories behind $m$. For the second claim, Step~4 of the proof of Proposition~\ref{prop:many-policy} shows that the conditional expectation of the information payoff $\log(P_n(O_{n+1}\mid M_n,A_n)/P_n(O_{n+1}))$ given $(h_n,A_n)$ is $B_n(h_n,A_n)-d_n(h_n,M_n,A_n)$. Sum over the path with the weights $\gamma^k$ and average with $\langle\cdot\rangle_{m,a}$; by the tower property the left side gives $\bar\iota$ and the right side $\bar B-\mathcal D$.
+\end{proof}
+
+\begin{proposition}\label{prop:x-merge}
+Let $s_h(a)=\alpha\,q_\pi(h,a)$, $s_m(a)=\alpha\,q_\pi(m,a)=\E[s_{h_t}(a)\mid M_t=m]$, $\pi_h\propto p\,e^{s_h/\lambda}$ and $\pi_m\propto p\,e^{s_m/\lambda}$. For every law $\pi$ on actions,
+\[
+\sum_a\pi(a)s_h(a)-\lambda\,\mathrm{KL}(\pi\|p)=\lambda\log Z_h-\lambda\,\mathrm{KL}(\pi\|\pi_h),\qquad Z_h=\sum_ap(a)e^{s_h(a)/\lambda}.
+\]
+Hence $\pi_h$ is the best policy for $h$ alone, $\pi_m$ is the best policy common to the histories behind $m$, and the loss at $h$ from using $\pi_m$ is
+\[
+\lambda\,\mathrm{KL}(\pi_m\|\pi_h)=\lambda\log\sum_a\pi_m(a)\,e^{\alpha g(h,a)/\lambda}-\alpha\sum_a\pi_m(a)\,g(h,a),
+\]
+with $g(h,a)=q_\pi(h,a)-q_\pi(m,a)$.
+It is zero exactly when $g(h,\cdot)$ is constant on $\{a:p(a)>0\}$, and $\E[\lambda\,\mathrm{KL}(\pi_m\|\pi_{h_t})\mid M_t=m]=\lambda\,\E\big[\log\sum_a\pi_m(a)e^{\alpha g(h_t,a)/\lambda}\,\big|\,M_t=m\big]$.
+\end{proposition}
+
+\begin{proof}
+Expand the divergence with $\log\pi_h(a)=\log p(a)+s_h(a)/\lambda-\log Z_h$:
+\[
+\mathrm{KL}(\pi\|\pi_h)=\sum_a\pi(a)\log\frac{\pi(a)}{p(a)}-\frac1\lambda\sum_a\pi(a)s_h(a)+\log Z_h.
+\]
+Multiply by $\lambda$ and rearrange to get the identity. The left side is largest when $\mathrm{KL}(\pi\|\pi_h)=0$, so $\pi_h$ is best for $h$. Averaged over the histories behind $m$, the left side is $\sum_a\pi(a)s_m(a)-\lambda\mathrm{KL}(\pi\|p)$, because $P(h_t\mid M_t=m)$ does not depend on the action; the same identity with $s_m$ shows that $\pi_m$ is best for this average. The loss at $h$ is the difference of the left side at $\pi_h$ and at $\pi_m$, which is $\lambda\,\mathrm{KL}(\pi_m\|\pi_h)$. With $\log(\pi_m(a)/\pi_h(a))=-\alpha g(h,a)/\lambda+\log(Z_h/Z_m)$ and
+\[
+\frac{Z_h}{Z_m}=\sum_a\frac{p(a)e^{s_m(a)/\lambda}}{Z_m}\,e^{(s_h(a)-s_m(a))/\lambda}=\sum_a\pi_m(a)\,e^{\alpha g(h,a)/\lambda},
+\]
+taking the expectation under $\pi_m$ gives the formula. The divergence is zero exactly when $\pi_m=\pi_h$, that is, when $s_h-s_m$ is constant where $p>0$. Finally, $\E[g(h_t,a)\mid M_t=m]=0$ for every $a$, so the second term vanishes on average.
+\end{proof}
+
+For the memory, fix the policy $\pi$, the law $p$, the later updates $f$ and the laws $P_n$ of the information payoff, as in Step~1 of the proof of Proposition~\ref{prop:many-policy}. Let the memory at $t$ be drawn as $M_t\sim q_t(\cdot\mid h_t)$, with $M_{t+k}$ obtained from $M_t$ by the recursive updates. Define the payoff $\tilde r_n=\alpha R_{n+1}+\ell_n(M_n,A_n,O_{n+1})-\lambda\log(\pi(A_n\mid M_n)/p(A_n))$ with $\ell_n(m,a,o)=\log(P_n(o\mid m,a)/P_n(o))$, and the values under the objective
+\begin{align*}
+\mathcal V_n(h,m)&=\E\Big[\sum_{i\ge0}\gamma^i\tilde r_{n+i}\ \Big|\ h_n=h,M_n=m\Big],\qquad \mathcal V(m)=\E[\mathcal V_t(h_t,M_t)\mid M_t=m],\\
+\mathcal V_{t,k+1}(o)&=\E\big[\mathcal V_{t+k+1}(h_{t+k+1},M_{t+k+1})\,\big|\,Z_{t,k},O_{t+k+1}=o\big].
+\end{align*}
+The future after $n$ depends on $(h_n,M_n)$ only, because the environment reads the history and the policy and the later updates read the memory.
+
+\begin{proposition}\label{prop:x-memory}
+With $W_{t,k}(o)=\alpha r(o)+\ell_{t+k}(M_{t+k},A_{t+k},o)+\gamma\mathcal V_{t,k+1}(o)$ and $L_{t,k}$ the ratio of $P(O_{t+k+1}\mid h_t,M_t,Z_{t,k})=P(O_{t+k+1}\mid h_{t+k},A_{t+k})$ to $P(O_{t+k+1}\mid Z_{t,k})$:
+\begin{enumerate}
+\item[(a)] $\mathcal V_t(h,m)-\mathcal V(m)=\sum_a\pi(a\mid m)\,\E\big[\sum_{k\ge0}\gamma^k\,\mathrm{Cov}_Z(L_{t,k},W_{t,k})\,\big|\,h_t=h,M_t=m,A_t=a\big]$;
+\item[(b)] a stationary point of the objective of Section~\ref{sec:many} plus $-\mu\gamma^{t-1}I(M_t;h_t)$ in $q_t$ satisfies $\mu\log(q_t(m\mid h)/q_t(m))=\mathcal V_t(h,m)-c(h)$;
+\item[(c)] with the payoff after step $t$ reduced to $\alpha R_{n+1}$, (b) is the condition of Proposition~\ref{prop:opt-memory} with $Q=q_\pi$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+(a) Repeat the proof of Proposition~\ref{prop:gap}(b)--(d) with the pair $(h_t,M_t)$ in place of $h_t$, with the payoff $\alpha r(o)+\ell_{t+k}(M_{t+k},A_{t+k},o)$ in place of $r(o)$, and with $\mathcal V$ in place of $v_\pi$. Three points need checking. First, $\ell_{t+k}(M_{t+k},A_{t+k},o)$ is a function of $(Z_{t,k},o)$, because $M_{t+k}$ is obtained from $M_t$, which is part of $Z_{t,k}$, by the updates; so it enters the history side and the window side alike, and the first-step difference is $\sum_o(P_h-P_Z)(o)W_{t,k}(o)=\mathrm{Cov}_Z(L_{t,k},W_{t,k})$. Second, the policy price $-\lambda\log(\pi(a\mid M_{t+k})/p(a))$ is a function of $Z_{t,k}$, so it is the same on both sides and cancels. Third, all payoffs are bounded, because the sets are finite and the frozen laws give finite logarithms on the observations that occur, so the remainder $\gamma^K\E[e_K]$ tends to $0$. This gives $\mathcal Q_t(h,m,a)-\mathcal Q_t(m,a)$ for the action values under the objective, and $\mathcal V_t(h,m)-\mathcal V(m)=\sum_a\pi(a\mid m)\big(\mathcal Q_t(h,m,a)-\mathcal Q_t(m,a)\big)$, because the law of $A_t$ given $(h_t,M_t=m)$ is $\pi(\cdot\mid m)$ and the law of $h_t$ given $M_t=m$ does not depend on $A_t$.
+
+(b) By Step~1 of the proof of Proposition~\ref{prop:many-policy}, the derivative of the objective in $q_t$ equals that of $\sum_n\gamma^{n-1}\E[\tilde r_n]$ with the laws $P_n$ frozen. The payoffs before $t$ do not depend on $q_t$. For $n\ge t$, $\E[\tilde r_n]=\sum_hP(h_t=h)\sum_mq_t(m\mid h)\,\E[\tilde r_n\mid h_t=h,M_t=m]$, and the conditional expectation does not depend on $q_t$. So the derivative in $q_t(m\mid h)$ is $\gamma^{t-1}P(h_t=h)\,\mathcal V_t(h,m)$. The derivative of $\mu\gamma^{t-1}I(M_t;h_t)$ is $\mu\gamma^{t-1}P(h_t=h)\log(q_t(m\mid h)/q_t(m))$ up to a term that depends only on $h$, as in the proof of Proposition~\ref{prop:opt-memory}. Setting the derivative plus a multiplier for $\sum_mq_t(m\mid h)=1$ to zero and dividing by $\gamma^{t-1}P(h_t=h)$ gives (b). Inserting (a) gives Result~\ref{res:x-memory}.
+
+(c) With the payoff after $t$ equal to $\alpha R_{n+1}$, $\mathcal V_{t+1}(h_{t+1},M_{t+1})=\alpha v_\pi(h_{t+1})$ and
+\[
+\mathcal V_t(h,m)=\sum_a\pi(a\mid m)\Big[\alpha\,q_\pi(h,a)+\sum_oP(o\mid h,a)\,\ell_t(m,a,o)\Big]-\lambda\,\mathrm{KL}\big(\pi(\cdot\mid m)\,\|\,p\big).
+\]
+By Step~4 of the proof of Proposition~\ref{prop:many-policy}, $\sum_oP(o\mid h,a)\ell_t(m,a,o)=B_h(a)-d_{h,m}(a)$, which is the bracket of Proposition~\ref{prop:opt-memory}.
+\end{proof}
+
+In the one-step case the rewriting reads, for each action,
+\begin{align*}
+\alpha\,q_\pi(h,a)+B_h(a)-d_{h,m}(a)&=\big[\alpha\,q_\pi(m,a)+B_m(a)\big]\\
+&\quad+\mathrm{Cov}_{P(\cdot\mid m,a)}\big(L_{h,m,a},\ \alpha(r+\gamma v_\pi(m,a,\cdot))+\ell_t(m,a,\cdot)\big)\\
+&\quad+\alpha\gamma\,\E\big[v_\pi(h_{t+1})-v_\pi(m,a,O_{t+1})\,\big|\,h,a\big],
+\end{align*}
+with $L_{h,m,a}=P(\cdot\mid h,a)/P(\cdot\mid m,a)$: the first bracket is the score of $m$ itself, the covariance is the tilt of the history's next observation along the value and the information gain, and the last term is the value gap one step later, which by Proposition~\ref{prop:gap} is the discounted sum of the later costs. The information part uses $\sum_oP(o\mid h,a)\ell_t(m,a,o)=B_m(a)+\mathrm{Cov}_{P(\cdot\mid m,a)}(L_{h,m,a},\ell_t(m,a,\cdot))$, which holds because $\sum_oP(o\mid m,a)\ell_t(m,a,o)=B_m(a)$.
 
 \bibliographystyle{plainnat}
 \bibliography{references}
