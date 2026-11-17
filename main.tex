@@ -323,6 +323,62 @@ example & term & reward first & rest first\\
 
 In Example~\ref{ex:xor} the co-information $I(h_t;R_{t+1};\Ob_{t+1}\mid M_t,A_t)=0-1=-1$ bit: the reward and the rest reveal $C$ only jointly. The reward-first order then shows a reward plasticity mismatch of $-1$ bit and a rest mismatch of $+1$ bit that cancel, while the rest-first order shows $0$ and $0$. In Example~\ref{ex:show} the reward lines agree, but the empowerment parts differ by $I(A_t;R_{t+1};\Ob_{t+1}\mid h_t)-I(A_t;R_{t+1};\Ob_{t+1}\mid M_t)=(1-0)-(0-0)=1$ bit. In both examples a negative part in one order comes with a positive part of the same size, and the other order shows neither: the signed parts are produced by the interaction between the reward and the rest of the observation.
 
+\subsection{An order-free split: partial information decomposition}\label{sec:pid}
+
+The two orders attribute the shared and the joint information differently. Partial information decomposition \citep{williams2010nonnegative} names these parts instead of assigning them.
+
+\paragraph{Definition.} For a target $T$ and two sources $S_1,S_2$, a bivariate partial information decomposition consists of four nonnegative numbers, the redundant information $\mathrm{Red}$, the unique informations $U_1,U_2$ and the synergistic information $\mathrm{Syn}$, with
+\[
+I(T;S_1)=\mathrm{Red}+U_1,\qquad I(T;S_2)=\mathrm{Red}+U_2,\qquad I(T;S_1,S_2)=\mathrm{Red}+U_1+U_2+\mathrm{Syn}.
+\]
+These three equations do not determine the four numbers; one more choice, a measure of redundancy or of unique information, is needed. For a conditioning variable $C$, the decomposition of $I(T;S_1,S_2\mid C)$ is the average over $c$ of the decompositions of the conditional laws given $C=c$ \citep[Definition~3]{matthias2025novel}.
+
+We take the history $h_t$ as the target, the reward $R_{t+1}$ and the rest $\Ob_{t+1}$ as the sources, and $C=(M_t,A_t)$, and write $\mathrm{Red}_t,U^R_t,U^{\Ob}_t,\mathrm{Syn}_t$ for the four parts.
+
+\begin{proposition}[The two orders in terms of the four parts]\label{prop:pid}
+For any partial information decomposition,
+\begin{align*}
+D_t&=\mathrm{Red}_t+U^R_t+U^{\Ob}_t+\mathrm{Syn}_t,\\
+I(h_t;R_{t+1}\mid M_t,A_t)&=\mathrm{Red}_t+U^R_t, & I(h_t;\Ob_{t+1}\mid M_t,A_t,R_{t+1})&=U^{\Ob}_t+\mathrm{Syn}_t,\\
+I(h_t;\Ob_{t+1}\mid M_t,A_t)&=\mathrm{Red}_t+U^{\Ob}_t, & I(h_t;R_{t+1}\mid M_t,A_t,\Ob_{t+1})&=U^R_t+\mathrm{Syn}_t,
+\end{align*}
+where the second line is the reward-first order and the third line the rest-first order,
+and the co-information of Proposition~\ref{prop:orders} is $I(h_t;R_{t+1};\Ob_{t+1}\mid M_t,A_t)=\mathrm{Red}_t-\mathrm{Syn}_t$.
+\end{proposition}
+
+\begin{proof}
+For each value $c$ of $(M_t,A_t)$, the three defining equations hold for the conditional law, and subtracting the second from the third gives $I(h_t;R_{t+1}\mid C=c,\Ob_{t+1})=U^R+\mathrm{Syn}$ by the chain rule; similarly for the other order. Averaging over $c$ gives the stated identities. The co-information is the reward line of the reward-first order minus that of the rest-first order, $(\mathrm{Red}_t+U^R_t)-(U^R_t+\mathrm{Syn}_t)$.
+\end{proof}
+
+So the reward-first order gives the reward the redundant part, the rest-first order gives it the synergistic part, and the part that belongs to the reward in either order is $U^R_t$: the information about the history that only the reward carries.
+
+\begin{proposition}[Bounds that hold for every decomposition]\label{prop:pid-bounds}
+For any partial information decomposition with nonnegative parts,
+\begin{align*}
+U^R_t&\ge\max\big(0,\ I(h_t;R_{t+1}\mid M_t,A_t)-I(h_t;\Ob_{t+1}\mid M_t,A_t)\big),\\
+U^R_t&\le\min\big(I(h_t;R_{t+1}\mid M_t,A_t),\ I(h_t;R_{t+1}\mid M_t,A_t,\Ob_{t+1})\big).
+\end{align*}
+\end{proposition}
+
+\begin{proof}
+For each $c$: $U^R-U^{\Ob}=I(h_t;R_{t+1}\mid C=c)-I(h_t;\Ob_{t+1}\mid C=c)$ and $U^{\Ob}\ge0$ give the lower bound; $\mathrm{Red}\ge0$ and $\mathrm{Syn}\ge0$ in Proposition~\ref{prop:pid} give the two upper bounds. Averaging over $c$ keeps the upper bounds, since the average of a minimum is at most the minimum of the averages, and keeps the lower bound, since the average of $\max(0,x_c)$ is at least $\max(0,\text{average of }x_c)$.
+\end{proof}
+
+The same bounds appear in redundancy form in \citet[Lemma~1]{matthias2025novel}. In Examples~\ref{ex:xor} and~\ref{ex:show} they determine all four parts, whatever measure is chosen:
+\begin{itemize}
+\item Exclusive or: $I(h_t;R_{t+1}\mid M_t,A_t)=0$ and $I(h_t;\Ob_{t+1}\mid M_t,A_t)=0$, so $\mathrm{Red}_t=U^R_t=U^{\Ob}_t=0$ and $\mathrm{Syn}_t=D_t=1$ bit. The information about the history is carried by the reward and the rest only jointly.
+\item The observation shows the action: $I(h_t;R_{t+1}\mid M_t,A_t)=1$ bit and $I(h_t;\Ob_{t+1}\mid M_t,A_t)=0$, so $\mathrm{Red}_t=U^{\Ob}_t=0$, $U^R_t=1$ bit and $\mathrm{Syn}_t=0$. The information is carried by the reward alone.
+\end{itemize}
+
+\paragraph{A choice of measure with a decision-theoretic meaning.}
+\citet{bertschinger2014quantifying} define the unique information of $S_1$ as
+\[
+\widetilde{UI}(T;S_1\setminus S_2)=\min_{Q\in\Delta_P}I_Q(T;S_1\mid S_2),
+\]
+where $\Delta_P$ is the set of joint laws with the same $(T,S_1)$ and $(T,S_2)$ marginals as the true law. All four parts are then nonnegative (their Lemma~5), and among decompositions that depend only on these two marginals it gives the largest unique information (their Lemma~3). Its zero set has a decision-theoretic meaning (their Corollary~7, via Blackwell's theorem): $\widetilde{UI}(T;S_1\setminus S_2)>0$ if and only if there is a decision problem, a finite set of actions and a utility depending on $T$ and the action, in which an agent that observes $S_1$ obtains a strictly higher expected utility than one that observes $S_2$. Only whether the unique information is zero has this meaning, not its size. Applied to each value of $(M_t,A_t)$, our own short argument, not taken from the literature, gives: $U^R_t>0$ if and only if there is a utility depending on the history, the memory, the action and a decision, under which an agent that sees the memory, the action and the reward does strictly better than one that sees the memory, the action and the rest of the observation.
+
+\paragraph{Scope.} The same decomposition applies to $D^0_t$ (with $C=M_t$), to $D^+_t$ (with $C=(M_t,A_t,A_{t+1})$), and to the routes through the next observation in Section~6. The terms $\dE_t$ and $\dP_t$ involve an action as a third variable; an order-free split of their reward parts would need a decomposition with three sources, which we leave open.
+
 \section{What the reward part controls}
 
 \begin{proposition}\label{prop:reward-error}
@@ -530,7 +586,7 @@ The rest-first reward routes measure the information about later rewards that re
 
 \begin{enumerate}
 \item Which parts of the reward line can a memory loss lower, and which are set by the policy? For instance $I(h_t;A_t\mid M_t,R_{t+1})\le H(A_t\mid M_t)$, which is zero for a deterministic policy.
-\item The signed parts come from the co-information between the reward and the rest of the observation (Proposition~\ref{prop:orders}). Which order is the right one depends on the question; is there a quantity, for instance from partial information decomposition \citep{williams2010nonnegative}, that separates the reward without choosing an order?
+\item Section~\ref{sec:pid} separates the reward without choosing an order for the terms that predict the observation. How should the reward parts of $\dE_t$ and $\dP_t$, which involve an action as a third variable, be separated without an order?
 \item Proposition~\ref{prop:reward-error} concerns the expected reward. Which part of one step controls the error of the advantage, which subtracts the part that does not depend on the action?
 \end{enumerate}
 
