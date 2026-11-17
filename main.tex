@@ -28,7 +28,9 @@
 \newcommand{\Ob}{\bar O}
 \newcommand{\indep}{\perp\!\!\!\perp}
 
-\title{The State Defect, Plasticity and Empowerment:\\ One Step}
+\newtheorem{result}{Result}
+
+\title{The State Defect, Plasticity, Empowerment and the Return}
 
 \author{Zihan Wang\\ Mila, McGill University}
 
@@ -36,7 +38,7 @@
 \maketitle
 
 \begin{abstract}
-A small agent keeps a memory that merges histories. The state defect is the information the history still carries about the next observation beyond the memory and the action. We split it in two ways into four terms, show that two of the terms are the differences between plasticity and empowerment computed from the history and from the memory, and separate the reward in every term in two orders, which differ exactly by co-informations between the reward and the rest of the observation. All statements concern a single step. Every term is a difference of two conditional entropies, and every proof adds such differences and cancels the entropies that two structural facts make equal.
+A small agent keeps a memory that merges histories. The state defect measures how much better the history predicts the next observation than the memory does. We split the defect into four terms, show that two of them are the errors the memory makes about the agent's own empowerment and plasticity, separate the part that concerns the reward, and follow the defect forward in time to the return. The main text states the results and what they mean; the appendix gives the full statements and proofs.
 \end{abstract}
 
 \section{Setting}
@@ -53,19 +55,126 @@ A small agent keeps a memory that merges histories. The state defect is the info
 \end{tikzpicture}
 \end{center}
 
-Observations, actions and memory values take values in finite sets. The history is $h_t=(O_1,A_1,\dots,A_{t-1},O_t)$. Each observation contains the reward, $O_t=(R_t,\Ob_t)$, where $\Ob_t$ is the rest of the observation and the rewards lie in an interval of length $\Delta R$.
+The agent sees observations $O_t$, which contain the reward: $O_t=(R_t,\Ob_t)$, with $\Ob_t$ the rest of the observation. The history is $h_t=(O_1,A_1,\dots,A_{t-1},O_t)$. All sets are finite and the rewards lie in an interval of length $\Delta R$. We make three assumptions.
 
 \begin{assumption}[Environment]\label{as:env}
-$O_{t+1}\sim e(\cdot\mid h_t,A_t)$, where $e$ may depend on the whole history.
+The next observation may depend on the whole history: $O_{t+1}\sim e(\cdot\mid h_t,A_t)$. No Markov or stationarity condition is imposed.
 \end{assumption}
 
 \begin{assumption}[Memory]\label{as:mem}
-$M_{t+1}=f(M_t,A_t,O_{t+1})$, so $M_t$ is a function of $h_t$.
+The memory is updated recursively, $M_{t+1}=f(M_t,A_t,O_{t+1})$, so it is a function of the history.
 \end{assumption}
 
 \begin{assumption}[Policy]\label{as:pol}
-$P(A_t=a\mid h_t)=\pi(a\mid M_t)$ for every action $a$.
+The policy depends on the history only through the memory: $P(A_t=a\mid h_t)=\pi(a\mid M_t)$.
 \end{assumption}
+
+All information quantities are taken under the distribution of the agent's own experience.
+
+\section{The state defect and its four terms}
+
+The state defect is
+\[
+D_t=I(h_t;O_{t+1}\mid M_t,A_t)=\E\left[\log\frac{P(O_{t+1}\mid h_t,A_t)}{P(O_{t+1}\mid M_t,A_t)}\right].
+\]
+In words: how much better, in expected log-likelihood, the history predicts the next observation than the memory does, for the action the agent takes. It is zero exactly when the memory predicts the next observation as well as the history on everything the agent encounters.
+
+Every quantity below has the same form: \emph{how much better the history predicts something than the memory does}. They differ only in what is predicted and what is given.
+
+\begin{center}
+\begin{tabular}{llll}
+\toprule
+term & what is predicted & what is given & in words\\
+\midrule
+$D_t$ & next observation & action & the defect\\
+$D^0_t$ & next observation & nothing & before the action is known\\
+$\dE_t$ & action & next observation & the action read from its outcome\\
+$\dP_t$ & next action & action & the agent's next decision\\
+$D^+_t$ & next observation & both actions & after both decisions are known\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{result}[Two splits; Proposition~\ref{prop:splits}]
+$D_t=D^0_t+\dE_t=\dP_t+D^+_t$.
+\end{result}
+
+\begin{result}[Empowerment and plasticity; Proposition~\ref{prop:mismatch}]
+$\dE_t$ is the empowerment of the action computed from the history minus that computed from the memory, and $\dP_t$ is the plasticity of the next action computed from the memory minus that computed from the history, in the one-step form of \citet{abel2025plasticity}. Both are nonnegative.
+\end{result}
+
+In words: a memory that merges histories under-estimates how much the agent's actions influence what it sees, and over-estimates how much its next action responds to what it sees. $\dE_t$ vanishes when the policy is deterministic, and $\dP_t$ vanishes when the next action ignores the observation.
+
+\section{The reward inside the defect}
+
+The observation contains the reward, so each term can be split into a part about the reward and a part about the rest of the observation. Done with the chain rule, the split depends on which part is taken first.
+
+\begin{result}[Two orders; Propositions~\ref{prop:split-xy} and~\ref{prop:orders}]
+The totals of the four terms do not depend on the order. The reward parts in the reward-first and the rest-first order differ by a co-information between the reward and the rest of the observation. Two parts can be negative. In both of our examples, a negative part in one order comes with a positive part of the same size, and both vanish in the other order.
+\end{result}
+
+In words: the reward and the rest of the observation can tell the agent the same thing about its past (redundancy) or tell it something only together (synergy, as in an exclusive or). The order decides whom the shared and the joint information is credited to.
+
+\begin{result}[An order-free split; Section~\ref{sec:pid}]
+A partial information decomposition \citep{williams2010nonnegative} splits the defect into information carried by both the reward and the rest, only by the reward, only by the rest, and only by the two together: $D_t=\mathrm{Red}_t+U^R_t+U^{\Ob}_t+\mathrm{Syn}_t$. The reward-first order credits the reward with $\mathrm{Red}_t+U^R_t$, the rest-first order with $U^R_t+\mathrm{Syn}_t$. The reward's own part $U^R_t$ is bounded, for every choice of decomposition, between $\max(0,\,I(h_t;R_{t+1}\mid M_t,A_t)-I(h_t;\Ob_{t+1}\mid M_t,A_t))$ and the smaller of the two reward parts.
+\end{result}
+
+\begin{center}
+\begin{tabular}{lcccc}
+\toprule
+example & shared & reward only & rest only & together\\
+\midrule
+exclusive or (Example~\ref{ex:xor}) & 0 & 0 & 0 & 1 bit\\
+the observation shows the action (Example~\ref{ex:show}) & 0 & 1 bit & 0 & 0\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+In the second example the observation shows the action, so $\dE_t=0$, yet the reward alone carries one bit about the agent's past. A measured $\dE_t\approx0$ therefore does not mean that the reward has no action-dependent hidden part.
+
+With the measure of \citet{bertschinger2014quantifying}, $U^R_t>0$ means that there is a decision problem in which seeing the reward is strictly better than seeing the rest of the observation.
+
+\section{From the defect to the return}
+
+Let $G_t=\sum_{k\ge0}\gamma^kR_{t+k+1}$ with $\gamma<1$. The history can reach the future return only through what happens next: the observations the agent will see and the actions it will take. Following these routes step by step gives an exact account.
+
+\begin{result}[The return; Proposition~\ref{prop:return}]
+The information the history carries about the future return beyond the memory and the action is the sum, over the agent's future path, of the parts of $\dP$ and $D^+$ that are relevant to the return:
+\[
+I(h_t;G_t\mid M_t,A_t)=\sum_{j\ge0}\Big[\text{part of }\dP\text{ at step }j+\text{part of }D^+\text{ at step }j\Big].
+\]
+Without the action, the same holds with $D^0$ and $\dE$ in place of $\dP$ and $D^+$. Each part is at most the agent's own term at that step.
+\end{result}
+
+In words: the second split describes how the past reaches the action value, through the agent's own next decisions and through the environment once the decisions are made; the first split describes how it reaches the state value.
+
+\begin{result}[Value errors; Propositions~\ref{prop:value} and~\ref{prop:value-return}]
+A critic that reads the memory can represent the action value up to an average error of at most $\frac{\Delta R}{1-\gamma}\sqrt{\tfrac12\,I(h_t;G_t\mid M_t,A_t)}$, and the state value likewise. If the defect is at most $\bar D$ at every step, the error is at most $\Delta R\sqrt{\bar D/2}\,(1-\gamma)^{-3/2}$.
+\end{result}
+
+The last bound has the structure of the approximate information state of \citet{subramanian2022approximate}.
+
+\section{What this gives for continual reinforcement learning}
+
+\paragraph{The objective that follows is known.} By the value-error result, a memory that keeps the history's information about the future return makes the critic, and with it the policy update, accurate. The corresponding objective, to keep $I(h_t;G_t\mid M_t,A_t)$ small, is a return-prediction objective; it is the approximate information state condition and the informational error with the return as the target, and it is not new.
+
+\paragraph{What the decomposition adds.} It says where this return-relevant information travels: through the agent's own next decisions or through the environment, and, within each observation, through the reward alone, the rest alone, both, or only both together. In continual reinforcement learning, a change of the world that the observation does not show and the rewards reveal is carried by the reward's own part $U^R$. A memory trained to predict the whole observation weighs this part by its share of the observation, which can be small even when it is all the return-relevant information.
+
+\paragraph{A candidate, not a result.} This suggests giving the reward's own part more weight in the memory's training when the observation does not reveal changes of the world. We have not derived that this improves the return, and it has not been tested.
+
+\section{Open questions}
+
+\begin{enumerate}
+\item How should the reward parts of $\dE_t$ and $\dP_t$, which involve an action as a third variable, be separated without choosing an order?
+\item The value results concern the value. Policy improvement uses the advantage, which removes the part that does not depend on the action. Which part of the decomposition controls the error of the advantage?
+\item Is there a setting in which weighting the reward's own part provably improves the return of a memory with fixed capacity?
+\end{enumerate}
+
+\paragraph{Note.} The reward-separated splits, the exact decomposition of the return information and the partial information decomposition of the defect have not been checked against the literature beyond the sources cited. An earlier multi-step draft is in \texttt{archive/multistep\_draft\_2026-11-16.tex}, and the previous single-part version of this note in \texttt{archive/main\_detailed\_2026-11-16.tex}.
+
+\appendix
+
+\section{Tools}
 
 \paragraph{Entropies.} Logarithms are natural, and all quantities are taken under the law of the agent's own experience. We use the following standard facts \citep[Ch.~2]{cover2006elements}:
 \begin{enumerate}
@@ -144,7 +253,7 @@ The two cancelled entropies are equal by Lemma~\ref{lem:ci}(a). In the same way,
 where the two cancelled entropies are equal by Lemma~\ref{lem:ci}(b).
 \end{proof}
 
-\section{$\dE$ and $\dP$ are mismatches of empowerment and plasticity}
+\section{$\dE$ and $\dP$ are mismatches of empowerment and plasticity}\label{app:mismatch}
 
 One-step analogues of the empowerment and plasticity of \citet{abel2025plasticity} are the influence of the action on the next observation and the response of the next action to the next observation, computed from the history or from the memory:
 \begin{gather*}
@@ -176,14 +285,14 @@ where the cancelled entropies are equal by Lemma~\ref{lem:ci}(b).
 
 Both mismatches are nonnegative by (H3): the memory can only under-estimate empowerment and over-estimate plasticity. By (H1) and (H3), $\dE_t\le H(A_t\mid M_t)$, so $\dE_t=0$ when the policy at $M_t$ is deterministic; and $\dP_t\le P_{t+1}(M)$, so $\dP_t=0$ when the next action does not depend on the next observation given $(M_t,A_t)$, for example under the uniform policy.
 
-\section{Separating the reward: two orders}
+\section{Separating the reward: two orders}\label{app:orders}
 
 To separate the reward we split the next observation into two parts, $O_{t+1}=(X,Y)$, and apply the chain rule with $X$ first. There are two natural choices:
 \begin{itemize}
 \item \emph{reward first}: $(X,Y)=(R_{t+1},\Ob_{t+1})$;
 \item \emph{rest first}: $(X,Y)=(\Ob_{t+1},R_{t+1})$.
 \end{itemize}
-The totals $D_t,D^0_t,\dE_t,\dP_t,D^+_t$, and with them the one-step empowerment and plasticity of Section~3, do not depend on the choice; only their parts do. The parts are a refinement of these quantities and are not defined by \citet{abel2025plasticity}.
+The totals $D_t,D^0_t,\dE_t,\dP_t,D^+_t$, and with them the one-step empowerment and plasticity of Appendix~\ref{app:mismatch}, do not depend on the choice; only their parts do. The parts are a refinement of these quantities and are not defined by \citet{abel2025plasticity}.
 
 \subsection{A split of the observation into two parts}
 
@@ -377,7 +486,7 @@ The same bounds appear in redundancy form in \citet[Lemma~1]{matthias2025novel}.
 \]
 where $\Delta_P$ is the set of joint laws with the same $(T,S_1)$ and $(T,S_2)$ marginals as the true law. All four parts are then nonnegative (their Lemma~5), and among decompositions that depend only on these two marginals it gives the largest unique information (their Lemma~3). Its zero set has a decision-theoretic meaning (their Corollary~7, via Blackwell's theorem): $\widetilde{UI}(T;S_1\setminus S_2)>0$ if and only if there is a decision problem, a finite set of actions and a utility depending on $T$ and the action, in which an agent that observes $S_1$ obtains a strictly higher expected utility than one that observes $S_2$. Only whether the unique information is zero has this meaning, not its size. Applied to each value of $(M_t,A_t)$, our own short argument, not taken from the literature, gives: $U^R_t>0$ if and only if there is a utility depending on the history, the memory, the action and a decision, under which an agent that sees the memory, the action and the reward does strictly better than one that sees the memory, the action and the rest of the observation.
 
-\paragraph{Scope.} The same decomposition applies to $D^0_t$ (with $C=M_t$), to $D^+_t$ (with $C=(M_t,A_t,A_{t+1})$), and to the routes through the next observation in Section~6. The terms $\dE_t$ and $\dP_t$ involve an action as a third variable; an order-free split of their reward parts would need a decomposition with three sources, which we leave open.
+\paragraph{Scope.} The same decomposition applies to $D^0_t$ (with $C=M_t$), to $D^+_t$ (with $C=(M_t,A_t,A_{t+1})$), and to the routes through the next observation in Appendix~\ref{app:many}. The terms $\dE_t$ and $\dP_t$ involve an action as a third variable; an order-free split of their reward parts would need a decomposition with three sources, which we leave open.
 
 \section{What the reward part controls}
 
@@ -400,7 +509,7 @@ $|\E_PR-\E_QR|=|\sum_r(P(r)-Q(r))(r-c)|\le\frac{\Delta R}2\sum_r|P(r)-Q(r)|=\Del
 
 The quantity under the root is the reward line of the reward-first order, so the bound does not depend on the order. By Proposition~\ref{prop:split-xy} with $X=R_{t+1}$, it equals $I(h_t;R_{t+1}\mid M_t)+I(h_t;A_t\mid M_t,R_{t+1})$.
 
-\section{From one step to many steps}
+\section{From one step to many steps}\label{app:many}
 
 We ask how much the history up to $t$ tells about a later reward $R_{t+k+1}$, $k\ge1$, beyond the memory at $t$. There are two versions, one for each split of the defect: without the action, $I(h_t;R_{t+k+1}\mid M_t)$, which controls the state value a critic on the memory can learn; and with the action, $I(h_t;R_{t+k+1}\mid M_t,A_t)$, which controls the action value. We show that the first split describes the first and the second split describes the second.
 
@@ -548,7 +657,7 @@ Together, Propositions~\ref{prop:return} and~\ref{prop:value-return} relate the 
 
 \subsection{Reward first or rest first, over many steps}
 
-In Proposition~\ref{prop:k-steps} the next observation enters each step as a whole. To separate the reward, we split $O_{t+j+1}$ into its two parts and place the action of that step between them, as in Section~4, where the sequence $(X,A_t,Y)$ gives the first split and $(X,A_{t+1},Y)$ the second split with the reward separated. For step $j$ write $(X_j,Y_j)=(R_{t+j+1},\Ob_{t+j+1})$ in the reward-first order and $(X_j,Y_j)=(\Ob_{t+j+1},R_{t+j+1})$ in the rest-first order.
+In Proposition~\ref{prop:k-steps} the next observation enters each step as a whole. To separate the reward, we split $O_{t+j+1}$ into its two parts and place the action of that step between them, as in Appendix~\ref{app:orders}, where the sequence $(X,A_t,Y)$ gives the first split and $(X,A_{t+1},Y)$ the second split with the reward separated. For step $j$ write $(X_j,Y_j)=(R_{t+j+1},\Ob_{t+j+1})$ in the reward-first order and $(X_j,Y_j)=(\Ob_{t+j+1},R_{t+j+1})$ in the rest-first order.
 
 \begin{proposition}[$k$ steps with the reward separated]\label{prop:k-steps-order}
 Under Assumptions~\ref{as:mem} and~\ref{as:pol}, for either order and $W=R_{t+k+1}$,
@@ -582,15 +691,6 @@ Under Assumptions~\ref{as:mem} and~\ref{as:pol}:
 \paragraph{Reading for continual RL.}
 The rest-first reward routes measure the information about later rewards that reaches the agent only through rewards, because the rest of the observation does not show it. By Proposition~\ref{prop:order-many}(b) they vanish in worlds where the reward can be computed from what the agent sees and does. They are positive in worlds where a change is hidden from the observation and revealed only by the rewards, such as a switch of the rewarding option that the agent does not see. The reward-first reward routes measure all the information about later rewards that the intermediate rewards carry, including what the observation also shows. The two attributions differ step by step by co-informations, as in Proposition~\ref{prop:orders}; their totals, and the value bounds, are the same.
 
-\section{Open questions}
-
-\begin{enumerate}
-\item Which parts of the reward line can a memory loss lower, and which are set by the policy? For instance $I(h_t;A_t\mid M_t,R_{t+1})\le H(A_t\mid M_t)$, which is zero for a deterministic policy.
-\item Section~\ref{sec:pid} separates the reward without choosing an order for the terms that predict the observation. How should the reward parts of $\dE_t$ and $\dP_t$, which involve an action as a third variable, be separated without an order?
-\item Proposition~\ref{prop:reward-error} concerns the expected reward. Which part of one step controls the error of the advantage, which subtracts the part that does not depend on the action?
-\end{enumerate}
-
-\paragraph{Note.} The earlier multi-step draft is in \texttt{archive/multistep\_draft\_2026-11-16.tex}. None of the reward-separated statements has been checked against the literature.
 
 \bibliographystyle{plainnat}
 \bibliography{references}
