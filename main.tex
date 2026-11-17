@@ -100,6 +100,19 @@ I(h_t;A_{t+k}\mid M_t,C)
 \end{align*}
 \end{proof}
 
+\begin{corollary}\label{cor:action}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol}, if $X$ is a function of $h_t$, then $I(X;A_{t+k}\mid M_t,A_t,O_{t+1},\dots,A_{t+k-1},O_{t+k})=0$ for every $k\ge0$.
+\end{corollary}
+
+\begin{proof}
+With $C$ as in the proof of Lemma~\ref{lem:action},
+\begin{align*}
+0=I(h_t;A_{t+k}\mid M_t,C)&=I(h_t,X;A_{t+k}\mid M_t,C) \why{Lemma~\ref{lem:action}; T4}\\
+&=I(X;A_{t+k}\mid M_t,C)+I(h_t;A_{t+k}\mid M_t,C,X) \why{T2}.
+\end{align*}
+Both terms on the right are nonnegative (T3), so both are zero.
+\end{proof}
+
 \section{Empowerment and plasticity at the history and at the memory}\label{sec:EP}
 
 In every derivation below, the label at the right of a line names the fact used to obtain that line. Two struck-through terms in a line are equal by the named fact and cancel.
@@ -455,85 +468,32 @@ So the reward-first order gives the reward the shared part, the rest-first order
 
 \section{Two steps}\label{sec:two}
 
-We now ask what the history tells, beyond the memory at $t$, about the agent's next two steps, $(A_t,O_{t+1},A_{t+1},O_{t+2},A_{t+2})$. The second step brings five terms like those of Definition~\ref{def:terms}, computed from the history up to $t$ and from the memory at $t$ together with what the agent did and saw at step $t$.
+The defect $D_t$ concerns one step, from $t$ to $t+1$. Over two steps, from $t$ to $t+2$, the history at $t$ can tell, beyond the memory and the action at $t$, something about the next two observations and the action between them.
 
-\begin{definition}\label{def:step1}
-\begin{align*}
-D_{t,1}&=I(h_t;O_{t+2}\mid M_t,A_t,O_{t+1},A_{t+1}),\\
-D^0_{t,1}&=I(h_t;O_{t+2}\mid M_t,A_t,O_{t+1}),\\
-\dE_{t,1}&=I(h_t;A_{t+1}\mid M_t,A_t,O_{t+1},O_{t+2}),\\
-\dP_{t,1}&=I(h_t;A_{t+2}\mid M_t,A_t,O_{t+1},A_{t+1}),\\
-D^+_{t,1}&=I(h_t;O_{t+2}\mid M_t,A_t,O_{t+1},A_{t+1},A_{t+2}).
-\end{align*}
-They are the five terms of Definition~\ref{def:terms} at time $t+1$, with $h_t$ in place of $h_{t+1}$ and $(M_t,A_t,O_{t+1})$ in place of $M_{t+1}$. In the subscript $t,1$, the $t$ says that the history $h_t$ and the memory $M_t$ are compared, and the $1$ says that the term concerns the step after $t$.
+\begin{definition}[Two-step defect]\label{def:two}
+\[
+D_{t:t+2}=I(h_t;O_{t+1},A_{t+1},O_{t+2}\mid M_t,A_t).
+\]
+The subscript $t:t+2$ is the time interval the defect covers; the one-step defect is $D_t=D_{t:t+1}$.
 \end{definition}
 
 \begin{proposition}[Two steps in the order of time]\label{prop:two-time}
 Under Assumptions~\ref{as:mem} and~\ref{as:pol},
 \[
-I(h_t;A_t,O_{t+1},A_{t+1},O_{t+2},A_{t+2}\mid M_t)=D_t+D_{t,1}.
+D_{t:t+2}=D_t+I(h_t;O_{t+2}\mid M_t,A_t,O_{t+1},A_{t+1}).
 \]
 \end{proposition}
 
 \begin{proof}
-Apply (T2) four times, in the order $A_t,O_{t+1},A_{t+1},O_{t+2},A_{t+2}$:
+Apply (T2) in the order $O_{t+1},A_{t+1},O_{t+2}$:
 \begin{align*}
-I(h_t;A_t,O_{t+1},A_{t+1},O_{t+2},A_{t+2}\mid M_t)
-&=I(h_t;A_t\mid M_t) \why{$=0$, Lemma~\ref{lem:action}, $k=0$}\\
-&\quad+I(h_t;O_{t+1}\mid M_t,A_t) \why{$=D_t$}\\
+D_{t:t+2}&=I(h_t;O_{t+1}\mid M_t,A_t) \why{$=D_t$}\\
 &\quad+I(h_t;A_{t+1}\mid M_t,A_t,O_{t+1}) \why{$=0$, Lemma~\ref{lem:action}, $k=1$}\\
-&\quad+I(h_t;O_{t+2}\mid M_t,A_t,O_{t+1},A_{t+1}) \why{$=D_{t,1}$}\\
-&\quad+I(h_t;A_{t+2}\mid M_t,A_t,O_{t+1},A_{t+1},O_{t+2}) \why{$=0$, Lemma~\ref{lem:action}, $k=2$}.
+&\quad+I(h_t;O_{t+2}\mid M_t,A_t,O_{t+1},A_{t+1}).
 \end{align*}
 \end{proof}
 
-\begin{proposition}[Two steps, first split]\label{prop:two-first}
-Under Assumptions~\ref{as:mem} and~\ref{as:pol},
-\[
-I(h_t;A_t,O_{t+1},A_{t+1},O_{t+2},A_{t+2}\mid M_t)=D^0_t+\dE_t+D^0_{t,1}+\dE_{t,1}.
-\]
-\end{proposition}
-
-\begin{proof}
-Apply (T2) in the order $O_{t+1},A_t,O_{t+2},A_{t+1},A_{t+2}$, which reads each action after the observation it produced:
-\begin{align*}
-I(h_t;A_t,O_{t+1},A_{t+1},O_{t+2},A_{t+2}\mid M_t)
-&=I(h_t;O_{t+1}\mid M_t) \why{$=D^0_t$}\\
-&\quad+I(h_t;A_t\mid M_t,O_{t+1}) \why{$=\dE_t$, Proposition~\ref{prop:dE}}\\
-&\quad+I(h_t;O_{t+2}\mid M_t,O_{t+1},A_t) \why{$=D^0_{t,1}$}\\
-&\quad+I(h_t;A_{t+1}\mid M_t,O_{t+1},A_t,O_{t+2}) \why{$=\dE_{t,1}$}\\
-&\quad+I(h_t;A_{t+2}\mid M_t,O_{t+1},A_t,O_{t+2},A_{t+1}) \why{$=0$, Lemma~\ref{lem:action}, $k=2$}.
-\end{align*}
-\end{proof}
-
-\begin{proposition}[Two steps, second split]\label{prop:two-second}
-Under Assumptions~\ref{as:mem} and~\ref{as:pol},
-\[
-I(h_t;A_t,O_{t+1},A_{t+1},O_{t+2},A_{t+2}\mid M_t)=\dP_t+D^+_t+\dP_{t,1}+D^+_{t,1}.
-\]
-\end{proposition}
-
-\begin{proof}
-Apply (T2) in the order $A_t,A_{t+1},O_{t+1},A_{t+2},O_{t+2}$, which reads each next action before the observation it responds to:
-\begin{align*}
-I(h_t;A_t,O_{t+1},A_{t+1},O_{t+2},A_{t+2}\mid M_t)
-&=I(h_t;A_t\mid M_t) \why{$=0$, Lemma~\ref{lem:action}, $k=0$}\\
-&\quad+I(h_t;A_{t+1}\mid M_t,A_t) \why{$=\dP_t$, Proposition~\ref{prop:dP}}\\
-&\quad+I(h_t;O_{t+1}\mid M_t,A_t,A_{t+1}) \why{$=D^+_t$}\\
-&\quad+I(h_t;A_{t+2}\mid M_t,A_t,A_{t+1},O_{t+1}) \why{$=\dP_{t,1}$}\\
-&\quad+I(h_t;O_{t+2}\mid M_t,A_t,A_{t+1},O_{t+1},A_{t+2}) \why{$=D^+_{t,1}$}.
-\end{align*}
-\end{proof}
-
-\begin{corollary}[The two splits at the second step]\label{cor:two-splits}
-$D_{t,1}=D^0_{t,1}+\dE_{t,1}=\dP_{t,1}+D^+_{t,1}$.
-\end{corollary}
-
-\begin{proof}
-The left sides of Propositions~\ref{prop:two-time}, \ref{prop:two-first} and~\ref{prop:two-second} are the same, so $D_t+D_{t,1}=D^0_t+\dE_t+D^0_{t,1}+\dE_{t,1}=\dP_t+D^+_t+\dP_{t,1}+D^+_{t,1}$. Subtract $D_t=D^0_t+\dE_t$ (Proposition~\ref{prop:split1}) and $D_t=\dP_t+D^+_t$ (Proposition~\ref{prop:split2}).
-\end{proof}
-
-The second-step terms use the memory at $t$ together with $(A_t,O_{t+1})$. The agent itself uses $M_{t+1}=f(M_t,A_t,O_{t+1})$, which may keep less. The next lemma writes the difference.
+The last term compares the history at $t$ with the memory at $t$ together with $(A_t,O_{t+1},A_{t+1})$. The agent's own defect at $t+1$ compares $h_{t+1}$ with $M_{t+1}=f(M_t,A_t,O_{t+1})$, which may keep less than $(M_t,A_t,O_{t+1})$. The next lemma writes the difference.
 
 \begin{lemma}[The update from $t$ to $t+1$]\label{lem:update1}
 Under Assumption~\ref{as:mem}, for any variables $X$ and $V$,
@@ -559,120 +519,163 @@ Subtract the second from the first:
 \end{align*}
 \end{proof}
 
-\begin{proposition}[The second-step terms and the agent's terms at $t+1$]\label{prop:two-agent}
+\begin{proposition}[The two-step defect and the agent's defects]\label{prop:two}
 Under Assumptions~\ref{as:mem} and~\ref{as:pol},
-\begin{align*}
-D_{t+1}&=D_{t,1}+I(M_t,A_t,O_{t+1};O_{t+2}\mid M_{t+1},A_{t+1}),\\
-D^0_{t+1}&=D^0_{t,1}+I(M_t,A_t,O_{t+1};O_{t+2}\mid M_{t+1}),\\
-\dE_{t+1}&=\dE_{t,1}+I(M_t,A_t,O_{t+1};A_{t+1}\mid M_{t+1},O_{t+2}),\\
-\dP_{t+1}&=\dP_{t,1}+I(M_t,A_t,O_{t+1};A_{t+2}\mid M_{t+1},A_{t+1}),\\
-D^+_{t+1}&=D^+_{t,1}+I(M_t,A_t,O_{t+1};O_{t+2}\mid M_{t+1},A_{t+1},A_{t+2}).
-\end{align*}
-Each added term is what the update $M_{t+1}=f(M_t,A_t,O_{t+1})$ removed from its input and still predicts the same variable. It is nonnegative, so each second-step term is at most the agent's own term at $t+1$.
+\[
+D_{t:t+2}=D_t+D_{t+1}-I(M_t,A_t,O_{t+1};O_{t+2}\mid M_{t+1},A_{t+1}).
+\]
 \end{proposition}
 
 \begin{proof}
-Apply Lemma~\ref{lem:update1} with $(X,V)$ equal to $(O_{t+2},A_{t+1})$, $(O_{t+2},\text{nothing})$, $(A_{t+1},O_{t+2})$, $(A_{t+2},A_{t+1})$ and $(O_{t+2},(A_{t+1},A_{t+2}))$. The left sides are the terms at $t+1$ of Definition~\ref{def:terms} and Propositions~\ref{prop:dE} and~\ref{prop:dP}, and the first terms on the right are those of Definition~\ref{def:step1}. Nonnegativity is (T3).
+Lemma~\ref{lem:update1} with $X=O_{t+2}$ and $V=A_{t+1}$ gives
+\begin{align*}
+D_{t+1}=I(h_{t+1};O_{t+2}\mid M_{t+1},A_{t+1})&=I(h_t;O_{t+2}\mid M_t,A_t,O_{t+1},A_{t+1})\\
+&\quad+I(M_t,A_t,O_{t+1};O_{t+2}\mid M_{t+1},A_{t+1}).
+\end{align*}
+Solve for the middle term and insert it into Proposition~\ref{prop:two-time}.
 \end{proof}
 
-\paragraph{Summary of two steps.} The information the history carries about the next two steps beyond the memory at $t$ is
+In words: the two-step defect is the sum of the agent's one-step defects at $t$ and at $t+1$, minus what the update $M_{t+1}=f(M_t,A_t,O_{t+1})$ removed from its input and still predicts $O_{t+2}$. That part is missing from $M_{t+1}$, so it counts in $D_{t+1}$, but it was available to the memory at $t$ together with $(A_t,O_{t+1})$, so it does not count in $D_{t:t+2}$. The subtracted term is nonnegative (T3), so $D_{t:t+2}\le D_t+D_{t+1}$.
+
+\begin{proposition}[Two steps, both splits]\label{prop:two-splits}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol},
 \begin{align*}
-I(h_t;A_t,O_{t+1},A_{t+1},O_{t+2},A_{t+2}\mid M_t)&=D_t+D_{t,1}\\
-&=\big(D^0_t+\dE_t\big)+\big(D^0_{t,1}+\dE_{t,1}\big)\\
-&=\big(\dP_t+D^+_t\big)+\big(\dP_{t,1}+D^+_{t,1}\big),
+D_{t:t+2}&=\big(D^0_t+\dE_t\big)+\big(D^0_{t+1}+\dE_{t+1}\big)\\
+&\quad-\big[I(M_t,A_t,O_{t+1};O_{t+2}\mid M_{t+1})+I(M_t,A_t,O_{t+1};A_{t+1}\mid M_{t+1},O_{t+2})\big]\\
+&=\big(\dP_t+D^+_t\big)+\big(\dP_{t+1}+D^+_{t+1}\big)\\
+&\quad-\big[I(M_t,A_t,O_{t+1};A_{t+2}\mid M_{t+1},A_{t+1})\\
+&\qquad\ \ +I(M_t,A_t,O_{t+1};O_{t+2}\mid M_{t+1},A_{t+1},A_{t+2})\big],
 \end{align*}
-and each second-step term is the agent's own term at $t+1$ minus what the update $M_{t+1}=f(M_t,A_t,O_{t+1})$ removed from its input and still predicts the same variable. The reward splits of Section~\ref{sec:reward} apply to each step in the same way: their proofs use only (T1)--(T5) and Lemma~\ref{lem:action}, which holds for every $k$. For instance, in the reward-first order the time-order expansion is
+and each bracket equals the subtracted term of Proposition~\ref{prop:two}. The two terms in the first bracket are what the update at $t+1$ removed from $D^0_{t+1}$ and from $\dE_{t+1}$, and the two terms in the second bracket what it removed from $\dP_{t+1}$ and from $D^+_{t+1}$.
+\end{proposition}
+
+\begin{proof}
+Propositions~\ref{prop:split1} and~\ref{prop:split2} hold at every time, so $D_t=D^0_t+\dE_t=\dP_t+D^+_t$ and $D_{t+1}=D^0_{t+1}+\dE_{t+1}=\dP_{t+1}+D^+_{t+1}$. Insert these into Proposition~\ref{prop:two}. It remains to show that each bracket equals $I(M_t,A_t,O_{t+1};O_{t+2}\mid M_{t+1},A_{t+1})$.
+
+First bracket. Apply (T2) to $I(M_t,A_t,O_{t+1};O_{t+2},A_{t+1}\mid M_{t+1})$ in two orders:
 \begin{align*}
-D_t+D_{t,1}&=I(h_t;R_{t+1}\mid M_t,A_t)+I(h_t;\Ob_{t+1}\mid M_t,A_t,R_{t+1})\\
-&\quad+I(h_t;R_{t+2}\mid M_t,A_t,O_{t+1},A_{t+1})+I(h_t;\Ob_{t+2}\mid M_t,A_t,O_{t+1},A_{t+1},R_{t+2}).
+&I(M_t,A_t,O_{t+1};O_{t+2},A_{t+1}\mid M_{t+1})\\
+&\quad=I(M_t,A_t,O_{t+1};O_{t+2}\mid M_{t+1})+I(M_t,A_t,O_{t+1};A_{t+1}\mid M_{t+1},O_{t+2}) \why{T2, $O_{t+2}$ first}\\
+&\quad=I(M_t,A_t,O_{t+1};A_{t+1}\mid M_{t+1})+I(M_t,A_t,O_{t+1};O_{t+2}\mid M_{t+1},A_{t+1}) \why{T2, $A_{t+1}$ first}\\
+&\quad=0+I(M_t,A_t,O_{t+1};O_{t+2}\mid M_{t+1},A_{t+1}) \why{Corollary~\ref{cor:action} at $t+1$, $k=0$}.
 \end{align*}
+Corollary~\ref{cor:action} applies because $(M_t,A_t,O_{t+1})$ is a function of $h_{t+1}$.
+
+Second bracket. Apply (T2) to $I(M_t,A_t,O_{t+1};A_{t+2},O_{t+2}\mid M_{t+1},A_{t+1})$ in two orders:
+\begin{align*}
+&I(M_t,A_t,O_{t+1};A_{t+2},O_{t+2}\mid M_{t+1},A_{t+1})\\
+&\quad=I(M_t,A_t,O_{t+1};A_{t+2}\mid M_{t+1},A_{t+1})+I(M_t,A_t,O_{t+1};O_{t+2}\mid M_{t+1},A_{t+1},A_{t+2}) \why{T2, $A_{t+2}$ first}\\
+&\quad=I(M_t,A_t,O_{t+1};O_{t+2}\mid M_{t+1},A_{t+1})+I(M_t,A_t,O_{t+1};A_{t+2}\mid M_{t+1},A_{t+1},O_{t+2}) \why{T2, $O_{t+2}$ first}\\
+&\quad=I(M_t,A_t,O_{t+1};O_{t+2}\mid M_{t+1},A_{t+1})+0 \why{Corollary~\ref{cor:action} at $t+1$, $k=1$}.
+\end{align*}
+For the last sentence of the statement, apply Lemma~\ref{lem:update1} with $(X,V)$ equal to $(O_{t+2},\text{nothing})$, $(A_{t+1},O_{t+2})$, $(A_{t+2},A_{t+1})$ and $(O_{t+2},(A_{t+1},A_{t+2}))$; the left sides are $D^0_{t+1}$, $\dE_{t+1}$, $\dP_{t+1}$ and $D^+_{t+1}$.
+\end{proof}
+
+\begin{proposition}[Two steps, with the reward separated]\label{prop:two-reward}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol}, in the reward-first order,
+\begin{align*}
+D_{t:t+2}&=\Big[I(h_t;R_{t+1}\mid M_t,A_t)+I(h_{t+1};R_{t+2}\mid M_{t+1},A_{t+1})\\
+&\qquad-I(M_t,A_t,O_{t+1};R_{t+2}\mid M_{t+1},A_{t+1})\Big]\\
+&\quad+\Big[I(h_t;\Ob_{t+1}\mid M_t,A_t,R_{t+1})+I(h_{t+1};\Ob_{t+2}\mid M_{t+1},A_{t+1},R_{t+2})\\
+&\qquad-I(M_t,A_t,O_{t+1};\Ob_{t+2}\mid M_{t+1},A_{t+1},R_{t+2})\Big].
+\end{align*}
+The first bracket collects the reward parts: the reward parts of $D_t$ and $D_{t+1}$ (Section~\ref{sec:reward}) minus the reward part of what the update at $t+1$ removed. The second bracket collects the rest parts. The rest-first order gives the same with $R$ and $\Ob$ exchanged at both steps.
+\end{proposition}
+
+\begin{proof}
+In Proposition~\ref{prop:two-time}, split $D_t$ by Proposition~\ref{prop:xy-D} and the last term by (T2) with $R_{t+2}$ first:
+\begin{align*}
+I(h_t;O_{t+2}\mid M_t,A_t,O_{t+1},A_{t+1})&=I(h_t;R_{t+2}\mid M_t,A_t,O_{t+1},A_{t+1})\\
+&\quad+I(h_t;\Ob_{t+2}\mid M_t,A_t,O_{t+1},A_{t+1},R_{t+2}).
+\end{align*}
+Lemma~\ref{lem:update1} with $(X,V)=(R_{t+2},A_{t+1})$ writes the first term as $I(h_{t+1};R_{t+2}\mid M_{t+1},A_{t+1})-I(M_t,A_t,O_{t+1};R_{t+2}\mid M_{t+1},A_{t+1})$, and with $(X,V)=(\Ob_{t+2},(A_{t+1},R_{t+2}))$ it writes the second as $I(h_{t+1};\Ob_{t+2}\mid M_{t+1},A_{t+1},R_{t+2})-I(M_t,A_t,O_{t+1};\Ob_{t+2}\mid M_{t+1},A_{t+1},R_{t+2})$. Group the reward terms and the rest terms.
+\end{proof}
+
+So over two steps, every term of Sections~\ref{sec:splits} and~\ref{sec:reward} appears once at $t$ and once at $t+1$, for the agent's own memory at each time, and what the update at $t+1$ removed is subtracted once, split in the same way. Each reward and rest part of $D_t$ and of $D_{t+1}$ splits further in the two ways of Proposition~\ref{prop:xy-splits}.
 
 \section{$K$ steps}\label{sec:K}
 
-For $k\ge0$ write
-\[
-Y_{t,k}=(M_t,A_t,O_{t+1},\dots,A_{t+k-1},O_{t+k}),\qquad Z_{t,k}=(Y_{t,k},A_{t+k}),
-\]
-the memory at $t$ together with what the agent did and saw up to $O_{t+k}$, without and with the action $A_{t+k}$; $Y_{t,0}=M_t$ and $Z_{t,0}=(M_t,A_t)$.
+For $a\le b$ write $X_{a:b}=(X_a,X_{a+1},\dots,X_b)$, and let $X_{a:b}$ be empty when $a>b$.
 
-\begin{definition}\label{def:stepk}
-For $k\ge0$,
-\begin{gather*}
-D_{t,k}=I(h_t;O_{t+k+1}\mid Z_{t,k}),\qquad D^0_{t,k}=I(h_t;O_{t+k+1}\mid Y_{t,k}),\\
-\dE_{t,k}=I(h_t;A_{t+k}\mid Y_{t,k},O_{t+k+1}),\qquad \dP_{t,k}=I(h_t;A_{t+k+1}\mid Z_{t,k}),\\
-D^+_{t,k}=I(h_t;O_{t+k+1}\mid Z_{t,k},A_{t+k+1}).
-\end{gather*}
-For $k=0$ they are the terms of Definition~\ref{def:terms} and Propositions~\ref{prop:dE}--\ref{prop:dP}, and for $k=1$ those of Definition~\ref{def:step1}.
+\begin{definition}[$K$-step defect]\label{def:K}
+For $K\ge1$,
+\[
+D_{t:t+K}=I(h_t;O_{t+1:t+K},A_{t+1:t+K-1}\mid M_t,A_t),
+\]
+the information the history at $t$ carries, beyond the memory and the action at $t$, about the next $K$ observations and the actions between them. $D_{t:t+1}=D_t$, and $D_{t:t+2}$ is the two-step defect of Definition~\ref{def:two}.
 \end{definition}
 
-\begin{proposition}[$K$ steps in three orders]\label{prop:K}
-Under Assumptions~\ref{as:mem} and~\ref{as:pol}, for $K\ge1$,
-\begin{align*}
-I(h_t;A_t,O_{t+1},A_{t+1},\dots,O_{t+K},A_{t+K}\mid M_t)&=\sum_{k=0}^{K-1}D_{t,k}\\
-&=\sum_{k=0}^{K-1}\big(D^0_{t,k}+\dE_{t,k}\big)\\
-&=\sum_{k=0}^{K-1}\big(\dP_{t,k}+D^+_{t,k}\big).
-\end{align*}
+\begin{proposition}[$K$ steps in the order of time]\label{prop:K-time}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol},
+\[
+D_{t:t+K}=\sum_{k=0}^{K-1}I(h_t;O_{t+k+1}\mid M_t,A_{t:t+k},O_{t+1:t+k}).
+\]
 \end{proposition}
 
 \begin{proof}
-Apply (T2) in three orders, as in Propositions~\ref{prop:two-time}--\ref{prop:two-second}.
-
-\emph{Order of time,} $A_t,O_{t+1},A_{t+1},\dots,O_{t+K},A_{t+K}$. Before $A_{t+k}$ the conditioning variables are $Y_{t,k}$, and before $O_{t+k+1}$ they are $Z_{t,k}$. The terms are $I(h_t;A_{t+k}\mid Y_{t,k})$ for $k=0,\dots,K$, each zero by Lemma~\ref{lem:action}, and $I(h_t;O_{t+k+1}\mid Z_{t,k})=D_{t,k}$ for $k=0,\dots,K-1$.
-
-\emph{First split,} $O_{t+1},A_t,O_{t+2},A_{t+1},\dots,O_{t+K},A_{t+K-1},A_{t+K}$. Before $O_{t+k+1}$ the conditioning variables are $Y_{t,k}$, and before $A_{t+k}$ they are $(Y_{t,k},O_{t+k+1})$. The terms are $I(h_t;O_{t+k+1}\mid Y_{t,k})=D^0_{t,k}$ and $I(h_t;A_{t+k}\mid Y_{t,k},O_{t+k+1})=\dE_{t,k}$ for $k=0,\dots,K-1$, and the last term $I(h_t;A_{t+K}\mid Y_{t,K})$ is zero by Lemma~\ref{lem:action}.
-
-\emph{Second split,} $A_t,A_{t+1},O_{t+1},A_{t+2},O_{t+2},\dots,A_{t+K},O_{t+K}$. The first term is $I(h_t;A_t\mid M_t)=0$ by Lemma~\ref{lem:action}. Before $A_{t+k+1}$ the conditioning variables are $Z_{t,k}$, and before $O_{t+k+1}$ they are $(Z_{t,k},A_{t+k+1})$. The terms are $I(h_t;A_{t+k+1}\mid Z_{t,k})=\dP_{t,k}$ and $I(h_t;O_{t+k+1}\mid Z_{t,k},A_{t+k+1})=D^+_{t,k}$ for $k=0,\dots,K-1$.
-
-The three expansions are of the same quantity.
-\end{proof}
-
-\begin{corollary}[The two splits at every step]\label{cor:K-splits}
-$D_{t,k}=D^0_{t,k}+\dE_{t,k}=\dP_{t,k}+D^+_{t,k}$ for every $k\ge0$.
-\end{corollary}
-
-\begin{proof}
-Compare Proposition~\ref{prop:K} for $K=k+1$ and for $K=k$ (for $k=0$, use Propositions~\ref{prop:split1} and~\ref{prop:split2}). The quantity on the left grows by $I(h_t;O_{t+k+1},A_{t+k+1}\mid Y_{t,k},A_{t+k})$, and each of the three sums grows by its term $k$; the zero terms of Lemma~\ref{lem:action} do not change the sums. So the three increments $D_{t,k}$, $D^0_{t,k}+\dE_{t,k}$ and $\dP_{t,k}+D^+_{t,k}$ are equal.
+Apply (T2) in the order $O_{t+1},A_{t+1},O_{t+2},\dots,A_{t+K-1},O_{t+K}$. Before $O_{t+k+1}$ the conditioning variables are $(M_t,A_{t:t+k},O_{t+1:t+k})$, which gives the terms of the sum. Before $A_{t+k}$, $k\ge1$, they are $(M_t,A_{t:t+k-1},O_{t+1:t+k})$, and the term $I(h_t;A_{t+k}\mid M_t,A_{t:t+k-1},O_{t+1:t+k})$ is zero by Lemma~\ref{lem:action}.
 \end{proof}
 
 \begin{lemma}[The updates from $t$ to $t+k$]\label{lem:updatek}
 Under Assumption~\ref{as:mem}, for $k\ge1$ and any variables $X$ and $V$,
-\[
-I(h_{t+k};X\mid M_{t+k},V)=I(h_t;X\mid Y_{t,k},V)+I(Y_{t,k};X\mid M_{t+k},V).
-\]
+\begin{align*}
+I(h_{t+k};X\mid M_{t+k},V)&=I(h_t;X\mid M_t,A_{t:t+k-1},O_{t+1:t+k},V)\\
+&\quad+I(M_t,A_{t:t+k-1},O_{t+1:t+k};X\mid M_{t+k},V).
+\end{align*}
 \end{lemma}
 
 \begin{proof}
-The proof of Lemma~\ref{lem:update1}, with two changes. First, $h_{t+k}$ and $(h_t,Y_{t,k})$ determine each other: by (T5) applied $k$ times, $h_{t+k}=(h_t,A_t,O_{t+1},\dots,A_{t+k-1},O_{t+k})$, and $Y_{t,k}$ adds only $M_t$, a function of $h_t$ (T4). So $H(X\mid h_t,Y_{t,k},V)=H(X\mid h_{t+k},V)$, and this term cancels as before. Second, $M_{t+k}$ is a function of $Y_{t,k}$, by applying $f$ $k$ times (Assumption~\ref{as:mem}), which is the step that uses (T4) in the second-to-last line. Written out:
+The proof of Lemma~\ref{lem:update1}, with $(M_t,A_{t:t+k-1},O_{t+1:t+k})$ in place of $(M_t,A_t,O_{t+1})$ and $h_{t+k}$ in place of $h_{t+1}$. The two facts it uses still hold. First, $(h_t,M_t,A_{t:t+k-1},O_{t+1:t+k})$ and $h_{t+k}$ determine each other, by (T5) applied $k$ times and (T4). Second, $M_{t+k}$ is a function of $(M_t,A_{t:t+k-1},O_{t+1:t+k})$, by applying $f$ $k$ times (Assumption~\ref{as:mem}). Written out:
 \begin{align*}
-&I(h_{t+k};X\mid M_{t+k},V)-I(h_t;X\mid Y_{t,k},V)\\
-&\quad=H(X\mid M_{t+k},V)-\cancel{H(X\mid h_{t+k},V)}-H(X\mid Y_{t,k},V)+\cancel{H(X\mid h_{t+k},V)} \why{T1, T4, T5}\\
-&\quad=H(X\mid M_{t+k},V)-H(X\mid Y_{t,k},M_{t+k},V) \why{T4, $M_{t+k}$ a function of $Y_{t,k}$}\\
-&\quad=I(Y_{t,k};X\mid M_{t+k},V) \why{T1}.
+&I(h_{t+k};X\mid M_{t+k},V)-I(h_t;X\mid M_t,A_{t:t+k-1},O_{t+1:t+k},V)\\
+&\quad=H(X\mid M_{t+k},V)-\cancel{H(X\mid h_{t+k},V)}\\
+&\qquad-H(X\mid M_t,A_{t:t+k-1},O_{t+1:t+k},V)+\cancel{H(X\mid h_{t+k},V)} \why{T1, T4, T5}\\
+&\quad=H(X\mid M_{t+k},V)-H(X\mid M_t,A_{t:t+k-1},O_{t+1:t+k},M_{t+k},V) \why{T4, $M_{t+k}$ a function of the inputs}\\
+&\quad=I(M_t,A_{t:t+k-1},O_{t+1:t+k};X\mid M_{t+k},V) \why{T1}.
 \end{align*}
 \end{proof}
 
-\begin{proposition}[The step-$k$ terms and the agent's terms at $t+k$]\label{prop:K-agent}
-Under Assumptions~\ref{as:mem} and~\ref{as:pol}, for $k\ge1$,
-\begin{align*}
-D_{t+k}&=D_{t,k}+I(Y_{t,k};O_{t+k+1}\mid M_{t+k},A_{t+k}),\\
-D^0_{t+k}&=D^0_{t,k}+I(Y_{t,k};O_{t+k+1}\mid M_{t+k}),\\
-\dE_{t+k}&=\dE_{t,k}+I(Y_{t,k};A_{t+k}\mid M_{t+k},O_{t+k+1}),\\
-\dP_{t+k}&=\dP_{t,k}+I(Y_{t,k};A_{t+k+1}\mid M_{t+k},A_{t+k}),\\
-D^+_{t+k}&=D^+_{t,k}+I(Y_{t,k};O_{t+k+1}\mid M_{t+k},A_{t+k},A_{t+k+1}).
-\end{align*}
+\begin{proposition}[The $K$-step defect and the agent's defects]\label{prop:K}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol},
+\[
+D_{t:t+K}=\sum_{k=0}^{K-1}D_{t+k}-\sum_{k=1}^{K-1}I(M_t,A_{t:t+k-1},O_{t+1:t+k};O_{t+k+1}\mid M_{t+k},A_{t+k}).
+\]
 \end{proposition}
 
 \begin{proof}
-Apply Lemma~\ref{lem:updatek} with $(X,V)$ equal to $(O_{t+k+1},A_{t+k})$, $(O_{t+k+1},\text{nothing})$, $(A_{t+k},O_{t+k+1})$, $(A_{t+k+1},A_{t+k})$ and $(O_{t+k+1},(A_{t+k},A_{t+k+1}))$, and compare with Definition~\ref{def:stepk}.
+The term $k=0$ of Proposition~\ref{prop:K-time} is $D_t$. For $k\ge1$, Lemma~\ref{lem:updatek} with $X=O_{t+k+1}$ and $V=A_{t+k}$ gives
+\begin{align*}
+I(h_t;O_{t+k+1}\mid M_t,A_{t:t+k},O_{t+1:t+k})&=D_{t+k}\\
+&\quad-I(M_t,A_{t:t+k-1},O_{t+1:t+k};O_{t+k+1}\mid M_{t+k},A_{t+k}).
+\end{align*}
+Insert into Proposition~\ref{prop:K-time}.
 \end{proof}
 
-\paragraph{Summary of $K$ steps.} The information the history carries about the next $K$ steps beyond the memory at $t$ is the sum over the steps of the defect, and each step splits in the two ways:
-\[
-I(h_t;A_t,O_{t+1},\dots,O_{t+K},A_{t+K}\mid M_t)=\sum_{k=0}^{K-1}D_{t,k},\qquad D_{t,k}=D^0_{t,k}+\dE_{t,k}=\dP_{t,k}+D^+_{t,k}.
-\]
-Each step-$k$ term is the agent's own term at $t+k$ minus the information that the updates from $t+1$ to $t+k$ removed and that still predicts the same variable (Proposition~\ref{prop:K-agent}). As for two steps, the reward splits of Section~\ref{sec:reward} apply to each step $k$ with $Y_{t,k}$ or $Z_{t,k}$ in place of $M_t$ or $(M_t,A_t)$. The relation to the return is the next question and is not treated here.
+In words: the $K$-step defect is the sum of the agent's one-step defects at $t,\dots,t+K-1$, minus, at each later step $t+k$, what the updates from $t+1$ to $t+k$ together removed from what the agent saw and did since $t$ and still predicts $O_{t+k+1}$. In particular $D_{t:t+K}\le\sum_{k=0}^{K-1}D_{t+k}$.
 
-\paragraph{What is known.} The one-step empowerment and plasticity are those of \citet{abel2025plasticity}; the chain rule and the other tools are standard; the partial information decomposition is that of \citet{williams2010nonnegative}, with the conditional form of \citet{matthias2025novel} and the measure of \citet{bertschinger2014quantifying}. The terms $D^0_t$, $D^+_t$, the two splits, the reward parts and the expansions over steps are defined and derived here; a short search did not find them elsewhere.
+\begin{proposition}[$K$ steps, both splits and the reward separated]\label{prop:K-full}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol},
+\begin{align*}
+D_{t:t+K}&=\sum_{k=0}^{K-1}\big(D^0_{t+k}+\dE_{t+k}\big)-\sum_{k=1}^{K-1}I(M_t,A_{t:t+k-1},O_{t+1:t+k};O_{t+k+1}\mid M_{t+k},A_{t+k})\\
+&=\sum_{k=0}^{K-1}\big(\dP_{t+k}+D^+_{t+k}\big)-\sum_{k=1}^{K-1}I(M_t,A_{t:t+k-1},O_{t+1:t+k};O_{t+k+1}\mid M_{t+k},A_{t+k}),
+\end{align*}
+and, in the reward-first order,
+\begin{align*}
+D_{t:t+K}&=\sum_{k=0}^{K-1}I(h_{t+k};R_{t+k+1}\mid M_{t+k},A_{t+k})\\
+&\quad-\sum_{k=1}^{K-1}I(M_t,A_{t:t+k-1},O_{t+1:t+k};R_{t+k+1}\mid M_{t+k},A_{t+k})\\
+&\quad+\sum_{k=0}^{K-1}I(h_{t+k};\Ob_{t+k+1}\mid M_{t+k},A_{t+k},R_{t+k+1})\\
+&\quad-\sum_{k=1}^{K-1}I(M_t,A_{t:t+k-1},O_{t+1:t+k};\Ob_{t+k+1}\mid M_{t+k},A_{t+k},R_{t+k+1}),
+\end{align*}
+where the first two lines collect the reward parts and the last two the rest parts. Each subtracted term splits in the two ways of Proposition~\ref{prop:two-splits}, with $(M_t,A_{t:t+k-1},O_{t+1:t+k})$ in place of $(M_t,A_t,O_{t+1})$ and $t+k$ in place of $t+1$.
+\end{proposition}
+
+\begin{proof}
+The first two equalities follow from Proposition~\ref{prop:K} and Propositions~\ref{prop:split1} and~\ref{prop:split2} at each time $t+k$. For the reward-first form, split each term $k$ of Proposition~\ref{prop:K-time} by (T2) with $R_{t+k+1}$ first, and convert each part for $k\ge1$ with Lemma~\ref{lem:updatek}, with $(X,V)=(R_{t+k+1},A_{t+k})$ and $(X,V)=(\Ob_{t+k+1},(A_{t+k},R_{t+k+1}))$; the term $k=0$ is split by Proposition~\ref{prop:xy-D}. The split of each subtracted term is the proof of Proposition~\ref{prop:two-splits} with the longer input, using Corollary~\ref{cor:action} at time $t+k$, which applies because the input is a function of $h_{t+k}$.
+\end{proof}
+
+\paragraph{Summary.} Over $K$ steps, the history's information beyond the memory and the action at $t$ is the sum of the agent's own one-step defects at $t,\dots,t+K-1$, minus what the memory updates removed and still predicts the next observation. Every term splits in the two ways of Section~\ref{sec:splits} and into a reward part and a rest part as in Section~\ref{sec:reward}, the agent's terms and the subtracted terms alike. The relation to the return is the next question and is not treated here.
+
+\paragraph{What is known.} The one-step empowerment and plasticity are those of \citet{abel2025plasticity}; the chain rule and the other tools are standard; the partial information decomposition is that of \citet{williams2010nonnegative}, with the conditional form of \citet{matthias2025novel} and the measure of \citet{bertschinger2014quantifying}. The terms $D^0_t$, $D^+_t$, the two splits, the reward parts and the multi-step defects and their expansions are defined and derived here; a short search did not find them elsewhere.
 
 \bibliographystyle{plainnat}
 \bibliography{references}

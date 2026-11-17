@@ -4,60 +4,56 @@ seed 2 (T=4, 32768 trajectories) done
 seed 3 (T=3, 4096 trajectories) done
 seed 4 (T=3, 4096 trajectories) done
 seed 5 (T=3, 4096 trajectories) done
-check                                                          n   max error  max |value|  result
-Lem 2.1(a) H(A_t|h_t)=H(A_t|M_t)                              17    1.18e-14       0.6884  PASS
-Lem 2.1(b) H(A_t+1|h_t,A_t,O_t+1)=H(A_t+1|M_t,A_t,O_t+1)      17    6.75e-14       0.6844  PASS
-Lem 2.1 I(h_t;A_t|M_t)=0                                      17    1.09e-14       0.0000  PASS
-Lem 2.1 I(h_t;A_t+1|M_t,A_t,O_t+1)=0                          17    6.84e-14       0.0000  PASS
-Prop 3.2 E-E(M) = I(h;A|M,O')                                 17    9.99e-15       0.0697  PASS
-Prop 3.3 P(M)-P = I(h;A'|M,A)                                 17    6.93e-14       0.0038  PASS
-Prop 4.2 I(h,A;O'|M) = D0+E                                   17    8.88e-16       0.1521  PASS
-Prop 4.2 I(h,A;O'|M) = E(M)+D                                 17    1.33e-15       0.1521  PASS
-Prop 4.2 D = D0 + dE                                          17    1.09e-14       0.1494  PASS
-Prop 4.3 I(h;O',A'|M,A) = D                                   17    6.75e-14       0.1494  PASS
-Prop 4.3 D = dP + D+                                          17    6.73e-14       0.1494  PASS
-Rem 4.4 I(h;A,O',A'|M) = D                                    17    5.97e-14       0.1494  PASS
-Cor 4.5(b) dP <= D                                            17    0.00e+00       0.1494  PASS
-Cor 4.5(c) dE <= H(A|M)                                       17    0.00e+00       0.6884  PASS
-Prop 5.1 D split                                              34    1.78e-15       0.1494  PASS
-Prop 5.1 D0 split                                             34    8.88e-16       0.1042  PASS
-Prop 5.1 D+ split                                             34    1.78e-15       0.1478  PASS
-Prop 5.2 dE = X part + Y part                                 34    1.02e-14       0.0697  PASS
-Prop 5.2 X part = I(h;A|M,X)                                  34    1.29e-14       0.0385  PASS
-Prop 5.3 dP = X part + Y part                                 34    6.75e-14       0.0038  PASS
-Prop 5.3 Y part = I(h;A'|M,A,X)                               34    6.75e-14       0.0057  PASS
-Prop 5.4 X part, first split                                  34    2.66e-15       0.0612  PASS
-Prop 5.4 X part, second split                                 34    1.78e-15       0.0612  PASS
-Prop 5.4 Y part, first split                                  34    2.22e-15       0.1029  PASS
-Prop 5.4 Y part, second split                                 34    2.22e-15       0.1029  PASS
-Prop 5.5 D                                                    17    0.00e+00       0.0512  PASS
-Prop 5.5 D0                                                   17    0.00e+00       0.0270  PASS
-Prop 5.5 D+                                                   17    0.00e+00       0.0463  PASS
-Prop 5.5 dE                                                   17    0.00e+00       0.0311  PASS
-Prop 5.5 dP                                                   17    0.00e+00       0.0058  PASS
-Prop 5.7(c) bounds on D^{R only} consistent                   17    0.00e+00       0.0612  PASS
-Lem 2.1 I(h_t;A_t+k|M_t,A_t,...,O_t+k)=0                      55    1.03e-13       0.0000  PASS
-Prop 6.2 two steps = D_t + D_t,1                              12    6.77e-14       0.2609  PASS
-Prop 6.3 two steps = D0+dE+D0_1+dE_1                          12    6.71e-14       0.2609  PASS
-Prop 6.4 two steps = dP+D+ +dP_1+D+_1                         12    7.33e-15       0.2609  PASS
-Cor 6.5 D_t,1 = D0_t,1 + dE_t,1                               12    9.77e-15       0.1290  PASS
-Cor 6.5 D_t,1 = dP_t,1 + D+_t,1                               12    6.57e-14       0.1290  PASS
-Sec 6 summary: reward-first two-step expansion                12    1.78e-15       0.2609  PASS
-Lem 6.6 one update                                            60    1.78e-15       0.1494  PASS
-Prop 6.7 D_t+1 = D_t,1 + update term                          12    1.33e-15       0.1494  PASS
-Prop 6.7 D0_t+1 = D0_t,1 + update term                        12    1.78e-15       0.1042  PASS
-Prop 6.7 dE_t+1 = dE_t,1 + update term                        12    1.33e-15       0.0641  PASS
-Prop 6.7 dP_t+1 = dP_t,1 + update term                        12    1.33e-15       0.0038  PASS
-Prop 6.7 Dp_t+1 = Dp_t,1 + update term                        12    1.78e-15       0.1478  PASS
-Prop 7.2 K steps = sum D_t,k                                  38    1.01e-13       0.3767  PASS
-Prop 7.2 K steps = sum (D0+dE)_t,k                            38    1.00e-13       0.3767  PASS
-Prop 7.2 K steps = sum (dP+D+)_t,k                            38    1.20e-14       0.3767  PASS
-Cor 7.3 D_t,k = D0_t,k + dE_t,k                               38    2.58e-14       0.1494  PASS
-Cor 7.3 D_t,k = dP_t,k + D+_t,k                               38    1.00e-13       0.1494  PASS
-Lem 7.4 updates t+1..t+k                                     105    2.66e-15       0.1494  PASS
-Prop 7.5 D_t+k = D_t,k + update term                          21    2.66e-15       0.1494  PASS
-Prop 7.5 D0_t+k = D0_t,k + update term                        21    1.78e-15       0.1042  PASS
-Prop 7.5 dE_t+k = dE_t,k + update term                        21    2.66e-15       0.0641  PASS
-Prop 7.5 dP_t+k = dP_t,k + update term                        21    1.78e-15       0.0038  PASS
-Prop 7.5 Dp_t+k = Dp_t,k + update term                        21    1.78e-15       0.1478  PASS
+check                                                           n   max error  max |value|  result
+Lem 2.1(a) H(A_t|h_t)=H(A_t|M_t)                               17    1.18e-14       0.6884  PASS
+Lem 2.1(b) H(A_t+1|h_t,A_t,O_t+1)=H(A_t+1|M_t,A_t,O_t+1)       17    6.75e-14       0.6844  PASS
+Lem 2.1 I(h_t;A_t|M_t)=0                                       17    1.09e-14       0.0000  PASS
+Lem 2.1 I(h_t;A_t+1|M_t,A_t,O_t+1)=0                           17    6.84e-14       0.0000  PASS
+Prop 3.2 E-E(M) = I(h;A|M,O')                                  17    9.99e-15       0.0697  PASS
+Prop 3.3 P(M)-P = I(h;A'|M,A)                                  17    6.93e-14       0.0038  PASS
+Prop 4.2 I(h,A;O'|M) = D0+E                                    17    8.88e-16       0.1521  PASS
+Prop 4.2 I(h,A;O'|M) = E(M)+D                                  17    1.33e-15       0.1521  PASS
+Prop 4.2 D = D0 + dE                                           17    1.09e-14       0.1494  PASS
+Prop 4.3 I(h;O',A'|M,A) = D                                    17    6.75e-14       0.1494  PASS
+Prop 4.3 D = dP + D+                                           17    6.73e-14       0.1494  PASS
+Rem 4.4 I(h;A,O',A'|M) = D                                     17    5.97e-14       0.1494  PASS
+Cor 4.5(b) dP <= D                                             17    0.00e+00       0.1494  PASS
+Cor 4.5(c) dE <= H(A|M)                                        17    0.00e+00       0.6884  PASS
+Prop 5.1 D split                                               34    1.78e-15       0.1494  PASS
+Prop 5.1 D0 split                                              34    8.88e-16       0.1042  PASS
+Prop 5.1 D+ split                                              34    1.78e-15       0.1478  PASS
+Prop 5.2 dE = X part + Y part                                  34    1.02e-14       0.0697  PASS
+Prop 5.2 X part = I(h;A|M,X)                                   34    1.29e-14       0.0385  PASS
+Prop 5.3 dP = X part + Y part                                  34    6.75e-14       0.0038  PASS
+Prop 5.3 Y part = I(h;A'|M,A,X)                                34    6.75e-14       0.0057  PASS
+Prop 5.4 X part, first split                                   34    2.66e-15       0.0612  PASS
+Prop 5.4 X part, second split                                  34    1.78e-15       0.0612  PASS
+Prop 5.4 Y part, first split                                   34    2.22e-15       0.1029  PASS
+Prop 5.4 Y part, second split                                  34    2.22e-15       0.1029  PASS
+Prop 5.5 D                                                     17    0.00e+00       0.0512  PASS
+Prop 5.5 D0                                                    17    0.00e+00       0.0270  PASS
+Prop 5.5 D+                                                    17    0.00e+00       0.0463  PASS
+Prop 5.5 dE                                                    17    0.00e+00       0.0311  PASS
+Prop 5.5 dP                                                    17    0.00e+00       0.0058  PASS
+Prop 5.7(c) bounds on D^{R only} consistent                    17    0.00e+00       0.0612  PASS
+Lem 2.1 I(h_t;A_t+k|M_t,A_t:t+k-1,O_t+1:t+k)=0                 55    1.03e-13       0.0000  PASS
+Prop 6.2 D_t:t+2 = D_t + I(h_t;O_t+2|M_t,A_t,O_t+1,A_t+1)      12    9.33e-15       0.2609  PASS
+Lem 6.3 update from t to t+1                                   84    1.78e-15       0.1494  PASS
+Prop 6.4 D_t:t+2 = D_t + D_t+1 - update term                   12    1.07e-14       0.2609  PASS
+Prop 6.5 first bracket = update term                           12    2.89e-15       0.0792  PASS
+Prop 6.5 second bracket = update term                          12    8.44e-15       0.0792  PASS
+Prop 6.5 first split                                           12    9.77e-15       0.2609  PASS
+Prop 6.5 second split                                          12    6.48e-14       0.2609  PASS
+Prop 6.6 reward first                                          12    1.07e-14       0.2609  PASS
+Prop 6.6 rest first                                            12    9.33e-15       0.2609  PASS
+Prop 7.2 D_t:t+K = sum of time-order terms                     38    2.00e-14       0.3767  PASS
+Prop 7.4 D_t:t+K = sum D_t+k - update terms                    38    1.82e-14       0.3767  PASS
+Prop 7.5 first split                                           38    1.55e-14       0.3767  PASS
+Prop 7.5 second split                                          38    6.95e-14       0.3767  PASS
+Prop 7.5 reward first                                          38    1.75e-14       0.3767  PASS
+Prop 7.5 subtracted term, first split                          32    1.13e-14       0.1003  PASS
+Prop 7.5 subtracted term, second split                         32    3.84e-14       0.1003  PASS
+Lem 7.3 updates from t to t+k                                 147    2.66e-15       0.1494  PASS
+Cor 2.2 I(X;A_t+k|...)=0 for X=(M_t-1,A_t-1,O_t)               33    2.13e-14       0.0000  PASS
+Cor 2.2 I(X;A_t+k|...)=0 for X=O_t                             33    2.49e-14       0.0000  PASS
 ALL PASS

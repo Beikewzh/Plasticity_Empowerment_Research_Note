@@ -287,75 +287,89 @@ def check_one_step(J, w, rec):
         rec.le('Prop 5.7(c) bounds on D^{R only} consistent', lo, hi)
 
 
-def terms_k(J, t, k):
-    """The five terms of Definition 7.1 (k = 1 is Definition 6.1)."""
-    h, Ok, Ak, Ak1 = ('h', t), ('O', t + k + 1), ('A', t + k), ('A', t + k + 1)
-    Ys, Zs = Y(t, k), Z(t, k)
-    return dict(D=J.I([h], [Ok], Zs), D0=J.I([h], [Ok], Ys), dE=J.I([h], [Ak], Ys + [Ok]),
-                dP=J.I([h], [Ak1], Zs), Dp=J.I([h], [Ok], Zs + [Ak1]))
+def own_terms(J, n):
+    """The agent's own five terms at time n (Definition 4.1)."""
+    h, M, A, O1, A1 = ('h', n), ('M', n), ('A', n), ('O', n + 1), ('A', n + 1)
+    return dict(D=J.I([h], [O1], [M, A]), D0=J.I([h], [O1], [M]), dE=J.I([h], [A], [M, O1]),
+                dP=J.I([h], [A1], [M, A]), Dp=J.I([h], [O1], [M, A, A1]))
+
+
+def inputs(t, k):
+    """(M_t, A_{t:t+k-1}, O_{t+1:t+k}): what the updates from t+1 to t+k received."""
+    return Y(t, k)
 
 
 def check_steps(J, w, rec):
     T = w.T
     for t in range(1, T + 1):
         h = ('h', t)
-        # Lemma 2.1 for every k
+        # Lemma 2.1 and Corollary 2.2
         for k in range(0, T + 2 - t):
-            rec.eq('Lem 2.1 I(h_t;A_t+k|M_t,A_t,...,O_t+k)=0', J.I([h], [('A', t + k)], Y(t, k)), 0.0)
-        # two steps (needs A_{t+2})
-        if t + 2 <= T + 1:
-            seq = [('A', t), ('O', t + 1), ('A', t + 1), ('O', t + 2), ('A', t + 2)]
-            tot = J.I([h], seq, [('M', t)])
-            s0, s1 = terms_k(J, t, 0), terms_k(J, t, 1)
-            rec.eq('Prop 6.2 two steps = D_t + D_t,1', tot, s0['D'] + s1['D'])
-            rec.eq('Prop 6.3 two steps = D0+dE+D0_1+dE_1', tot, s0['D0'] + s0['dE'] + s1['D0'] + s1['dE'])
-            rec.eq('Prop 6.4 two steps = dP+D+ +dP_1+D+_1', tot, s0['dP'] + s0['Dp'] + s1['dP'] + s1['Dp'])
-            rec.eq('Cor 6.5 D_t,1 = D0_t,1 + dE_t,1', s1['D'], s1['D0'] + s1['dE'])
-            rec.eq('Cor 6.5 D_t,1 = dP_t,1 + D+_t,1', s1['D'], s1['dP'] + s1['Dp'])
-            # reward-first two-step expansion in the summary
-            M, A, O1, A1 = ('M', t), ('A', t), ('O', t + 1), ('A', t + 1)
-            rf = (J.I([h], [('R', t + 1)], [M, A]) + J.I([h], [('Ob', t + 1)], [M, A, ('R', t + 1)])
-                  + J.I([h], [('R', t + 2)], [M, A, O1, A1]) + J.I([h], [('Ob', t + 2)], [M, A, O1, A1, ('R', t + 2)]))
-            rec.eq('Sec 6 summary: reward-first two-step expansion', s0['D'] + s1['D'], rf)
-        # Lemma 6.6 and Proposition 6.7 (t+1 <= T)
+            Ck = Y(t, k)
+            rec.eq('Lem 2.1 I(h_t;A_t+k|M_t,A_t:t+k-1,O_t+1:t+k)=0', J.I([h], [('A', t + k)], Ck), 0.0)
+            if t >= 2:
+                rec.eq('Cor 2.2 I(X;A_t+k|...)=0 for X=(M_t-1,A_t-1,O_t)', J.I([('M', t - 1), ('A', t - 1), ('O', t)], [('A', t + k)], Ck), 0.0)
+                rec.eq('Cor 2.2 I(X;A_t+k|...)=0 for X=O_t', J.I([('O', t)], [('A', t + k)], Ck), 0.0)
+        # two steps
         if t + 1 <= T:
-            h1, M1 = ('h', t + 1), ('M', t + 1)
-            U = [('M', t), ('A', t), ('O', t + 1)]
-            combos = [([('O', t + 2)], [('A', t + 1)]), ([('O', t + 2)], []), ([('A', t + 1)], [('O', t + 2)]),
-                      ([('A', t + 2)], [('A', t + 1)]), ([('O', t + 2)], [('A', t + 1), ('A', t + 2)])]
-            names = ['D', 'D0', 'dE', 'dP', 'Dp']
-            s1 = terms_k(J, t, 1)
-            for (X, V), nm in zip(combos, names):
-                lhs = J.I([h1], X, [M1] + V)
-                rec.eq('Lem 6.6 one update', lhs, J.I([h], X, U + V) + J.I(U, X, [M1] + V))
-                rec.eq('Prop 6.7 ' + nm + '_t+1 = ' + nm + '_t,1 + update term', lhs, s1[nm] + J.I(U, X, [M1] + V))
+            M, A, O1, A1, O2, A2 = ('M', t), ('A', t), ('O', t + 1), ('A', t + 1), ('O', t + 2), ('A', t + 2)
+            R1, B1, R2, B2 = ('R', t + 1), ('Ob', t + 1), ('R', t + 2), ('Ob', t + 2)
+            M1, h1 = ('M', t + 1), ('h', t + 1)
+            U = [M, A, O1]
+            D2 = J.I([h], [O1, A1, O2], [M, A])
+            a, b = own_terms(J, t), own_terms(J, t + 1)
+            mid = J.I([h], [O2], [M, A, O1, A1])
+            rec.eq('Prop 6.2 D_t:t+2 = D_t + I(h_t;O_t+2|M_t,A_t,O_t+1,A_t+1)', D2, a['D'] + mid)
+            for X, V in (([O2], [A1]), ([R2], [A1]), ([B2], [A1, R2]), ([O2], []), ([A1], [O2]), ([A2], [A1]), ([O2], [A1, A2])):
+                rec.eq('Lem 6.3 update from t to t+1', J.I([h1], X, [M1] + V), J.I([h], X, U + V) + J.I(U, X, [M1] + V))
+            corr = J.I(U, [O2], [M1, A1])
+            rec.eq('Prop 6.4 D_t:t+2 = D_t + D_t+1 - update term', D2, a['D'] + b['D'] - corr)
+            br1 = J.I(U, [O2], [M1]) + J.I(U, [A1], [M1, O2])
+            br2 = J.I(U, [A2], [M1, A1]) + J.I(U, [O2], [M1, A1, A2])
+            rec.eq('Prop 6.5 first bracket = update term', br1, corr)
+            rec.eq('Prop 6.5 second bracket = update term', br2, corr)
+            rec.eq('Prop 6.5 first split', D2, a['D0'] + a['dE'] + b['D0'] + b['dE'] - br1)
+            rec.eq('Prop 6.5 second split', D2, a['dP'] + a['Dp'] + b['dP'] + b['Dp'] - br2)
+            rf = (J.I([h], [R1], [M, A]) + J.I([h1], [R2], [M1, A1]) - J.I(U, [R2], [M1, A1])
+                  + J.I([h], [B1], [M, A, R1]) + J.I([h1], [B2], [M1, A1, R2]) - J.I(U, [B2], [M1, A1, R2]))
+            rec.eq('Prop 6.6 reward first', D2, rf)
+            sf = (J.I([h], [B1], [M, A]) + J.I([h1], [B2], [M1, A1]) - J.I(U, [B2], [M1, A1])
+                  + J.I([h], [R1], [M, A, B1]) + J.I([h1], [R2], [M1, A1, B2]) - J.I(U, [R2], [M1, A1, B2]))
+            rec.eq('Prop 6.6 rest first', D2, sf)
         # K steps
         for K in range(1, T + 2 - t):
-            seq = []
-            for k in range(K):
-                seq += [('A', t + k), ('O', t + k + 1)]
-            seq += [('A', t + K)]
-            tot = J.I([h], seq, [('M', t)])
-            ts = [terms_k(J, t, k) for k in range(K)]
-            rec.eq('Prop 7.2 K steps = sum D_t,k', tot, sum(x['D'] for x in ts))
-            rec.eq('Prop 7.2 K steps = sum (D0+dE)_t,k', tot, sum(x['D0'] + x['dE'] for x in ts))
-            rec.eq('Prop 7.2 K steps = sum (dP+D+)_t,k', tot, sum(x['dP'] + x['Dp'] for x in ts))
-        for k in range(0, T + 1 - t):
-            x = terms_k(J, t, k)
-            rec.eq('Cor 7.3 D_t,k = D0_t,k + dE_t,k', x['D'], x['D0'] + x['dE'])
-            rec.eq('Cor 7.3 D_t,k = dP_t,k + D+_t,k', x['D'], x['dP'] + x['Dp'])
+            preds = []
+            for k in range(1, K + 1):
+                preds.append(('O', t + k))
+                if k < K:
+                    preds.append(('A', t + k))
+            DK = J.I([h], preds, [('M', t), ('A', t)])
+            terms = [J.I([h], [('O', t + k + 1)], Z(t, k)) for k in range(K)]
+            rec.eq('Prop 7.2 D_t:t+K = sum of time-order terms', DK, sum(terms))
+            own = [own_terms(J, t + k) for k in range(K)]
+            corr = [J.I(inputs(t, k), [('O', t + k + 1)], [('M', t + k), ('A', t + k)]) for k in range(1, K)]
+            rec.eq('Prop 7.4 D_t:t+K = sum D_t+k - update terms', DK, sum(x['D'] for x in own) - sum(corr))
+            rec.eq('Prop 7.5 first split', DK, sum(x['D0'] + x['dE'] for x in own) - sum(corr))
+            rec.eq('Prop 7.5 second split', DK, sum(x['dP'] + x['Dp'] for x in own) - sum(corr))
+            rew = sum(J.I([('h', t + k)], [('R', t + k + 1)], [('M', t + k), ('A', t + k)]) for k in range(K))
+            rew -= sum(J.I(inputs(t, k), [('R', t + k + 1)], [('M', t + k), ('A', t + k)]) for k in range(1, K))
+            rst = sum(J.I([('h', t + k)], [('Ob', t + k + 1)], [('M', t + k), ('A', t + k), ('R', t + k + 1)]) for k in range(K))
+            rst -= sum(J.I(inputs(t, k), [('Ob', t + k + 1)], [('M', t + k), ('A', t + k), ('R', t + k + 1)]) for k in range(1, K))
+            rec.eq('Prop 7.5 reward first', DK, rew + rst)
+            for k in range(1, K):
+                n = t + k
+                W = inputs(t, k)
+                Mn, An, An1, On1 = ('M', n), ('A', n), ('A', n + 1), ('O', n + 1)
+                c = J.I(W, [On1], [Mn, An])
+                rec.eq('Prop 7.5 subtracted term, first split', c, J.I(W, [On1], [Mn]) + J.I(W, [An], [Mn, On1]))
+                rec.eq('Prop 7.5 subtracted term, second split', c, J.I(W, [An1], [Mn, An]) + J.I(W, [On1], [Mn, An, An1]))
+        # Lemma 7.3
         for k in range(1, T + 1 - t):
             n = t + k
-            hn, Mn = ('h', n), ('M', n)
-            Yk = Y(t, k)
-            combos = [([('O', n + 1)], [('A', n)]), ([('O', n + 1)], []), ([('A', n)], [('O', n + 1)]),
-                      ([('A', n + 1)], [('A', n)]), ([('O', n + 1)], [('A', n), ('A', n + 1)])]
-            names = ['D', 'D0', 'dE', 'dP', 'Dp']
-            x = terms_k(J, t, k)
-            for (X, V), nm in zip(combos, names):
-                lhs = J.I([hn], X, [Mn] + V)
-                rec.eq('Lem 7.4 updates t+1..t+k', lhs, J.I([h], X, Yk + V) + J.I(Yk, X, [Mn] + V))
-                rec.eq('Prop 7.5 ' + nm + '_t+k = ' + nm + '_t,k + update term', lhs, x[nm] + J.I(Yk, X, [Mn] + V))
+            hn, Mn, W = ('h', n), ('M', n), inputs(t, k)
+            An, An1, On1, Rn1, Bn1 = ('A', n), ('A', n + 1), ('O', n + 1), ('R', n + 1), ('Ob', n + 1)
+            for X, V in (([On1], [An]), ([Rn1], [An]), ([Bn1], [An, Rn1]), ([On1], []), ([An], [On1]), ([An1], [An]), ([On1], [An, An1])):
+                rec.eq('Lem 7.3 updates from t to t+k', J.I([hn], X, [Mn] + V), J.I([h], X, W + V) + J.I(W, X, [Mn] + V))
 
 
 def main():
