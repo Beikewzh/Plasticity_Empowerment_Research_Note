@@ -36,7 +36,7 @@
 \maketitle
 
 \begin{abstract}
-For an agent that acts on a memory, we derive the empowerment and plasticity mismatches between the history and the memory, the two splits of the state defect, and three ways to separate the reward inside them. We then follow the defects $D_t,D_{t+1},D_{t+2},\dots$ of successive steps, write each term as an average log ratio of two predictions, show how the reward of each step enters the return over a few steps, and relate the return to the Bellman equation with the history and with the memory as the state. Every derivation is written term by term, and every cancellation names the assumption or lemma that allows it.
+For an agent that acts on a memory, we derive the empowerment and plasticity mismatches between the history and the memory, the two splits of the state defect, and three ways to separate the reward inside them. We then write the terms at three successive times, add them, and list the reward terms of the sum. Every derivation is written term by term, and every cancellation names the assumption or lemma that allows it.
 \end{abstract}
 
 \section{Setting}\label{sec:setting}
@@ -454,189 +454,95 @@ Average over $(m,a)$. The identities are linear and hold for the averages. The u
 
 So the reward-first order gives the reward the shared part, the rest-first order gives it the joint part, and the part that belongs to the reward in both orders is $D^{R\,\mathrm{only}}_t$. The difference between the orders, $D^{\mathrm{shared}}_t-D^{\mathrm{joint}}_t$, is positive when the shared part is larger and negative when the joint part is larger. With the measure of \citet{bertschinger2014quantifying}, $D^{R\,\mathrm{only}}_t>0$ exactly when there is a decision problem in which seeing the reward is strictly better than seeing the rest of the observation. The same split applies to $D^0_t$ and $D^+_t$ with other conditioning variables. The terms $\dE_t$ and $\dP_t$ involve an action as a third variable, and an order-free split of their reward parts would need a decomposition with three sources; we leave this open.
 
-\section{From the defects at each step to the return}\label{sec:return}
+\section{The defects at $t$, $t+1$ and $t+2$, and their sum}\label{sec:sum}
 
-\subsection{The terms at each step}
+Sections~\ref{sec:splits} and~\ref{sec:reward} hold at every time. The defect at time $n$ concerns the observation $O_{n+1}=(R_{n+1},\Ob_{n+1})$, so the reward in it is $R_{n+1}$: $D_t$ contains $R_{t+1}$, $D_{t+1}$ contains $R_{t+2}$, and $D_{t+2}$ contains $R_{t+3}$.
 
-Sections~\ref{sec:splits} and~\ref{sec:reward} hold at every time. At the times $n=t,t+1,t+2$, the agent's own terms are
+\subsection{The terms at $t$, $t+1$ and $t+2$}
+
+By Propositions~\ref{prop:split1} and~\ref{prop:split2} and the reward-first lines of Section~\ref{sec:reward}, with $t$, $t+1$ and $t+2$ in place of $t$. In each of the last five lines of each block, the first term is the reward part and the second the rest part.
+
+\paragraph{At $t$.}
 \begin{align*}
-D_n&=D^0_n+\dE_n=\dP_n+D^+_n,\\
-D_n&=I(h_n;R_{n+1}\mid M_n,A_n)+I(h_n;\Ob_{n+1}\mid M_n,A_n,R_{n+1}),\\
-D^0_n&=I(h_n;R_{n+1}\mid M_n)+I(h_n;\Ob_{n+1}\mid M_n,R_{n+1}),\\
-D^+_n&=I(h_n;R_{n+1}\mid M_n,A_n,A_{n+1})+I(h_n;\Ob_{n+1}\mid M_n,A_n,A_{n+1},R_{n+1}),\\
-\dE_n&=I(h_n;A_n\mid M_n,R_{n+1})+\big[I(A_n;\Ob_{n+1}\mid h_n,R_{n+1})-I(A_n;\Ob_{n+1}\mid M_n,R_{n+1})\big],\\
-\dP_n&=\big[I(R_{n+1};A_{n+1}\mid M_n,A_n)-I(R_{n+1};A_{n+1}\mid h_n,A_n)\big]+I(h_n;A_{n+1}\mid M_n,A_n,R_{n+1}),
+D_t&=D^0_t+\dE_t=\dP_t+D^+_t,\\
+D_t&=I(h_t;R_{t+1}\mid M_t,A_t)+I(h_t;\Ob_{t+1}\mid M_t,A_t,R_{t+1}),\\
+D^0_t&=I(h_t;R_{t+1}\mid M_t)+I(h_t;\Ob_{t+1}\mid M_t,R_{t+1}),\\
+D^+_t&=I(h_t;R_{t+1}\mid M_t,A_t,A_{t+1})+I(h_t;\Ob_{t+1}\mid M_t,A_t,A_{t+1},R_{t+1}),\\
+\dE_t&=I(h_t;A_t\mid M_t,R_{t+1})+\big[I(A_t;\Ob_{t+1}\mid h_t,R_{t+1})-I(A_t;\Ob_{t+1}\mid M_t,R_{t+1})\big],\\
+\dP_t&=\big[I(R_{t+1};A_{t+1}\mid M_t,A_t)-I(R_{t+1};A_{t+1}\mid h_t,A_t)\big]+I(h_t;A_{t+1}\mid M_t,A_t,R_{t+1}).
 \end{align*}
-by Propositions~\ref{prop:split1} and~\ref{prop:split2} and the reward-first lines of Section~\ref{sec:reward}, with $n$ in place of $t$; in each of the last five lines the first term is the reward part and the second the rest part. The defect at time $n$ concerns the observation $O_{n+1}$, so the reward it contains is $R_{n+1}$:
-\begin{center}
-\small
-\begin{tabular}{lll}
-\toprule
-time & defect & reward in its observation\\
-\midrule
-$t$ & $D_t$ & $R_{t+1}$\\
-$t+1$ & $D_{t+1}$ & $R_{t+2}$\\
-$t+2$ & $D_{t+2}$ & $R_{t+3}$\\
-\bottomrule
-\end{tabular}
-\end{center}
 
-\subsection{Each term as a ratio of two probabilities}
-
-\begin{lemma}[Information as a ratio of predictions]\label{lem:ratio}
-Under Assumption~\ref{as:mem}, for any variables $X$ and $Z$ and any time $n$,
-\[
-I(h_n;X\mid M_n,Z)=\E\Big[\log\frac{P(X\mid h_n,Z)}{P(X\mid M_n,Z)}\Big]=\E\Big[\KL\big(P(X\mid h_n,Z)\,\big\|\,P(X\mid M_n,Z)\big)\Big],
-\]
-and the memory's prediction is the average of the history's predictions over the histories behind the memory:
-\[
-P(X=x\mid M_n=m,Z=z)=\sum_hP(h_n=h\mid M_n=m,Z=z)\,P(X=x\mid h_n=h,Z=z).
-\]
-\end{lemma}
-
-\begin{proof}
+\paragraph{At $t+1$.}
 \begin{align*}
-I(h_n;X\mid M_n,Z)&=H(X\mid M_n,Z)-H(X\mid h_n,M_n,Z) \why{T1}\\
-&=H(X\mid M_n,Z)-H(X\mid h_n,Z) \why{T4}\\
-&=\E\big[-\log P(X\mid M_n,Z)\big]-\E\big[-\log P(X\mid h_n,Z)\big] \why{definition of $H$}\\
-&=\E\Big[\log\frac{P(X\mid h_n,Z)}{P(X\mid M_n,Z)}\Big].
+D_{t+1}&=D^0_{t+1}+\dE_{t+1}=\dP_{t+1}+D^+_{t+1},\\
+D_{t+1}&=I(h_{t+1};R_{t+2}\mid M_{t+1},A_{t+1})+I(h_{t+1};\Ob_{t+2}\mid M_{t+1},A_{t+1},R_{t+2}),\\
+D^0_{t+1}&=I(h_{t+1};R_{t+2}\mid M_{t+1})+I(h_{t+1};\Ob_{t+2}\mid M_{t+1},R_{t+2}),\\
+D^+_{t+1}&=I(h_{t+1};R_{t+2}\mid M_{t+1},A_{t+1},A_{t+2})+I(h_{t+1};\Ob_{t+2}\mid M_{t+1},A_{t+1},A_{t+2},R_{t+2}),\\
+\dE_{t+1}&=I(h_{t+1};A_{t+1}\mid M_{t+1},R_{t+2})\\
+&\quad+\big[I(A_{t+1};\Ob_{t+2}\mid h_{t+1},R_{t+2})-I(A_{t+1};\Ob_{t+2}\mid M_{t+1},R_{t+2})\big],\\
+\dP_{t+1}&=\big[I(R_{t+2};A_{t+2}\mid M_{t+1},A_{t+1})-I(R_{t+2};A_{t+2}\mid h_{t+1},A_{t+1})\big]\\
+&\quad+I(h_{t+1};A_{t+2}\mid M_{t+1},A_{t+1},R_{t+2}).
 \end{align*}
-Taking first the expectation over $X$ given $(h_n,Z)$ (tower property) gives the divergence inside. For the second formula, apply the tower property over $h_n$ given $(M_n,Z)$, and drop $M_n$ from $P(X\mid h_n,M_n,Z)$ by (T4).
-\end{proof}
 
-\begin{corollary}[The terms as ratios of predictions]\label{cor:ratio}
-Under Assumptions~\ref{as:mem} and~\ref{as:pol}, at every time $n$,
+\paragraph{At $t+2$.}
 \begin{align*}
-D_n&=\E\Big[\log\frac{P(O_{n+1}\mid h_n,A_n)}{P(O_{n+1}\mid M_n,A_n)}\Big], &
-D^0_n&=\E\Big[\log\frac{P(O_{n+1}\mid h_n)}{P(O_{n+1}\mid M_n)}\Big],\\
-D^+_n&=\E\Big[\log\frac{P(O_{n+1}\mid h_n,A_n,A_{n+1})}{P(O_{n+1}\mid M_n,A_n,A_{n+1})}\Big], &
-\dE_n&=\E\Big[\log\frac{P(A_n\mid h_n,O_{n+1})}{P(A_n\mid M_n,O_{n+1})}\Big],\\
-\dP_n&=\E\Big[\log\frac{P(A_{n+1}\mid h_n,A_n)}{P(A_{n+1}\mid M_n,A_n)}\Big], &&
+D_{t+2}&=D^0_{t+2}+\dE_{t+2}=\dP_{t+2}+D^+_{t+2},\\
+D_{t+2}&=I(h_{t+2};R_{t+3}\mid M_{t+2},A_{t+2})+I(h_{t+2};\Ob_{t+3}\mid M_{t+2},A_{t+2},R_{t+3}),\\
+D^0_{t+2}&=I(h_{t+2};R_{t+3}\mid M_{t+2})+I(h_{t+2};\Ob_{t+3}\mid M_{t+2},R_{t+3}),\\
+D^+_{t+2}&=I(h_{t+2};R_{t+3}\mid M_{t+2},A_{t+2},A_{t+3})+I(h_{t+2};\Ob_{t+3}\mid M_{t+2},A_{t+2},A_{t+3},R_{t+3}),\\
+\dE_{t+2}&=I(h_{t+2};A_{t+2}\mid M_{t+2},R_{t+3})\\
+&\quad+\big[I(A_{t+2};\Ob_{t+3}\mid h_{t+2},R_{t+3})-I(A_{t+2};\Ob_{t+3}\mid M_{t+2},R_{t+3})\big],\\
+\dP_{t+2}&=\big[I(R_{t+3};A_{t+3}\mid M_{t+2},A_{t+2})-I(R_{t+3};A_{t+3}\mid h_{t+2},A_{t+2})\big]\\
+&\quad+I(h_{t+2};A_{t+3}\mid M_{t+2},A_{t+2},R_{t+3}).
 \end{align*}
-and the reward part and the rest part of $D_n$ are
+
+\subsection{The sum}
+
+\begin{proposition}[The sum of the three defects]\label{prop:sum}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol},
+\begin{align*}
+D_t+D_{t+1}+D_{t+2}&=\big(D^0_t+D^0_{t+1}+D^0_{t+2}\big)+\big(\dE_t+\dE_{t+1}+\dE_{t+2}\big)\\
+&=\big(\dP_t+\dP_{t+1}+\dP_{t+2}\big)+\big(D^+_t+D^+_{t+1}+D^+_{t+2}\big),
+\end{align*}
+and
 \[
-\E\Big[\log\frac{P(R_{n+1}\mid h_n,A_n)}{P(R_{n+1}\mid M_n,A_n)}\Big]\quad\text{and}\quad\E\Big[\log\frac{P(\Ob_{n+1}\mid h_n,A_n,R_{n+1})}{P(\Ob_{n+1}\mid M_n,A_n,R_{n+1})}\Big].
+D_t+D_{t+1}+D_{t+2}=\text{(reward terms)}+\text{(rest terms)},
 \]
-The reward parts and rest parts of $D^0_n$ and $D^+_n$, the reward part of $\dE_n$ and the rest part of $\dP_n$ have the same form with the variables of their mutual information; the other two parts, in brackets above, are differences of two such averages. Each term is zero exactly when its two predictions agree for every value of the conditioning variables that occurs.
-\end{corollary}
-
-\begin{proof}
-Lemma~\ref{lem:ratio} with $(X,Z)$ equal to $(O_{n+1},A_n)$ for $D_n$, $(O_{n+1},\text{nothing})$ for $D^0_n$, $(O_{n+1},(A_n,A_{n+1}))$ for $D^+_n$, $(A_n,O_{n+1})$ for $\dE_n$ (Proposition~\ref{prop:dE}), $(A_{n+1},A_n)$ for $\dP_n$ (Proposition~\ref{prop:dP}), $(R_{n+1},A_n)$ for the reward part and $(\Ob_{n+1},(A_n,R_{n+1}))$ for the rest part. For the last sentence: a divergence is nonnegative and zero exactly when its two laws are equal \citep[Theorem~2.6.3]{cover2006elements}, and an average of nonnegative numbers is zero exactly when every number with positive probability is zero.
-\end{proof}
-
-\subsection{The reward at each step}
-
-\begin{proposition}[The expected reward at one step]\label{prop:reward-step}
-Under Assumptions~\ref{as:mem} and~\ref{as:pol}, for every time $n$, history $h_n$ and action $a$,
-\begin{multline*}
-\E[R_{n+1}\mid h_n,A_n=a]-\E[R_{n+1}\mid M_n,A_n=a]\\=\sum_\rho\rho\,\big[P(R_{n+1}=\rho\mid h_n,a)-P(R_{n+1}=\rho\mid M_n,a)\big].
-\end{multline*}
-The two predictions are those of the reward part of $D_n$ (Corollary~\ref{cor:ratio}), so the difference is zero for every $(h_n,a)$ that occurs when the reward part of $D_n$ is zero.
+with the reward terms
+\begin{align*}
+&I(h_t;R_{t+1}\mid M_t,A_t)+I(h_{t+1};R_{t+2}\mid M_{t+1},A_{t+1})+I(h_{t+2};R_{t+3}\mid M_{t+2},A_{t+2})
+\end{align*}
+and the rest terms
+\begin{align*}
+&I(h_t;\Ob_{t+1}\mid M_t,A_t,R_{t+1})+I(h_{t+1};\Ob_{t+2}\mid M_{t+1},A_{t+1},R_{t+2})\\
+&\quad+I(h_{t+2};\Ob_{t+3}\mid M_{t+2},A_{t+2},R_{t+3}).
+\end{align*}
+The reward terms of the sum split in the two ways,
+\begin{align*}
+\text{reward terms}&=(\text{reward terms of }D^0)+(\text{reward terms of }\dE)\\
+&=(\text{reward terms of }\dP)+(\text{reward terms of }D^+),
+\end{align*}
+where
+\begin{align*}
+\text{reward terms of }D^0:&\quad I(h_t;R_{t+1}\mid M_t)+I(h_{t+1};R_{t+2}\mid M_{t+1})+I(h_{t+2};R_{t+3}\mid M_{t+2}),\\
+\text{reward terms of }\dE:&\quad I(h_t;A_t\mid M_t,R_{t+1})+I(h_{t+1};A_{t+1}\mid M_{t+1},R_{t+2})\\
+&\quad+I(h_{t+2};A_{t+2}\mid M_{t+2},R_{t+3}),\\
+\text{reward terms of }\dP:&\quad\big[I(R_{t+1};A_{t+1}\mid M_t,A_t)-I(R_{t+1};A_{t+1}\mid h_t,A_t)\big]\\
+&\quad+\big[I(R_{t+2};A_{t+2}\mid M_{t+1},A_{t+1})-I(R_{t+2};A_{t+2}\mid h_{t+1},A_{t+1})\big]\\
+&\quad+\big[I(R_{t+3};A_{t+3}\mid M_{t+2},A_{t+2})-I(R_{t+3};A_{t+3}\mid h_{t+2},A_{t+2})\big],\\
+\text{reward terms of }D^+:&\quad I(h_t;R_{t+1}\mid M_t,A_t,A_{t+1})+I(h_{t+1};R_{t+2}\mid M_{t+1},A_{t+1},A_{t+2})\\
+&\quad+I(h_{t+2};R_{t+3}\mid M_{t+2},A_{t+2},A_{t+3}),
+\end{align*}
+and the rest terms split in the same two ways, into the rest terms of $D^0$ and $\dE$, and of $\dP$ and $D^+$, as listed in the three blocks above.
 \end{proposition}
 
 \begin{proof}
-Write each expectation as a sum over the values $\rho$ of $R_{n+1}$ and subtract. The last sentence is Corollary~\ref{cor:ratio}.
+At each time $n=t,t+1,t+2$: $D_n=D^0_n+\dE_n=\dP_n+D^+_n$ (Propositions~\ref{prop:split1} and~\ref{prop:split2}); $D_n$ is its reward part plus its rest part (Proposition~\ref{prop:xy-D} with $X=R_{n+1}$, $Y=\Ob_{n+1}$); and the reward part of $D_n$ is the reward part of $D^0_n$ plus that of $\dE_n$, and the reward part of $\dP_n$ plus that of $D^+_n$, and the same for the rest part (Proposition~\ref{prop:xy-splits} with $X=R_{n+1}$, $Y=\Ob_{n+1}$). Add the three times.
 \end{proof}
 
-\subsection{The return within a few steps}
+In the sum, the reward terms are the reward parts of $D_t$, $D_{t+1}$ and $D_{t+2}$, one for each of the rewards $R_{t+1}$, $R_{t+2}$ and $R_{t+3}$, each taken at the agent's own memory at its own time.
 
-Fix a final time $T$ and a discount factor $\gamma\in[0,1]$. The return from time $t<T$ is
-\[
-G_t=R_{t+1}+\gamma R_{t+2}+\dots+\gamma^{T-t-1}R_T=\sum_{k=0}^{T-t-1}\gamma^kR_{t+k+1},
-\]
-with $G_T=0$, so that $G_t=R_{t+1}+\gamma G_{t+1}$. Within three steps, $T=t+3$, it is $G_t=R_{t+1}+\gamma R_{t+2}+\gamma^2R_{t+3}$, and its rewards are those of $D_t$, $D_{t+1}$ and $D_{t+2}$. The value of a history is $q_t(h,a)=\E[G_t\mid h_t=h,A_t=a]$, and $v_t(h)=\E[G_t\mid h_t=h]$, with $v_T=0$; they depend on $T$, which is fixed in each statement.
-
-\begin{proposition}[The return as the rewards of the steps]\label{prop:return-steps}
-Under Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol}, for $t<T$, every history $h_t$ and action $a$,
-\begin{align*}
-&q_t(h_t,a)=\E\Big[\sum_{k=0}^{T-t-1}\gamma^k\,\E[R_{t+k+1}\mid h_{t+k},A_{t+k}]\ \Big|\ h_t,A_t=a\Big],\\
-&q_t(h_t,a)-\E\Big[\sum_{k=0}^{T-t-1}\gamma^k\,\E[R_{t+k+1}\mid M_{t+k},A_{t+k}]\ \Big|\ h_t,A_t=a\Big]\\
-&\quad=\E\Big[\sum_{k=0}^{T-t-1}\gamma^k\,\delta_{t+k}\ \Big|\ h_t,A_t=a\Big],
-\end{align*}
-where $\delta_n=\E[R_{n+1}\mid h_n,A_n]-\E[R_{n+1}\mid M_n,A_n]$ is the difference of Proposition~\ref{prop:reward-step}. Within three steps,
-\begin{multline*}
-q_t(h_t,a)-\E\big[\textstyle\sum_{k=0}^{2}\gamma^k\,\E[R_{t+k+1}\mid M_{t+k},A_{t+k}]\,\big|\,h_t,a\big]\\=\delta_t+\gamma\,\E[\delta_{t+1}\mid h_t,a]+\gamma^2\,\E[\delta_{t+2}\mid h_t,a].
-\end{multline*}
-\end{proposition}
-
-\begin{proof}
-First line: $q_t(h_t,a)=\sum_k\gamma^k\E[R_{t+k+1}\mid h_t,A_t=a]$ by linearity, and $\E[R_{t+k+1}\mid h_t,A_t=a]=\E\big[\E[R_{t+k+1}\mid h_{t+k},A_{t+k}]\mid h_t,A_t=a\big]$ by the tower property, since $(h_t,A_t)$ is a function of $(h_{t+k},A_{t+k})$ (T5). Second line: subtract, term by term, and use the definition of $\delta_n$. The last display is $T=t+3$; the term $k=0$ needs no expectation because $(h_t,A_t=a)$ is given.
-\end{proof}
-
-So along the agent's path, the reward of each step enters the return with its discount, and the history's prediction of it differs from the memory's by $\delta_n$, which depends only on the two predictions of the reward part of $D_n$. The path itself, however, is drawn with the history's predictions of the whole observation. To compute an expected return from the memory alone, the agent must also predict, from the memory, the rest of the observation and the next memory. This is the Bellman equation.
-
-\subsection{The return and the two Bellman equations}
-
-\begin{proposition}[Bellman equation for the history]\label{prop:bellman-h}
-Under Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol}, for $t<T$, every history $h_t$ and action $a$,
-\begin{align*}
-q_t(h_t,a)&=\sum_oP(O_{t+1}=o\mid h_t,a)\big[r(o)+\gamma\,v_{t+1}(h_{t+1})\big],\\
-v_{t+1}(h_{t+1})&=\sum_{a'}\pi(a'\mid M_{t+1})\,q_{t+1}(h_{t+1},a'),
-\end{align*}
-where $r(o)$ is the reward contained in $o$, $h_{t+1}=(h_t,a,o)$ and $M_{t+1}=f(M_t,a,o)$.
-\end{proposition}
-
-\begin{proof}
-\begin{align*}
-q_t(h_t,a)&=\E[R_{t+1}+\gamma G_{t+1}\mid h_t,A_t=a] \why{$G_t=R_{t+1}+\gamma G_{t+1}$}\\
-&=\sum_oP(O_{t+1}=o\mid h_t,a)\big[r(o)+\gamma\,\E[G_{t+1}\mid h_t,A_t=a,O_{t+1}=o]\big] \why{tower property}\\
-&=\sum_oP(O_{t+1}=o\mid h_t,a)\big[r(o)+\gamma\,v_{t+1}(h_{t+1})\big] \why{T5}.
-\end{align*}
-Second line: the tower property over $A_{t+1}$, whose law given $h_{t+1}$ is $\pi(\cdot\mid M_{t+1})$ (Assumption~\ref{as:pol}), with $M_{t+1}=f(M_t,a,o)$ (Assumption~\ref{as:mem}).
-\end{proof}
-
-\begin{definition}[Bellman equation on the memory]\label{def:bellman-m}
-Let $\hat v_T=0$, and for $n=T-1,T-2,\dots$, for memory values $m$ and actions $a$ that occur at time $n$,
-\begin{align*}
-\hat q_n(m,a)&=\sum_oP(O_{n+1}=o\mid M_n=m,A_n=a)\big[r(o)+\gamma\,\hat v_{n+1}(f(m,a,o))\big],\\
-\hat v_n(m)&=\sum_a\pi(a\mid m)\,\hat q_n(m,a).
-\end{align*}
-\end{definition}
-
-This is the same equation with the memory in place of the history: the memory's prediction of the next observation in place of the history's, and the next memory $f(m,a,o)$ in place of the next history. It is the value the agent can compute from its memory, and the one a critic that reads the memory and bootstraps on its own value at the next memory estimates.
-
-\begin{proposition}[The return gap and the defects of the steps]\label{prop:gap}
-Under Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol}, for $t<T$, every history $h_t$ and action $a$,
-\[
-q_t(h_t,a)-\hat q_t(M_t,a)=\E\Big[\sum_{k=0}^{T-t-1}\gamma^k\big(c^R_{t+k}+c^{\Ob}_{t+k}\big)\ \Big|\ h_t,A_t=a\Big],
-\]
-where, at the time $n$ and with $(h_n,A_n)$ as the arguments, $o=(\rho,\bar o)$, and $w_n(\rho,\bar o)=\hat v_{n+1}(f(M_n,A_n,(\rho,\bar o)))$ the memory's value of the next memory,
-\begin{align*}
-c^R_n&=\sum_\rho\big[P(R_{n+1}=\rho\mid h_n,A_n)-P(R_{n+1}=\rho\mid M_n,A_n)\big]\\
-&\qquad\times\Big[\rho+\gamma\sum_{\bar o}P(\bar o\mid M_n,A_n,\rho)\,w_n(\rho,\bar o)\Big],\\
-c^{\Ob}_n&=\gamma\sum_\rho P(\rho\mid h_n,A_n)\\
-&\qquad\times\sum_{\bar o}\big[P(\Ob_{n+1}=\bar o\mid h_n,A_n,\rho)-P(\Ob_{n+1}=\bar o\mid M_n,A_n,\rho)\big]\,w_n(\rho,\bar o).
-\end{align*}
-Within three steps, $T=t+3$,
-\begin{align*}
-q_t(h_t,a)-\hat q_t(M_t,a)&=\big(c^R_t+c^{\Ob}_t\big)+\gamma\,\E\big[c^R_{t+1}+c^{\Ob}_{t+1}\,\big|\,h_t,a\big]+\gamma^2\,\E\big[c^R_{t+2}\,\big|\,h_t,a\big],
-\end{align*}
-since $c^{\Ob}_{t+2}=0$ ($\hat v_{t+3}=0$).
-\end{proposition}
-
-\begin{proof}
-\emph{Step 1: one step.} Subtract the first line of Definition~\ref{def:bellman-m} at $(n,m)=(t,M_t)$ from the first line of Proposition~\ref{prop:bellman-h}, writing $M_{t+1}=f(M_t,a,o)$, and add and subtract $\sum_oP(O_{t+1}=o\mid h_t,a)\big[r(o)+\gamma\,\hat v_{t+1}(M_{t+1})\big]$:
-\begin{align*}
-&q_t(h_t,a)-\hat q_t(M_t,a)\\
-&\quad=\sum_o\big[P(O_{t+1}=o\mid h_t,a)-P(O_{t+1}=o\mid M_t,a)\big]\big[r(o)+\gamma\,\hat v_{t+1}(M_{t+1})\big]\\
-&\qquad+\gamma\sum_oP(O_{t+1}=o\mid h_t,a)\big[v_{t+1}(h_{t+1})-\hat v_{t+1}(M_{t+1})\big].
-\end{align*}
-
-\emph{Step 2: the first sum is $c^R_t+c^{\Ob}_t$.} Write $P(o\mid\cdot)=P(\rho\mid\cdot)P(\bar o\mid\cdot,\rho)$ and add and subtract $P(\rho\mid h_t,a)P(\bar o\mid M_t,a,\rho)$:
-\begin{align*}
-P(o\mid h_t,a)-P(o\mid M_t,a)&=\big[P(\rho\mid h_t,a)-P(\rho\mid M_t,a)\big]P(\bar o\mid M_t,a,\rho)\\
-&\quad+P(\rho\mid h_t,a)\big[P(\bar o\mid h_t,a,\rho)-P(\bar o\mid M_t,a,\rho)\big].
-\end{align*}
-Multiply by $\rho+\gamma\,w_t(\rho,\bar o)$ and sum over $(\rho,\bar o)$. The first part gives $c^R_t$. In the second part, $\rho$ does not depend on $\bar o$ and $\sum_{\bar o}[P(\bar o\mid h_t,a,\rho)-P(\bar o\mid M_t,a,\rho)]=0$, so only the term in $\gamma$ remains, which is $c^{\Ob}_t$.
-
-\emph{Step 3: the second sum.} By the second lines of Proposition~\ref{prop:bellman-h} and Definition~\ref{def:bellman-m}, $v_{t+1}(h_{t+1})-\hat v_{t+1}(M_{t+1})=\sum_{a'}\pi(a'\mid M_{t+1})\big[q_{t+1}(h_{t+1},a')-\hat q_{t+1}(M_{t+1},a')\big]$, the conditional expectation of the gap at $t+1$ given $h_{t+1}$ (Assumption~\ref{as:pol}); summed with the weights $P(O_{t+1}=o\mid h_t,a)$ it is the conditional expectation given $(h_t,A_t=a)$ (tower property, T5).
-
-\emph{Step 4: repeat.} Steps 1 to 3 give the gap at $t$ as $c^R_t+c^{\Ob}_t$ plus $\gamma$ times the expected gap at $t+1$. Apply them to the gap at $t+1$, then $t+2$, and so on, using the tower property each time, until $T$, where $v_T=\hat v_T=0$.
-\end{proof}
-
-In words: the gap between the history's value and the value the agent computes from its memory is the discounted sum over the steps $t,t+1,t+2,\dots$ of two comparisons per step. The reward comparison $c^R_n$ uses the two predictions of the reward part of $D_n$; it is $\delta_n$ of Proposition~\ref{prop:return-steps} plus $\gamma$ times the same two predictions weighted by the memory's value of what follows. The rest comparison $c^{\Ob}_n$ uses the two predictions of the rest part of $D_n$, weighted only by the memory's value of the next memory. By Corollary~\ref{cor:ratio}, $c^R_n=0$ when the reward part of $D_n$ is zero and $c^{\Ob}_n=0$ when its rest part is zero; so if $D_n=0$ for $n=t,\dots,T-1$, then $q_t(h_t,a)=\hat q_t(M_t,a)$.
-
-\paragraph{What is known.} The one-step empowerment and plasticity are those of \citet{abel2025plasticity}; the chain rule and the other tools are standard; the partial information decomposition is that of \citet{williams2010nonnegative}, with the conditional form of \citet{matthias2025novel} and the measure of \citet{bertschinger2014quantifying}. The Bellman equation is that of the textbook \citep{sutton2018reinforcement}, and the step-by-step subtraction of Proposition~\ref{prop:gap} has the form of the simulation lemma \citep{kearns2002near}, with the history's and the memory's predictions as the two models. The terms $D^0_t$, $D^+_t$, the two splits and the reward parts are defined and derived here; a short search did not find them elsewhere.
+\paragraph{What is known.} The one-step empowerment and plasticity are those of \citet{abel2025plasticity}; the chain rule and the other tools are standard; the partial information decomposition is that of \citet{williams2010nonnegative}, with the conditional form of \citet{matthias2025novel} and the measure of \citet{bertschinger2014quantifying}. The terms $D^0_t$, $D^+_t$, the two splits and the reward parts are defined and derived here; a short search did not find them elsewhere.
 
 \bibliographystyle{plainnat}
 \bibliography{references}

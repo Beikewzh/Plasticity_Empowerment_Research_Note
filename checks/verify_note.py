@@ -292,131 +292,32 @@ def check_steps(J, w, rec):
             rec.eq('Lem 2.1 I(h_t;A_t+k|M_t,A_t:t+k-1,O_t+1:t+k)=0', J.I([h], [('A', t + k)], Y(t, k)), 0.0)
 
 
-def bellman_pieces(J, w, t, K):
-    """The memory's Bellman value with final time t+K (Definition 6.2) and, for each n,
-    the comparisons c_n, c^R_n, c^Obar_n over all trajectories (Propositions 7.1, 7.3)."""
-    g, N = w.gamma, J.N
-    Qh, Vh = {}, {t + K: defaultdict(float)}
-    c, cR, cB = {}, {}, {}
-    for n in range(t + K - 1, t - 1, -1):
-        hn, Mn, An, On1 = ('h', n), ('M', n), ('A', n), ('O', n + 1)
-        Rn1, Bn1 = ('R', n + 1), ('Ob', n + 1)
-        PM, Ph = J.cdist([On1], [Mn, An]), J.cdist([On1], [hn, An])
-        V1 = Vh[n + 1]
-
-        def wt(m, a, o):
-            return o[0] + g * V1[w.f[(m, a, o)]]
-
-        Q = {(m, a): sum(p * wt(m, a, o) for (o,), p in d.items()) for (m, a), d in PM.items()}
-        V = {m: sum(w.pi[m][a] * Q[(m, a)] for a in ACTS) for m in MEMS if all((m, a) in Q for a in ACTS)}
-        Qh[n], Vh[n] = Q, V
-        kh, kM = J.keys([hn, An]), J.keys([Mn, An])
-        PRh, PRM = J.cdist([Rn1], [hn, An]), J.cdist([Rn1], [Mn, An])
-        PBh, PBM = J.cdist([Bn1], [hn, An, Rn1]), J.cdist([Bn1], [Mn, An, Rn1])
-        cn, cRn, cBn = [], [], []
-        for i in range(N):
-            m, a = kM[i]
-            cn.append(sum((Ph[kh[i]].get((o,), 0.0) - p) * wt(m, a, o) for (o,), p in PM[kM[i]].items()))
-            cRn.append(sum((PRh[kh[i]].get((r,), 0.0) - pr)
-                           * (r + g * sum(pb * V1[w.f[(m, a, (r, b))]] for (b,), pb in PBM[(m, a, r)].items()))
-                           for (r,), pr in PRM[kM[i]].items()))
-            tot = 0.0
-            for (r,), phr in PRh[kh[i]].items():
-                tot += phr * g * sum((PBh[kh[i] + (r,)].get((b,), 0.0) - pb) * V1[w.f[(m, a, (r, b))]]
-                                     for (b,), pb in PBM[(m, a, r)].items())
-            cBn.append(tot)
-        c[n], cR[n], cB[n] = cn, cRn, cBn
-    return Qh, Vh, c, cR, cB
-
-
-def returns(J, w, t, K):
-    """G_n for t <= n <= t+K with final time t+K."""
-    g, N = w.gamma, J.N
-    R = {n: J.vals(('R', n)) for n in range(t + 1, t + K + 1)}
-    return {n: [sum(g ** j * R[n + j + 1][i] for j in range(t + K - n)) for i in range(N)] for n in range(t, t + K + 1)}
-
-
-def kl(P, Q):
-    return sum(p * math.log(p / Q[x]) for x, p in P.items() if p > 0)
-
-
-def ratio(J, X, hside, mside):
-    """E[log P(X|hside)/P(X|mside)] computed from the two conditional laws."""
-    Ph, Pm = J.cdist(X, hside), J.cdist(X, mside)
-    kh, km, kx = J.keys(hside), J.keys(mside), J.keys(X)
-    return J.E([math.log(Ph[kh[i]][kx[i]] / Pm[km[i]][kx[i]]) for i in range(J.N)])
-
-
-def check_section6(J, w, rec):
-    T, g, N = w.T, w.gamma, J.N
-    for n in range(1, T + 1):
-        h, M, A, O1, A1, R1, B1 = ('h', n), ('M', n), ('A', n), ('O', n + 1), ('A', n + 1), ('R', n + 1), ('Ob', n + 1)
-        # Lemma 6.1 and Corollary 6.2
-        cases = [('D_n', [O1], [A]), ('D0_n', [O1], []), ('D+_n', [O1], [A, A1]), ('dE_n', [A], [O1]),
-                 ('dP_n', [A1], [A]), ('reward part of D_n', [R1], [A]), ('rest part of D_n', [B1], [A, R1]),
-                 ('reward part of dE_n', [A], [R1]), ('rest part of dP_n', [A1], [A, R1])]
-        for name, X, Zs in cases:
-            rec.eq('Lem 6.1 / Cor 6.2 %s = E[log ratio]' % name, J.I([h], X, [M] + Zs), ratio(J, X, [h] + Zs, [M] + Zs))
-        rec.eq('Cor 6.2 dE_n = I(h;A|M,O) (Prop 3.2 form)', J.I([h], [A], [M, O1]),
-               (J.I([A], [O1], [h])) - J.I([A], [O1], [M]))
-        # memory prediction = average of history predictions (Lemma 6.1), X = O_{n+1}, Z = A_n
-        PM, Ph, PhM = J.cdist([O1], [M, A]), J.cdist([O1], [h, A]), J.cdist([h], [M, A])
-        for (m, a), d in PM.items():
-            for (o,), p in d.items():
-                avg = sum(ph * Ph[(hv, a)].get((o,), 0.0) for (hv,), ph in PhM[(m, a)].items())
-                rec.eq('Lem 6.1 memory prediction = average of history predictions', p, avg)
-        # Proposition 6.3
-        kh, kM = J.keys([h, A]), J.keys([M, A])
-        PRh, PRM = J.cdist([R1], [h, A]), J.cdist([R1], [M, A])
-        Rv = J.vals(R1)
-        dl = [x - y for x, y in zip(J.cexp(Rv, [h, A])[0], J.cexp(Rv, [M, A])[0])]
-        for i in range(N):
-            rec.eq('Prop 6.3 reward difference = sum rho [P(rho|h,a) - P(rho|M,a)]', dl[i],
-                   sum(r * (PRh[kh[i]].get((r,), 0.0) - p) for (r,), p in PRM[kM[i]].items()))
-    for t in range(1, T + 1):
-        h, M, A = ('h', t), ('M', t), ('A', t)
-        kh, kM = J.keys([h, A]), J.keys([M, A])
-        for K in range(1, T + 2 - t):
-            Gn = returns(J, w, t, K)
-            R = {n: J.vals(('R', n)) for n in range(t + 1, t + K + 1)}
-            q = J.cexp(Gn[t], [h, A])[0]
-            # Proposition 6.4
-            eh = {n: J.cexp(R[n + 1], [('h', n), ('A', n)])[0] for n in range(t, t + K)}
-            em = {n: J.cexp(R[n + 1], [('M', n), ('A', n)])[0] for n in range(t, t + K)}
-            first = J.cexp([sum(g ** (n - t) * eh[n][i] for n in range(t, t + K)) for i in range(N)], [h, A])[0]
-            mem = J.cexp([sum(g ** (n - t) * em[n][i] for n in range(t, t + K)) for i in range(N)], [h, A])[0]
-            dsum = J.cexp([sum(g ** (n - t) * (eh[n][i] - em[n][i]) for n in range(t, t + K)) for i in range(N)], [h, A])[0]
-            for i in range(N):
-                rec.eq('Prop 6.4 first line', q[i], first[i])
-                rec.eq('Prop 6.4 second line (T = t+%d)' % K if K <= 3 else 'Prop 6.4 second line (T > t+3)', q[i] - mem[i], dsum[i])
-            # Proposition 6.5
-            if K > 1:
-                Ph = J.cdist([('O', t + 1)], [h, A])
-                _, v1 = J.cexp(Gn[t + 1], [('h', t + 1)])
-                _, q1 = J.cexp(Gn[t + 1], [('h', t + 1), ('A', t + 1)])
-            for i in range(N):
-                hv, a = kh[i]
-                m = kM[i][0]
-                if K == 1:
-                    rec.eq('Prop 6.5 Bellman equation for the history', q[i], eh[t][i])
-                    continue
-                rhs = 0.0
-                for (o,), p in Ph[kh[i]].items():
-                    h1 = (hv[0] + (o,), hv[1] + (a,))
-                    m1 = w.f[(m, a, o)]
-                    rhs += p * (o[0] + g * v1[(h1,)])
-                    rec.eq('Prop 6.5 second line v = sum pi q', v1[(h1,)], sum(w.pi[m1][b] * q1[(h1, b)] for b in ACTS))
-                rec.eq('Prop 6.5 Bellman equation for the history', q[i], rhs)
-            # Proposition 6.7
-            Qh, Vh, c, cR, cB = bellman_pieces(J, w, t, K)
-            for n in range(t, t + K):
-                for i in range(N):
-                    rec.eq('Prop 6.7 step 2: first sum = c^R_n + c^Obar_n', c[n][i], cR[n][i] + cB[n][i])
-            rec.eq('Prop 6.7 c^Obar = 0 at the last step', max(abs(x) for x in cB[t + K - 1]), 0.0)
-            lhs = [q[i] - Qh[t][kM[i]] for i in range(N)]
-            rhs = J.cexp([sum(g ** (n - t) * (cR[n][i] + cB[n][i]) for n in range(t, t + K)) for i in range(N)], [h, A])[0]
-            for i in range(N):
-                rec.eq('Prop 6.7 gap = E[sum g^k (c^R + c^Obar)] (T = t+%d)' % K if K <= 3 else 'Prop 6.7 gap (T > t+3)', lhs[i], rhs[i])
+def check_sum(J, w, rec):
+    """Proposition 6.1: the terms at t, t+1, t+2 and their sum."""
+    T = w.T
+    for t in range(1, T - 1):
+        tot = {k: 0.0 for k in ('D', 'D0', 'dE', 'dP', 'Dp', 'rD', 'sD', 'rD0', 'rdE', 'rdP', 'rDp', 'sD0', 'sdE', 'sdP', 'sDp')}
+        for n in (t, t + 1, t + 2):
+            h, M, A, O1, A1, R1, B1 = ('h', n), ('M', n), ('A', n), ('O', n + 1), ('A', n + 1), ('R', n + 1), ('Ob', n + 1)
+            I = J.I
+            tot['D'] += I([h], [O1], [M, A]); tot['D0'] += I([h], [O1], [M]); tot['dE'] += I([h], [A], [M, O1])
+            tot['dP'] += I([h], [A1], [M, A]); tot['Dp'] += I([h], [O1], [M, A, A1])
+            tot['rD'] += I([h], [R1], [M, A]); tot['sD'] += I([h], [B1], [M, A, R1])
+            tot['rD0'] += I([h], [R1], [M]); tot['sD0'] += I([h], [B1], [M, R1])
+            tot['rdE'] += I([h], [A], [M, R1]); tot['sdE'] += I([A], [B1], [h, R1]) - I([A], [B1], [M, R1])
+            tot['rdP'] += I([R1], [A1], [M, A]) - I([R1], [A1], [h, A]); tot['sdP'] += I([h], [A1], [M, A, R1])
+            tot['rDp'] += I([h], [R1], [M, A, A1]); tot['sDp'] += I([h], [B1], [M, A, A1, R1])
+        rec.eq('Prop 6.1 sum D = sum D0 + sum dE', tot['D'], tot['D0'] + tot['dE'])
+        rec.eq('Prop 6.1 sum D = sum dP + sum D+', tot['D'], tot['dP'] + tot['Dp'])
+        rec.eq('Prop 6.1 sum D = reward terms + rest terms', tot['D'], tot['rD'] + tot['sD'])
+        rec.eq('Prop 6.1 reward terms = D0 + dE reward terms', tot['rD'], tot['rD0'] + tot['rdE'])
+        rec.eq('Prop 6.1 reward terms = dP + D+ reward terms', tot['rD'], tot['rdP'] + tot['rDp'])
+        rec.eq('Prop 6.1 rest terms = D0 + dE rest terms', tot['sD'], tot['sD0'] + tot['sdE'])
+        rec.eq('Prop 6.1 rest terms = dP + D+ rest terms', tot['sD'], tot['sdP'] + tot['sDp'])
+        rec.eq('Prop 6.1 sum D0 = its reward + rest terms', tot['D0'], tot['rD0'] + tot['sD0'])
+        rec.eq('Prop 6.1 sum dE = its reward + rest terms', tot['dE'], tot['rdE'] + tot['sdE'])
+        rec.eq('Prop 6.1 sum dP = its reward + rest terms', tot['dP'], tot['rdP'] + tot['sdP'])
+        rec.eq('Prop 6.1 sum D+ = its reward + rest terms', tot['Dp'], tot['rDp'] + tot['sDp'])
 
 
 def main():
@@ -426,7 +327,7 @@ def main():
         J = world_joint(w)
         check_one_step(J, w, rec)
         check_steps(J, w, rec)
-        check_section6(J, w, rec)
+        check_sum(J, w, rec)
         print(f"seed {seed} (T={T}, {J.N} trajectories) done", flush=True)
     ok = rec.report()
     print("ALL PASS" if ok else "SOME CHECKS FAILED")
