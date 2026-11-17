@@ -267,7 +267,7 @@ reward part of $\dP_t$ & $I(R_{t+1};A_{t+1}\mid M_t,A_t)$\newline $\quad-I(R_{t+
 \item \emph{Rest first} asks what the reward adds beyond the rest of the observation. Its reward line is the information about the reward that remains once the rest of the observation is known. Its reward plasticity mismatch $I(h_t;A_{t+1}\mid M_t,A_t,\Ob_{t+1})$ is nonnegative: how much the next action depends on the history through the reward alone. Its reward empowerment mismatch can be negative.
 \end{itemize}
 
-\subsection{How the two orders differ}
+\subsection{How the two orders differ}\label{sec:orders}
 
 For random variables $U,V,W$ and a conditioning variable $Z$, the conditional co-information (interaction information) is
 \[
@@ -344,7 +344,68 @@ $|\E_PR-\E_QR|=|\sum_r(P(r)-Q(r))(r-c)|\le\frac{\Delta R}2\sum_r|P(r)-Q(r)|=\Del
 
 The quantity under the root is the reward line of the reward-first order, so the bound does not depend on the order. By Proposition~\ref{prop:split-xy} with $X=R_{t+1}$, it equals $I(h_t;R_{t+1}\mid M_t)+I(h_t;A_t\mid M_t,R_{t+1})$.
 
-\section{Open questions about one step}
+\section{One more step: the reward at time $t+2$}
+
+We now ask how much the history up to $t$ tells about the reward one step later, $R_{t+2}$, beyond the memory and the action at $t$:
+\[
+I(h_t;R_{t+2}\mid M_t,A_t).
+\]
+By the proof of Proposition~\ref{prop:reward-error} with $R_{t+2}$ in place of $R_{t+1}$, this quantity bounds the error of $\E[R_{t+2}\mid M_t,A_t]$, the expected reward at $t+2$ that a critic reading the memory can learn.
+
+\paragraph{The part of a term relevant to a later reward.}
+For a term of the form $T=I(h_t;V\mid C)$ and a later variable $W$, the definition of co-information (Section~\ref{sec:orders}) gives
+\[
+T=I(h_t;V;W\mid C)+I(h_t;V\mid C,W).
+\]
+We call $I(h_t;V;W\mid C)$ the part of $T$ relevant to $W$. It is at most $T$, because $I(h_t;V\mid C,W)\ge0$, and it can be negative.
+
+\begin{proposition}[Two steps]\label{prop:two-steps}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol},
+\begin{align*}
+I(h_t;R_{t+2}\mid M_t,A_t)&=\underbrace{I(h_t;A_{t+1};R_{t+2}\mid M_t,A_t)}_{\text{part of }\dP_t\text{ relevant to }R_{t+2}}\\
+&\quad+\underbrace{I(h_t;O_{t+1};R_{t+2}\mid M_t,A_t,A_{t+1})}_{\text{part of }D^+_t\text{ relevant to }R_{t+2}}+L_{t+1},
+\end{align*}
+where $L_{t+1}=I(h_t;R_{t+2}\mid M_t,A_t,O_{t+1},A_{t+1})$ is what the history up to $t$ still tells about $R_{t+2}$ after everything the agent sees and does at $t+1$.
+\end{proposition}
+
+\begin{proof}
+Expand $I(h_t;A_{t+1},O_{t+1},R_{t+2}\mid M_t,A_t)$ by the chain rule in two orders. In the order $A_{t+1},O_{t+1},R_{t+2}$:
+\[
+I(h_t;A_{t+1}\mid M_t,A_t)+I(h_t;O_{t+1}\mid M_t,A_t,A_{t+1})+L_{t+1}=\dP_t+D^+_t+L_{t+1}.
+\]
+In the order $R_{t+2},A_{t+1},O_{t+1}$:
+\[
+I(h_t;R_{t+2}\mid M_t,A_t)+I(h_t;A_{t+1}\mid M_t,A_t,R_{t+2})+I(h_t;O_{t+1}\mid M_t,A_t,A_{t+1},R_{t+2}).
+\]
+Setting the two equal and solving for $I(h_t;R_{t+2}\mid M_t,A_t)$,
+\begin{align*}
+I(h_t;R_{t+2}\mid M_t,A_t)&=\big[\dP_t-I(h_t;A_{t+1}\mid M_t,A_t,R_{t+2})\big]\\
+&\quad+\big[D^+_t-I(h_t;O_{t+1}\mid M_t,A_t,A_{t+1},R_{t+2})\big]+L_{t+1},
+\end{align*}
+and the two brackets are the stated co-informations by definition.
+\end{proof}
+
+So the second split of the defect tells exactly how the history reaches the reward one step later. There are three routes: through the agent's own next action (the relevant part of $\dP_t$), through the next observation once both actions are given (the relevant part of $D^+_t$), and through what is still hidden after step $t+1$ ($L_{t+1}$). The first two are at most $\dP_t$ and $D^+_t$.
+
+\paragraph{The remaining route is the reward line of the next step.}
+Since $h_{t+1}$ and $(h_t,M_t,A_t,O_{t+1})$ determine each other, and $M_{t+1}$ is a function of $(M_t,A_t,O_{t+1})$, the chain rule, first $(M_t,A_t,O_{t+1})$ and then $h_t$, gives
+\[
+I(h_{t+1};R_{t+2}\mid M_{t+1},A_{t+1})=I(M_t,A_t,O_{t+1};R_{t+2}\mid M_{t+1},A_{t+1})+L_{t+1}.
+\]
+The left side is the reward line of the reward-first order at $t+1$. The first term on the right is what the memory update at $t+1$ discards from its own input that still predicts $R_{t+2}$, and $L_{t+1}$ is what was lost before. Hence $L_{t+1}\le I(h_{t+1};R_{t+2}\mid M_{t+1},A_{t+1})$.
+
+\begin{corollary}\label{cor:two-steps}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol},
+\begin{align*}
+I(h_t;R_{t+2}\mid M_t,A_t)&\le\dP_t+D^+_t+I(h_{t+1};R_{t+2}\mid M_{t+1},A_{t+1})\\
+&=D_t+I(h_{t+1};R_{t+2}\mid M_{t+1},A_{t+1}).
+\end{align*}
+\end{corollary}
+
+\paragraph{Where the two orders enter.}
+The route through the next observation splits by the chain rule for co-information, $I(h_t;(R_{t+1},\Ob_{t+1});R_{t+2}\mid C)=I(h_t;R_{t+1};R_{t+2}\mid C)+I(h_t;\Ob_{t+1};R_{t+2}\mid C,R_{t+1})$ with $C=(M_t,A_t,A_{t+1})$, or in the other order. In the reward-first order, the first part is the route from the history to the later reward through the next reward: it is what an agent that sees no change in its observations, and notices a change only in its rewards, can use. In the rest-first order, the first part is the route through the rest of the observation. The two orders differ by a co-information, as in Proposition~\ref{prop:orders}.
+
+\section{Open questions}
 
 \begin{enumerate}
 \item Which parts of the reward line can a memory loss lower, and which are set by the policy? For instance $I(h_t;A_t\mid M_t,R_{t+1})\le H(A_t\mid M_t)$, which is zero for a deterministic policy.
@@ -352,7 +413,7 @@ The quantity under the root is the reward line of the reward-first order, so the
 \item Proposition~\ref{prop:reward-error} concerns the expected reward. Which part of one step controls the error of the advantage, which subtracts the part that does not depend on the action?
 \end{enumerate}
 
-\paragraph{Note.} The multi-step derivation is set aside in \texttt{archive/multistep\_draft\_2026-11-16.tex}. None of the reward-separated statements has been checked against the literature.
+\paragraph{Note.} The earlier multi-step draft is in \texttt{archive/multistep\_draft\_2026-11-16.tex}. None of the reward-separated statements has been checked against the literature.
 
 \bibliographystyle{plainnat}
 \bibliography{references}
