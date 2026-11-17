@@ -36,7 +36,7 @@
 \maketitle
 
 \begin{abstract}
-For an agent that acts on a memory, we derive the empowerment and plasticity mismatches between the history and the memory, the two splits of the state defect, and three ways to separate the reward inside them. We then write the terms at three successive times, add them, and list the reward terms of the sum. As preliminary results, not yet checked numerically, we relate these terms to the Bellman equation on the history and on the memory, to the order of actions, and to single-step policy improvement. Every derivation is written term by term, and every cancellation names the assumption or lemma that allows it.
+For an agent that acts on a memory, we derive the empowerment and plasticity mismatches between the history and the memory, the two splits of the state defect, and three ways to separate the reward inside them. We then write the terms at three successive times, add them, and list the reward terms of the sum. As preliminary results, we relate these terms to the Bellman equation on the history and on the memory, to the order of actions, and to single-step policy improvement. Every derivation is written term by term, and every cancellation names the assumption or lemma that allows it.
 \end{abstract}
 
 \section{Setting}\label{sec:setting}
@@ -632,7 +632,7 @@ In either order, the reward terms of the sum are the reward parts of $D_t$, $D_{
 
 \section{Preliminary results: from the reward terms to the return}\label{sec:prelim}
 
-The statements of this section are proved below, but unlike those of Sections~\ref{sec:setting}--\ref{sec:sum} they have not yet been checked by exact enumeration; the examples are computed by hand. Throughout, a final time $T$ and a discount factor $\gamma\in[0,1]$ are fixed, $r(o)$ is the reward contained in an observation $o$, $G_t=R_{t+1}+\gamma G_{t+1}$ with $G_T=0$, $J(\pi)=\E[G_1]$, and $\pi(a\mid m)>0$ for every action $a$ and every memory value $m$ that occurs.
+The statements of this section are proved below. They were also checked by exact enumeration of all trajectories, in small random environments and in environments built so that each zero condition holds (largest error $6\cdot10^{-16}$), and the values in the examples agree with the enumeration; these checks are not yet part of \texttt{checks/verify\_note.py}. Throughout, a final time $T$ and a discount factor $\gamma\in[0,1]$ are fixed, $r(o)$ is the reward contained in an observation $o$, $G_t=R_{t+1}+\gamma G_{t+1}$ with $G_T=0$, $J(\pi)=\E[G_1]$, and $\pi(a\mid m)>0$ for every action $a$ and every memory value $m$ that occurs.
 
 \subsection{The two Bellman equations and their difference}
 
@@ -778,7 +778,19 @@ Under the assumptions of Proposition~\ref{prop:improve}, let $\pi'$ choose at ti
 (a) The term in $\varepsilon_t$ is $\E\big[\varepsilon_t(M_t,\hat a)-\sum_a\pi(a\mid M_t)\varepsilon_t(M_t,a)\big]$, which is zero, and $\sum_a(\pi'-\pi)\hat Q_t\ge0$ by the choice of $\pi'$. (b) Averaging Proposition~\ref{prop:gap} at time $j$ over $A_j$ given $h_j$ (law $\pi(\cdot\mid M_j)$) gives $\E[Q^\pi_j-\hat Q_j\mid h_j]=\sum_a\pi(a\mid M_j)(\delta_j+\gamma\tau_j)+\gamma\,\E\big[\E[Q^\pi_{j+1}-\hat Q_{j+1}\mid h_{j+1}]\,\big|\,h_j\big]$. Under the conditions, the first term is zero for every $j>t$ by Proposition~\ref{prop:future}; by induction from $j=T-1$, $\E[Q^\pi_{t+1}-\hat Q_{t+1}\mid h_{t+1}]=0$, and $\varepsilon_t=0$ by its second form.
 \end{proof}
 
-The defect at the decision time, $D_t$, does not enter $\varepsilon_t$: what the memory has already lost limits how good a memory-based decision can be, but does not make a greedy step on $\hat Q_t$ worse. A greedy step can fail only through later steps.
+\begin{remark}[Three filters between information and improvement]\label{rem:filters}
+Let $e_j(h_j)=\sum_a\pi(a\mid M_j)\big[\delta_j(h_j,a)+\gamma\,\tau_j(h_j,a)\big]$ be the per-step error of Proposition~\ref{prop:future}, averaged over the agent's own action. Unrolling the averaged recursion in the proof of Corollary~\ref{cor:improve}(b) and using the second form of $\varepsilon_t$,
+\[
+\varepsilon_t(m,a)=\gamma\,\E\Big[\sum_{k=1}^{T-t-1}\gamma^{k-1}e_{t+k}(h_{t+k})\ \Big|\ M_t=m,A_t=a\Big].
+\]
+So information missing from the memory reaches the return difference of Proposition~\ref{prop:improve} only through three filters.
+\begin{enumerate}
+\item[(1)] \emph{Temporal relevance.} No term of time $t$ appears: the information already missing at the decision time, $D_t$, averages out over the histories behind $M_t$ (Proposition~\ref{prop:gap}(b)). It limits how good a memory-based decision can be, but does not make a greedy step on $\hat Q_t$ worse.
+\item[(2)] \emph{Bellman relevance.} At a later time $j$ the action is drawn from $\pi$ and averaged. Then $e_j$ consists of the error in predicting $O_{j+1}$ without the action, which vanishes with $D^0_j$, and of a term without reward that vanishes with $\dE_j$ and is present only when the value of the next memory depends on the action (Proposition~\ref{prop:future}).
+\item[(3)] \emph{Decision relevance.} Only the part of $\varepsilon_t(m,\cdot)$ that differs across actions enters the improvement (Proposition~\ref{prop:improve}, Corollary~\ref{cor:improve}(a)); a common shift, and differences between predictions that leave the expected targets unchanged, do not.
+\end{enumerate}
+The second filter uses the first split, $D_j=D^0_j+\dE_j$; the first and third use only the Bellman equations, the tower property and Lemma~\ref{lem:action}.
+\end{remark}
 
 \subsection{Examples}
 
@@ -795,7 +807,6 @@ The defect at the decision time, $D_t$, does not enter $\varepsilon_t$: what the
 \item Every link between an information term and a value term above is a zero condition. The size of $\varepsilon_t$ is given by the predictions, not by the information terms.
 \item Changing the policy at several times at once is not covered: the law of the history behind the memory then changes.
 \item The second split, $D_t=\dP_t+D^+_t$, has not yet been related to the prediction error.
-\item None of the statements of this section has been checked by exact enumeration yet.
 \end{itemize}
 
 \bibliographystyle{plainnat}
