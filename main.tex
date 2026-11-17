@@ -344,63 +344,114 @@ $|\E_PR-\E_QR|=|\sum_r(P(r)-Q(r))(r-c)|\le\frac{\Delta R}2\sum_r|P(r)-Q(r)|=\Del
 
 The quantity under the root is the reward line of the reward-first order, so the bound does not depend on the order. By Proposition~\ref{prop:split-xy} with $X=R_{t+1}$, it equals $I(h_t;R_{t+1}\mid M_t)+I(h_t;A_t\mid M_t,R_{t+1})$.
 
-\section{One more step: the reward at time $t+2$}
+\section{From one step to many steps}
 
-We now ask how much the history up to $t$ tells about the reward one step later, $R_{t+2}$, beyond the memory and the action at $t$:
-\[
-I(h_t;R_{t+2}\mid M_t,A_t).
-\]
-By the proof of Proposition~\ref{prop:reward-error} with $R_{t+2}$ in place of $R_{t+1}$, this quantity bounds the error of $\E[R_{t+2}\mid M_t,A_t]$, the expected reward at $t+2$ that a critic reading the memory can learn.
+We ask how much the history up to $t$ tells about a later reward $R_{t+k+1}$, $k\ge1$, beyond the memory at $t$. There are two versions, one for each split of the defect: without the action, $I(h_t;R_{t+k+1}\mid M_t)$, which controls the state value a critic on the memory can learn; and with the action, $I(h_t;R_{t+k+1}\mid M_t,A_t)$, which controls the action value. We show that the first split describes the first and the second split describes the second.
 
-\paragraph{The part of a term relevant to a later reward.}
-For a term of the form $T=I(h_t;V\mid C)$ and a later variable $W$, the definition of co-information (Section~\ref{sec:orders}) gives
+\subsection{The part of a term relevant to a later reward}
+
+For a term $T=I(h_t;V\mid C)$ and a later variable $W$, the definition of co-information (Section~\ref{sec:orders}) gives
 \[
 T=I(h_t;V;W\mid C)+I(h_t;V\mid C,W).
 \]
 We call $I(h_t;V;W\mid C)$ the part of $T$ relevant to $W$. It is at most $T$, because $I(h_t;V\mid C,W)\ge0$, and it can be negative.
 
-\begin{proposition}[Two steps]\label{prop:two-steps}
+\begin{lemma}[Chain rule for the relevant parts]\label{lem:relevant}
+For variables $V_1,\dots,V_n$, a target $W$ and a conditioning variable $C$,
+\[
+I(h_t;W\mid C)=\sum_{i=1}^{n}I(h_t;V_i;W\mid C,V_1,\dots,V_{i-1})+I(h_t;W\mid C,V_1,\dots,V_n).
+\]
+\end{lemma}
+
+\begin{proof}
+Expand $I(h_t;V_1,\dots,V_n,W\mid C)$ by the chain rule in two orders. With $W$ last it is $\sum_iI(h_t;V_i\mid C,V_{<i})+I(h_t;W\mid C,V_{1:n})$; with $W$ first it is $I(h_t;W\mid C)+\sum_iI(h_t;V_i\mid C,W,V_{<i})$. Set them equal and solve for $I(h_t;W\mid C)$; each difference $I(h_t;V_i\mid C,V_{<i})-I(h_t;V_i\mid C,V_{<i},W)$ is the co-information $I(h_t;V_i;W\mid C,V_{<i})$.
+\end{proof}
+
+\subsection{Two steps}
+
+\begin{proposition}[Two steps, both splits]\label{prop:two-steps}
 Under Assumptions~\ref{as:mem} and~\ref{as:pol},
 \begin{align*}
-I(h_t;R_{t+2}\mid M_t,A_t)&=\underbrace{I(h_t;A_{t+1};R_{t+2}\mid M_t,A_t)}_{\text{part of }\dP_t\text{ relevant to }R_{t+2}}\\
-&\quad+\underbrace{I(h_t;O_{t+1};R_{t+2}\mid M_t,A_t,A_{t+1})}_{\text{part of }D^+_t\text{ relevant to }R_{t+2}}+L_{t+1},
+I(h_t;R_{t+2}\mid M_t)&=\underbrace{I(h_t;O_{t+1};R_{t+2}\mid M_t)}_{\text{part of }D^0_t}+\underbrace{I(h_t;A_t;R_{t+2}\mid M_t,O_{t+1})}_{\text{part of }\dE_t}\\
+&\quad+I(h_t;R_{t+2}\mid M_t,A_t,O_{t+1}),\\[4pt]
+I(h_t;R_{t+2}\mid M_t,A_t)&=\underbrace{I(h_t;A_{t+1};R_{t+2}\mid M_t,A_t)}_{\text{part of }\dP_t}\\
+&\quad+\underbrace{I(h_t;O_{t+1};R_{t+2}\mid M_t,A_t,A_{t+1})}_{\text{part of }D^+_t}\\
+&\quad+I(h_t;R_{t+2}\mid M_t,A_t,O_{t+1},A_{t+1}),
 \end{align*}
-where $L_{t+1}=I(h_t;R_{t+2}\mid M_t,A_t,O_{t+1},A_{t+1})$ is what the history up to $t$ still tells about $R_{t+2}$ after everything the agent sees and does at $t+1$.
+where ``part of'' means the part relevant to $R_{t+2}$.
 \end{proposition}
 
 \begin{proof}
-Expand $I(h_t;A_{t+1},O_{t+1},R_{t+2}\mid M_t,A_t)$ by the chain rule in two orders. In the order $A_{t+1},O_{t+1},R_{t+2}$:
-\[
-I(h_t;A_{t+1}\mid M_t,A_t)+I(h_t;O_{t+1}\mid M_t,A_t,A_{t+1})+L_{t+1}=\dP_t+D^+_t+L_{t+1}.
-\]
-In the order $R_{t+2},A_{t+1},O_{t+1}$:
-\[
-I(h_t;R_{t+2}\mid M_t,A_t)+I(h_t;A_{t+1}\mid M_t,A_t,R_{t+2})+I(h_t;O_{t+1}\mid M_t,A_t,A_{t+1},R_{t+2}).
-\]
-Setting the two equal and solving for $I(h_t;R_{t+2}\mid M_t,A_t)$,
-\begin{align*}
-I(h_t;R_{t+2}\mid M_t,A_t)&=\big[\dP_t-I(h_t;A_{t+1}\mid M_t,A_t,R_{t+2})\big]\\
-&\quad+\big[D^+_t-I(h_t;O_{t+1}\mid M_t,A_t,A_{t+1},R_{t+2})\big]+L_{t+1},
-\end{align*}
-and the two brackets are the stated co-informations by definition.
+For the first line, apply Lemma~\ref{lem:relevant} with $C=M_t$, $(V_1,V_2)=(O_{t+1},A_t)$ and $W=R_{t+2}$; the two terms are the parts of $D^0_t=I(h_t;O_{t+1}\mid M_t)$ and $\dE_t=I(h_t;A_t\mid M_t,O_{t+1})$. For the second line, apply it with $C=(M_t,A_t)$ and $(V_1,V_2)=(A_{t+1},O_{t+1})$; the two terms are the parts of $\dP_t=I(h_t;A_{t+1}\mid M_t,A_t)$ and $D^+_t=I(h_t;O_{t+1}\mid M_t,A_t,A_{t+1})$.
 \end{proof}
 
-So the second split of the defect tells exactly how the history reaches the reward one step later. There are three routes: through the agent's own next action (the relevant part of $\dP_t$), through the next observation once both actions are given (the relevant part of $D^+_t$), and through what is still hidden after step $t+1$ ($L_{t+1}$). The first two are at most $\dP_t$ and $D^+_t$.
+So the history reaches the reward one step later along the routes named by the four terms: through the next observation without the action and through the action read with its outcome (first split), or through the agent's own next action and through the next observation given both actions (second split). The last term in each line is what is still hidden after step $t+1$.
 
-\paragraph{The remaining route is the reward line of the next step.}
-Since $h_{t+1}$ and $(h_t,M_t,A_t,O_{t+1})$ determine each other, and $M_{t+1}$ is a function of $(M_t,A_t,O_{t+1})$, the chain rule, first $(M_t,A_t,O_{t+1})$ and then $h_t$, gives
+\subsection{$k$ steps}
+
+Write $Y_{t,j}=(M_t,A_t,O_{t+1},\dots,A_{t+j-1},O_{t+j})$ for the memory at $t$ and everything the agent saw up to $O_{t+j}$ and did up to $A_{t+j-1}$, with $Y_{t,0}=M_t$; and $Z_{t,j}=(Y_{t,j},A_{t+j})$. Since $h_{t+j}$ and $(h_t,Y_{t,j})$ determine each other, the following window quantities are the four terms at time $t+j$ computed with $h_t$ in place of $h_{t+j}$ and $Y_{t,j}$ in place of $M_{t+j}$:
+\begin{align*}
+D^{0}_{t,j}&=I(h_t;O_{t+j+1}\mid Y_{t,j}), & \dE_{t,j}&=I(h_t;A_{t+j}\mid Y_{t,j},O_{t+j+1}),\\
+\dP_{t,j}&=I(h_t;A_{t+j+1}\mid Z_{t,j}), & D^{+}_{t,j}&=I(h_t;O_{t+j+1}\mid Z_{t,j},A_{t+j+1}).
+\end{align*}
+For $j=0$ they are $D^0_t,\dE_t,\dP_t,D^+_t$.
+
+\begin{proposition}[$k$ steps, both splits]\label{prop:k-steps}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol}, for $k\ge1$,
+\begin{align*}
+I(h_t;R_{t+k+1}\mid M_t)&=\sum_{j=0}^{k-1}\Big[I(h_t;O_{t+j+1};R_{t+k+1}\mid Y_{t,j})\\
+&\qquad\qquad+I(h_t;A_{t+j};R_{t+k+1}\mid Y_{t,j},O_{t+j+1})\Big]\\
+&\quad+I(h_t;R_{t+k+1}\mid Y_{t,k}),\\
+I(h_t;R_{t+k+1}\mid M_t,A_t)&=\sum_{j=0}^{k-1}\Big[I(h_t;A_{t+j+1};R_{t+k+1}\mid Z_{t,j})\\
+&\qquad\qquad+I(h_t;O_{t+j+1};R_{t+k+1}\mid Z_{t,j},A_{t+j+1})\Big]\\
+&\quad+I(h_t;R_{t+k+1}\mid Z_{t,k}).
+\end{align*}
+The two terms in the $j$-th bracket of the first line are the parts of $D^0_{t,j}$ and $\dE_{t,j}$ relevant to $R_{t+k+1}$; in the second line, the parts of $\dP_{t,j}$ and $D^+_{t,j}$.
+\end{proposition}
+
+\begin{proof}
+Apply Lemma~\ref{lem:relevant} with $W=R_{t+k+1}$. For the first line take $C=M_t$ and the sequence $O_{t+1},A_t,O_{t+2},A_{t+1},\dots,O_{t+k},A_{t+k-1}$: before $O_{t+j+1}$ the conditioning variables are $Y_{t,j}$, and after $A_{t+j}$ they are $Y_{t,j+1}$. For the second line take $C=(M_t,A_t)$ and the sequence $A_{t+1},O_{t+1},A_{t+2},O_{t+2},\dots,A_{t+k},O_{t+k}$: before $A_{t+j+1}$ the conditioning variables are $Z_{t,j}$, and after $O_{t+j+1}$ they are $Z_{t,j+1}$.
+\end{proof}
+
+\begin{lemma}[Window terms are at most the agent's terms]\label{lem:window}
+Under Assumption~\ref{as:mem}, for any variables $X$ and $V$,
 \[
-I(h_{t+1};R_{t+2}\mid M_{t+1},A_{t+1})=I(M_t,A_t,O_{t+1};R_{t+2}\mid M_{t+1},A_{t+1})+L_{t+1}.
+I(h_{t+j};X\mid M_{t+j},V)=I(Y_{t,j};X\mid M_{t+j},V)+I(h_t;X\mid Y_{t,j},V).
 \]
-The left side is the reward line of the reward-first order at $t+1$. The first term on the right is what the memory update at $t+1$ discards from its own input that still predicts $R_{t+2}$, and $L_{t+1}$ is what was lost before. Hence $L_{t+1}\le I(h_{t+1};R_{t+2}\mid M_{t+1},A_{t+1})$.
+Hence $D^0_{t,j}\le D^0_{t+j}$, $\dE_{t,j}\le\dE_{t+j}$, $\dP_{t,j}\le\dP_{t+j}$, $D^+_{t,j}\le D^+_{t+j}$, $I(h_t;R_{t+k+1}\mid Y_{t,k})\le I(h_{t+k};R_{t+k+1}\mid M_{t+k})$ and $I(h_t;R_{t+k+1}\mid Z_{t,k})\le I(h_{t+k};R_{t+k+1}\mid M_{t+k},A_{t+k})$.
+\end{lemma}
 
-\begin{corollary}\label{cor:two-steps}
+\begin{proof}
+$h_{t+j}$ and $(h_t,Y_{t,j})$ determine each other, and $M_{t+j}$ is a function of $Y_{t,j}$ by applying $f$ $j$ times. The chain rule, first $Y_{t,j}$ and then $h_t$, gives the identity after removing $M_{t+j}$ from the condition of the second term. The first term is what the memory updates from $t$ to $t+j$ discarded that is still relevant; it is nonnegative. The inequalities follow by taking $(X,V)$ equal to $(O_{t+j+1},\,\cdot\,)$, $(A_{t+j},O_{t+j+1})$, $(A_{t+j+1},A_{t+j})$ and $(O_{t+j+1},(A_{t+j},A_{t+j+1}))$, and for the last two to $(R_{t+k+1},\,\cdot\,)$ and $(R_{t+k+1},A_{t+k})$.
+\end{proof}
+
+\begin{corollary}\label{cor:k-steps}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol}, since each relevant part is at most its window term,
+\begin{align*}
+I(h_t;R_{t+k+1}\mid M_t)&\le\sum_{j=0}^{k-1}\big(D^0_{t+j}+\dE_{t+j}\big)+I(h_{t+k};R_{t+k+1}\mid M_{t+k}),\\
+I(h_t;R_{t+k+1}\mid M_t,A_t)&\le\sum_{j=0}^{k-1}\big(\dP_{t+j}+D^+_{t+j}\big)+I(h_{t+k};R_{t+k+1}\mid M_{t+k},A_{t+k}).
+\end{align*}
+Both sums equal $\sum_{j<k}D_{t+j}$ by Proposition~\ref{prop:splits}; the last terms are the reward parts of $D^0_{t+k}$ and $D_{t+k}$ in the reward-first order.
+\end{corollary}
+
+\subsection{The infinite horizon}
+
+Let $\gamma<1$. The state value and action value of the history under the policy are $v_\pi(h)=\E[\sum_{k\ge0}\gamma^kR_{t+k+1}\mid h_t=h]$ and $q_\pi(h,a)=\E[\sum_{k\ge0}\gamma^kR_{t+k+1}\mid h_t=h,A_t=a]$. A critic that reads the memory can at best learn their averages over the histories behind each memory value, $v_\pi(m)=\E[v_\pi(h_t)\mid M_t=m]$ and $q_\pi(m,a)=\E[q_\pi(h_t,a)\mid M_t=m,A_t=a]$.
+
+\begin{proposition}[Value errors]\label{prop:value}
 Under Assumptions~\ref{as:mem} and~\ref{as:pol},
 \begin{align*}
-I(h_t;R_{t+2}\mid M_t,A_t)&\le\dP_t+D^+_t+I(h_{t+1};R_{t+2}\mid M_{t+1},A_{t+1})\\
-&=D_t+I(h_{t+1};R_{t+2}\mid M_{t+1},A_{t+1}).
+\E\big|v_\pi(h_t)-v_\pi(M_t)\big|&\le\Delta R\sum_{k\ge0}\gamma^k\sqrt{\tfrac12\,I(h_t;R_{t+k+1}\mid M_t)},\\
+\E\big|q_\pi(h_t,A_t)-q_\pi(M_t,A_t)\big|&\le\Delta R\sum_{k\ge0}\gamma^k\sqrt{\tfrac12\,I(h_t;R_{t+k+1}\mid M_t,A_t)},
 \end{align*}
-\end{corollary}
+where for $k\ge1$ each information term is given exactly by Proposition~\ref{prop:k-steps}, through the first split for the state value and through the second split for the action value, and for $k=0$ the terms are $I(h_t;R_{t+1}\mid M_t)$ and $I(h_t;R_{t+1}\mid M_t,A_t)$, the reward parts of $D^0_t$ and $D_t$ in the reward-first order. If $D_{t+j}\le\bar D$ for all $j\ge0$, both right-hand sides are at most $\Delta R\sqrt{\bar D/2}\,(1-\gamma)^{-3/2}$.
+\end{proposition}
+
+\begin{proof}
+By the tower property, $v_\pi(h)-v_\pi(m)=\sum_{k\ge0}\gamma^k\big(\E[R_{t+k+1}\mid h_t=h]-\E[R_{t+k+1}\mid M_t=m]\big)$ for $m$ the memory value of $h$. Take absolute values, use the triangle inequality, and bound each term as in the proof of Proposition~\ref{prop:reward-error} with $R_{t+k+1}$ in place of $R_{t+1}$; the same argument applies to $q_\pi$ with $A_t$ added to the conditioning. For the uniform bound, Corollary~\ref{cor:k-steps} and $I(h_{t+k};R_{t+k+1}\mid M_{t+k},A_{t+k})\le D_{t+k}$, $I(h_{t+k};R_{t+k+1}\mid M_{t+k})\le D^0_{t+k}\le D_{t+k}$ give an information term at most $(k+1)\bar D$, and $\sum_{k\ge0}\gamma^k\sqrt{k+1}\le\sqrt{\sum_k\gamma^k}\sqrt{\sum_k\gamma^k(k+1)}=(1-\gamma)^{-3/2}$ by the Cauchy--Schwarz inequality.
+\end{proof}
+
+So, over an infinite horizon, the state value depends on the history beyond the memory through the parts of $D^0$ and $\dE$ along the agent's path that are relevant to later rewards, and the action value through the parts of $\dP$ and $D^+$. The uniform bound has the structure of the approximate information state of \citet{subramanian2022approximate}; the exact decomposition into relevant parts has not been checked against the literature.
 
 \paragraph{Where the two orders enter.}
 The route through the next observation splits by the chain rule for co-information, $I(h_t;(R_{t+1},\Ob_{t+1});R_{t+2}\mid C)=I(h_t;R_{t+1};R_{t+2}\mid C)+I(h_t;\Ob_{t+1};R_{t+2}\mid C,R_{t+1})$ with $C=(M_t,A_t,A_{t+1})$, or in the other order. In the reward-first order, the first part is the route from the history to the later reward through the next reward: it is what an agent that sees no change in its observations, and notices a change only in its rewards, can use. In the rest-first order, the first part is the route through the rest of the observation. The two orders differ by a co-information, as in Proposition~\ref{prop:orders}.
