@@ -1,0 +1,85 @@
+Python 3.10.12
+seed 1 (T=4, 32768 trajectories) done
+seed 2 (T=4, 32768 trajectories) done
+seed 3 (T=3, 4096 trajectories) done
+seed 4 (T=3, 4096 trajectories) done
+seed 5 (T=3, 4096 trajectories) done
+memory seed 11 done
+memory seed 12 done
+memory seed 13 done
+check                                                                  n   max error  max |value|  result
+Ex 7.3 (xor): D = 1 bit                                                1    3.33e-16       1.0000  PASS
+Ex 7.3 (xor): reward-first D parts (0,1)                               1    1.78e-15      10.0000  PASS
+Ex 7.3 (xor): rest-first D parts (1,0)                                 1    1.55e-15       1.0000  PASS
+Ex 7.3 (xor): dP = 0                                                   1    1.60e-16       0.0000  PASS
+Ex 7.3 (xor): reward-first dP reward part -1                           1    3.33e-16       1.0000  PASS
+Ex 7.3 (xor): reward-first dP rest part +1                             1    1.11e-16       1.0000  PASS
+Ex 7.3 (xor): rest-first dP parts (0,0)                                1    4.81e-16       0.0000  PASS
+Ex 7.3 (xor): co-information -1 bit                                    1    3.33e-16       1.0000  PASS
+Ex 7.4 (shows action): D = 1 bit                                       1    0.00e+00       1.0000  PASS
+Ex 7.4 (shows action): dE = 0                                          1    0.00e+00       0.0000  PASS
+Ex 7.4 (shows action): reward-first dE parts (1,-1)                    1    0.00e+00      11.0000  PASS
+Ex 7.4 (shows action): rest-first dE parts (0,0)                       1    3.20e-16       0.0000  PASS
+Ex 7.4 (shows action): U^R = 1 bit (I(h;R|M,A)=1, I(h;Ob|M,A)=0)       1    2.22e-16       1.0000  PASS
+Lem 2.1: I(h_t;A_t|M_t)=0                                             17    1.09e-14       0.0000  PASS
+Lem 2.1: I(h_t;A_t+1|M_t,A_t,O_t+1)=0                                 17    6.84e-14       0.0000  PASS
+Prop 3.2: D=D0+dE                                                     17    1.09e-14       0.1494  PASS
+Prop 3.2: D=dP+D+                                                     17    6.73e-14       0.1494  PASS
+Prop 3.2: time order gives 0+D+0                                      17    5.97e-14       0.1494  PASS
+Prop 3.4a: dE=E-E(M)                                                  17    9.99e-15       0.0697  PASS
+Prop 3.4a: dP=P(M)-P                                                  17    6.93e-14       0.0038  PASS
+Prop 3.4b: H(A|M)=E(M)+dE+H(A|h,O')                                   17    8.88e-16       0.6884  PASS
+Prop 3.4c: I(M';A')=I(M,A;A')+P+dP                                    17    6.84e-14       0.0496  PASS
+Prop 3.4c: I(M,A;A')+dP=I(h,A;A')                                     17    1.11e-15       0.0114  PASS
+Lem 6.1a: I(M,A;O')=I(h,A;O')-D                                       17    1.33e-15       0.0796  PASS
+Prop 3.2: four terms >= 0                                             17    0.00e+00       0.0038  PASS
+Prop 7.1: dE formula                                                  34    1.02e-14       0.0697  PASS
+Prop 7.1: dE first bracket                                            34    1.29e-14       0.0385  PASS
+Prop 7.1: dP formula                                                  34    6.75e-14       0.0038  PASS
+Prop 7.1: dP second bracket                                           34    6.75e-14       0.0057  PASS
+Prop 7.1: X line, first split                                         34    1.24e-14       0.0612  PASS
+Prop 7.1: X line, second split                                        34    1.78e-15       0.0612  PASS
+Prop 7.1: Y line, first split                                         34    2.22e-15       0.1029  PASS
+Prop 7.1: Y line, second split                                        34    6.93e-14       0.1029  PASS
+Prop 7.2: D                                                           17    0.00e+00       0.0512  PASS
+Prop 7.2: D0                                                          17    0.00e+00       0.0270  PASS
+Prop 7.2: D+                                                          17    0.00e+00       0.0463  PASS
+Prop 7.2: dE                                                          17    0.00e+00       0.0311  PASS
+Prop 7.2: dP                                                          17    0.00e+00       0.0058  PASS
+Prop 7.5: bounds on U^R consistent                                    17    0.00e+00       0.0612  PASS
+extra: Pinsker bound for the next reward                              17    0.00e+00       0.1749  PASS
+Lem 2.2: sum over updates                                            119    4.44e-15       0.1494  PASS
+Lem 2.2: two groups of updates                                        38    2.66e-15       0.1494  PASS
+Prop 4.2: first split                                                 38    2.58e-14       0.0938  PASS
+Prop 4.2: second split                                                38    1.00e-13       0.0938  PASS
+Lem 2.1: I(U_s;A_n|Y_s,n-s)=0                                         38    2.31e-14       0.0000  PASS
+Prop 4.2: sums over s give D0,dE,dP,D+                                68    4.44e-15       0.1478  PASS
+Prop 4.1c: sum_k = I(U_s; future | M_s)                               38    1.87e-14       0.2927  PASS
+Prop 4.1a,b: sum g^n D_n = sum g^s C_s                                 5    3.22e-15       0.4223  PASS
+Prop 5.1: D_t,k = E[E_Z L log L]                                      38    2.01e-14       0.1494  PASS
+Prop 3.7a: D_t,k = D0+dE                                              38    2.58e-14       0.1494  PASS
+Prop 3.7a: D_t,k = dP+D+                                              38    1.00e-13       0.1494  PASS
+Prop 3.7b: D_t,k <= D_t+k                                             38    0.00e+00       0.1494  PASS
+Prop 5.2a: c = c^dP + c^D+                                        729088    3.82e-15       0.6872  PASS
+Prop 5.2b: cbar = c^D0 + c^dE (no reward in dE)                   729088    1.15e-14       0.5484  PASS
+Prop 5.1: q(h,a)-q(M,a) = E[sum g^k c]                            299008    1.37e-14       0.5401  PASS
+Prop 5.1: v(h)-v(M) = E[sum g^k c]                                299008    1.51e-14       0.4193  PASS
+Cor 5.6: first bound                                                  17    0.00e+00       1.9407  PASS
+Cor 5.6: second bound                                                 17    0.00e+00       6.8072  PASS
+Prop 5.5: first line                                                  17    6.22e-15       0.0753  PASS
+Prop 5.5: second line                                                 17    4.44e-15       0.0569  PASS
+Prop 5.4: Bellman on the memory                                   299008    1.47e-14       1.9572  PASS
+Prop 5.4: E[v(U')-v(M')|M'] = 0                                   299008    9.86e-15       0.0000  PASS
+Prop 5.4: size of the last term (shown)                               17    0.00e+00       0.0899  PASS
+Prop 5.3: E[G|U_s,Z_s] = E[G|F_s-1]                               729088    0.00e+00       1.9572  PASS
+Prop 5.3: pieces sum to the error                                 299008    5.55e-17       0.5401  PASS
+Prop 5.3: MSE = sum of mean squares                                   17    2.64e-16       0.0339  PASS
+Prop 5.3: pieces uncorrelated                                         32    9.90e-17       0.0000  PASS
+Prop 6.4: variational identity                                        20    2.22e-16       1.2848  PASS
+Prop 6.4: loss formula                                                20    1.01e-16       0.0161  PASS
+Prop 6.4: loss = lam KL(pi_m||pi_h)                                   20    3.94e-16       0.0161  PASS
+Lem 6.1b: E[l|h,A] = B - d                                        299008    9.99e-16       0.2281  PASS
+Prop 6.3: gradient (finite differences)                               10    3.74e-09       0.8260  PASS
+Prop 6.5b: V_t(h,m)-V(m) = E[sum g^k Cov(L,W)]                       192    3.58e-15       0.1861  PASS
+Prop 6.5a: gradient (finite differences)                              12    5.04e-08       0.0372  PASS
+ALL PASS

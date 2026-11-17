@@ -1,19 +1,14 @@
 #!/usr/bin/env python3
-"""Exact numerical checks of the identities in the note
-"The State Defect, Plasticity, Empowerment and the Return".
+"""Exact numerical checks of every numbered statement in main.tex
+("The State Defect, Empowerment and Plasticity").
 
-A small random world is enumerated exactly:
-  observations O = (R, Obar) in {0,1}^2 (R is the reward, Delta R = 1),
-  actions A in {0,1}, a memory with two values updated by a random map
-  M_{t+1} = f(M_t, A_t, O_{t+1}) (M_1 = f0(O_1)), a random stochastic policy
-  pi(a|m), and an environment whose law of the next observation is drawn at
-  random for every (history, action) pair, so it depends on the whole history.
-Every quantity is computed from the exact law of the trajectory
-(O_1, A_1, ..., O_{T+1}, A_{T+1}), so each identity must hold to floating-point
-precision. Logarithms are natural. Pure Python, no dependencies.
-
-Each check is labelled by the statement of the note it tests (e.g. "Prop 5.1").
-Usage: python3 verify_note.py            (all checks)
+A small random world is enumerated exactly: observations O = (R, Obar) in {0,1}^2,
+actions in {0,1}, a memory with two values updated by a random map
+M_{t+1} = f(M_t, A_t, O_{t+1}) (M_1 = f1(O_1)), a random stochastic policy pi(a|m),
+and an environment whose law of the next observation is drawn at random for every
+(history, action) pair. All quantities are computed from the exact law of the
+trajectory (O_1, A_1, ..., O_{T+1}, A_{T+1}). Each check is labelled with the number
+of the statement it tests. Logarithms are natural. Pure Python.
 """
 import math
 import random
@@ -235,484 +230,142 @@ class Rec:
         return ok_all
 
 
+
 # ---------------------------------------------------------------- checks
-def check_four_terms(J, w, rec):
+def check_one_step(J, w, rec):
     T = w.T
     for t in range(1, T + 1):
-        ht, Mt, At, O1, A1, M1 = ('h', t), ('M', t), ('A', t), ('O', t + 1), ('A', t + 1), ('M', t + 1)
-        D = J.I([ht], [O1], [Mt, At])
-        D0 = J.I([ht], [O1], [Mt])
-        dE = J.I([ht], [At], [Mt, O1])
-        dP = J.I([ht], [A1], [Mt, At])
-        Dp = J.I([ht], [O1], [Mt, At, A1])
-        rec.eq('Lem 2.1: I(h_t;A_t|M_t)=0', J.I([ht], [At], [Mt]), 0.0)
-        rec.eq('Lem 2.1: I(h_t;A_t+1|M_t,A_t,O_t+1)=0', J.I([ht], [A1], [Mt, At, O1]), 0.0)
-        rec.eq('Prop 3.2: D=D0+dE', D, D0 + dE)
-        rec.eq('Prop 3.2: D=dP+D+', D, dP + Dp)
-        rec.eq('Prop 3.2: time order gives 0+D+0', J.I([ht], [At, O1, A1], [Mt]), D)
-        E, EM = J.I([At], [O1], [ht]), J.I([At], [O1], [Mt])
-        P, PM = J.I([O1], [A1], [ht, At]), J.I([O1], [A1], [Mt, At])
-        rec.eq('Prop 3.4a: dE=E-E(M)', dE, E - EM)
-        rec.eq('Prop 3.4a: dP=P(M)-P', dP, PM - P)
-        rec.eq('Prop 3.4b: H(A|M)=E(M)+dE+H(A|h,O\')', J.Hc([At], [Mt]), EM + dE + J.Hc([At], [ht, O1]))
-        rec.eq('Prop 3.4c: I(M\';A\')=I(M,A;A\')+P+dP', J.I([M1], [A1]), J.I([Mt, At], [A1]) + P + dP)
-        rec.eq('Prop 3.4c: I(M,A;A\')+dP=I(h,A;A\')', J.I([Mt, At], [A1]) + dP, J.I([ht, At], [A1]))
-        rec.eq('Lem 6.1a: I(M,A;O\')=I(h,A;O\')-D', J.I([Mt, At], [O1]), J.I([ht, At], [O1]) - D)
-        rec.le('Prop 3.2: four terms >= 0', -min(D0, dE, dP, Dp), 0.0)
-
-        # reward inside the terms
+        h, M, A, O1, A1, M1 = ('h', t), ('M', t), ('A', t), ('O', t + 1), ('A', t + 1), ('M', t + 1)
         R1, B1 = ('R', t + 1), ('Ob', t + 1)
+        # Lemma 2.1, k = 0, 1
+        rec.eq('Lem 2.1(a) H(A_t|h_t)=H(A_t|M_t)', J.Hc([A], [h]), J.Hc([A], [M]))
+        rec.eq('Lem 2.1(b) H(A_t+1|h_t,A_t,O_t+1)=H(A_t+1|M_t,A_t,O_t+1)', J.Hc([A1], [h, A, O1]), J.Hc([A1], [M, A, O1]))
+        rec.eq('Lem 2.1 I(h_t;A_t|M_t)=0', J.I([h], [A], [M]), 0.0)
+        rec.eq('Lem 2.1 I(h_t;A_t+1|M_t,A_t,O_t+1)=0', J.I([h], [A1], [M, A, O1]), 0.0)
+        E, EM = J.I([A], [O1], [h]), J.I([A], [O1], [M])
+        P, PM = J.I([O1], [A1], [h, A]), J.I([O1], [A1], [M, A])
+        D, D0, Dp = J.I([h], [O1], [M, A]), J.I([h], [O1], [M]), J.I([h], [O1], [M, A, A1])
+        dE, dP = J.I([h], [A], [M, O1]), J.I([h], [A1], [M, A])
+        rec.eq('Prop 3.2 E-E(M) = I(h;A|M,O\')', E - EM, dE)
+        rec.eq('Prop 3.3 P(M)-P = I(h;A\'|M,A)', PM - P, dP)
+        rec.eq('Prop 4.2 I(h,A;O\'|M) = D0+E', J.I([h, A], [O1], [M]), D0 + E)
+        rec.eq('Prop 4.2 I(h,A;O\'|M) = E(M)+D', J.I([h, A], [O1], [M]), EM + D)
+        rec.eq('Prop 4.2 D = D0 + dE', D, D0 + dE)
+        rec.eq('Prop 4.3 I(h;O\',A\'|M,A) = D', J.I([h], [O1, A1], [M, A]), D)
+        rec.eq('Prop 4.3 D = dP + D+', D, dP + Dp)
+        rec.eq('Rem 4.4 I(h;A,O\',A\'|M) = D', J.I([h], [A, O1, A1], [M]), D)
+        rec.le('Cor 4.5(b) dP <= D', dP, D)
+        rec.le('Cor 4.5(c) dE <= H(A|M)', dE, J.Hc([A], [M]))
         for X, Yv in ((R1, B1), (B1, R1)):
-            rec.eq('Prop 7.1: dE formula', dE, (J.I([At], [X], [ht]) - J.I([At], [X], [Mt]))
-                   + (J.I([At], [Yv], [ht, X]) - J.I([At], [Yv], [Mt, X])))
-            rec.eq('Prop 7.1: dE first bracket', J.I([At], [X], [ht]) - J.I([At], [X], [Mt]), J.I([ht], [At], [Mt, X]))
-            rec.eq('Prop 7.1: dP formula', dP, (J.I([X], [A1], [Mt, At]) - J.I([X], [A1], [ht, At]))
-                   + (J.I([Yv], [A1], [Mt, At, X]) - J.I([Yv], [A1], [ht, At, X])))
-            rec.eq('Prop 7.1: dP second bracket', J.I([Yv], [A1], [Mt, At, X]) - J.I([Yv], [A1], [ht, At, X]),
-                   J.I([ht], [A1], [Mt, At, X]))
-            Xl = J.I([ht], [X], [Mt, At])
-            rec.eq('Prop 7.1: X line, first split', Xl, J.I([ht], [X], [Mt]) + J.I([ht], [At], [Mt, X]))
-            rec.eq('Prop 7.1: X line, second split', Xl, (J.I([X], [A1], [Mt, At]) - J.I([X], [A1], [ht, At]))
-                   + J.I([ht], [X], [Mt, At, A1]))
-            Yl = J.I([ht], [Yv], [Mt, At, X])
-            rec.eq('Prop 7.1: Y line, first split', Yl, J.I([ht], [Yv], [Mt, X])
-                   + (J.I([At], [Yv], [ht, X]) - J.I([At], [Yv], [Mt, X])))
-            rec.eq('Prop 7.1: Y line, second split', Yl, J.I([ht], [A1], [Mt, At, X]) + J.I([ht], [Yv], [Mt, At, A1, X]))
-        rec.eq('Prop 7.2: D',
-               J.I([ht], [R1], [Mt, At]) - J.I([ht], [R1], [Mt, At, B1]), J.CI([ht], [R1], [B1], [Mt, At]))
-        rec.eq('Prop 7.2: D0',
-               J.I([ht], [R1], [Mt]) - J.I([ht], [R1], [Mt, B1]), J.CI([ht], [R1], [B1], [Mt]))
-        rec.eq('Prop 7.2: D+',
-               J.I([ht], [R1], [Mt, At, A1]) - J.I([ht], [R1], [Mt, At, A1, B1]), J.CI([ht], [R1], [B1], [Mt, At, A1]))
-        rE_rf = J.I([At], [R1], [ht]) - J.I([At], [R1], [Mt])
-        rE_sf = J.I([At], [R1], [ht, B1]) - J.I([At], [R1], [Mt, B1])
-        rec.eq('Prop 7.2: dE', rE_rf - rE_sf,
-               J.CI([At], [R1], [B1], [ht]) - J.CI([At], [R1], [B1], [Mt]))
-        rP_rf = J.I([R1], [A1], [Mt, At]) - J.I([R1], [A1], [ht, At])
-        rP_sf = J.I([R1], [A1], [Mt, At, B1]) - J.I([R1], [A1], [ht, At, B1])
-        rec.eq('Prop 7.2: dP', rP_rf - rP_sf,
-               J.CI([R1], [A1], [B1], [Mt, At]) - J.CI([R1], [A1], [B1], [ht, At]))
-        lo = max(0.0, J.I([ht], [R1], [Mt, At]) - J.I([ht], [B1], [Mt, At]))
-        hi = min(J.I([ht], [R1], [Mt, At]), J.I([ht], [R1], [Mt, At, B1]))
-        rec.le('Prop 7.5: bounds on U^R consistent', lo, hi)
-        # reward error bound (Pinsker)
-        lhs = J.E([abs(a - b) for a, b in zip(J.cexp(J.vals(R1), [ht, At])[0], J.cexp(J.vals(R1), [Mt, At])[0])])
-        rec.le('extra: Pinsker bound for the next reward', lhs, math.sqrt(0.5 * J.I([ht], [R1], [Mt, At])))
+            rec.eq('Prop 5.1 D split', D, J.I([h], [X], [M, A]) + J.I([h], [Yv], [M, A, X]))
+            rec.eq('Prop 5.1 D0 split', D0, J.I([h], [X], [M]) + J.I([h], [Yv], [M, X]))
+            rec.eq('Prop 5.1 D+ split', Dp, J.I([h], [X], [M, A, A1]) + J.I([h], [Yv], [M, A, A1, X]))
+            xE = J.I([A], [X], [h]) - J.I([A], [X], [M])
+            yE = J.I([A], [Yv], [h, X]) - J.I([A], [Yv], [M, X])
+            rec.eq('Prop 5.2 dE = X part + Y part', dE, xE + yE)
+            rec.eq('Prop 5.2 X part = I(h;A|M,X)', xE, J.I([h], [A], [M, X]))
+            xP = J.I([X], [A1], [M, A]) - J.I([X], [A1], [h, A])
+            yP = J.I([Yv], [A1], [M, A, X]) - J.I([Yv], [A1], [h, A, X])
+            rec.eq('Prop 5.3 dP = X part + Y part', dP, xP + yP)
+            rec.eq('Prop 5.3 Y part = I(h;A\'|M,A,X)', yP, J.I([h], [A1], [M, A, X]))
+            Xl, Yl = J.I([h], [X], [M, A]), J.I([h], [Yv], [M, A, X])
+            rec.eq('Prop 5.4 X part, first split', Xl, J.I([h], [X], [M]) + xE)
+            rec.eq('Prop 5.4 X part, second split', Xl, xP + J.I([h], [X], [M, A, A1]))
+            rec.eq('Prop 5.4 Y part, first split', Yl, J.I([h], [Yv], [M, X]) + yE)
+            rec.eq('Prop 5.4 Y part, second split', Yl, yP + J.I([h], [Yv], [M, A, A1, X]))
+        rec.eq('Prop 5.5 D', J.I([h], [R1], [M, A]) - J.I([h], [R1], [M, A, B1]), J.CI([h], [R1], [B1], [M, A]))
+        rec.eq('Prop 5.5 D0', J.I([h], [R1], [M]) - J.I([h], [R1], [M, B1]), J.CI([h], [R1], [B1], [M]))
+        rec.eq('Prop 5.5 D+', J.I([h], [R1], [M, A, A1]) - J.I([h], [R1], [M, A, A1, B1]), J.CI([h], [R1], [B1], [M, A, A1]))
+        rec.eq('Prop 5.5 dE',
+               (J.I([A], [R1], [h]) - J.I([A], [R1], [M])) - (J.I([A], [R1], [h, B1]) - J.I([A], [R1], [M, B1])),
+               J.CI([A], [R1], [B1], [h]) - J.CI([A], [R1], [B1], [M]))
+        rec.eq('Prop 5.5 dP',
+               (J.I([R1], [A1], [M, A]) - J.I([R1], [A1], [h, A])) - (J.I([R1], [A1], [M, A, B1]) - J.I([R1], [A1], [h, A, B1])),
+               J.CI([R1], [A1], [B1], [M, A]) - J.CI([R1], [A1], [B1], [h, A]))
+        lo = max(0.0, J.I([h], [R1], [M, A]) - J.I([h], [B1], [M, A]))
+        hi = min(J.I([h], [R1], [M, A]), J.I([h], [R1], [M, A, B1]))
+        rec.le('Prop 5.7(d) bounds on U^R consistent', lo, hi)
 
 
-def check_updates(J, w, rec):
-    T, g = w.T, w.gamma
-    for n in range(1, T + 1):
-        hn, Mn, An, On1, An1 = ('h', n), ('M', n), ('A', n), ('O', n + 1), ('A', n + 1)
-        combos = [([On1], []), ([On1], [An]), ([An1], [An]), ([On1], [An, An1]),
-                  ([An], [On1]), (['G'], [An]), (['G'], [])]
-        for X, V in combos:
-            X = [('G', n)] if X == ['G'] else X
-            lhs = J.I([hn], X, [Mn] + V)
-            rhs = sum(J.I([('U', s)], X, Y(s, n - s) + V) for s in range(1, n + 1))
-            rec.eq('Lem 2.2: sum over updates', lhs, rhs)
-        # two-piece window lemma
-        for t in range(1, n + 1):
-            j = n - t
-            lhs = J.I([hn], [On1], [Mn, An])
-            rhs = J.I(Y(t, j), [On1], [Mn, An]) + J.I([('h', t)], [On1], Y(t, j) + [An])
-            rec.eq('Lem 2.2: two groups of updates', lhs, rhs)
-        # per-update charge and its two splits
-        for s in range(1, n + 1):
-            U, Zs, Ys = [('U', s)], Z(s, n - s), Y(s, n - s)
-            T_sn = J.I(U, [On1], Zs)
-            first = J.I(U, [On1], Ys) + J.I(U, [An], Ys + [On1])
-            second = J.I(U, [An1], Zs) + J.I(U, [On1], Zs + [An1])
-            rec.eq('Prop 4.2: first split', T_sn, first)
-            rec.eq('Prop 4.2: second split', T_sn, second)
-            rec.eq('Lem 2.1: I(U_s;A_n|Y_s,n-s)=0', J.I(U, [An], Ys), 0.0)
-        # parts sum to the four terms
-        parts = [sum(J.I([('U', s)], [On1], Y(s, n - s)) for s in range(1, n + 1)),
-                 sum(J.I([('U', s)], [An], Y(s, n - s) + [On1]) for s in range(1, n + 1)),
-                 sum(J.I([('U', s)], [An1], Z(s, n - s)) for s in range(1, n + 1)),
-                 sum(J.I([('U', s)], [On1], Z(s, n - s) + [An1]) for s in range(1, n + 1))]
-        terms = [J.I([hn], [On1], [Mn]), J.I([hn], [An], [Mn, On1]), J.I([hn], [An1], [Mn, An]),
-                 J.I([hn], [On1], [Mn, An, An1])]
-        for p_, q_ in zip(parts, terms):
-            rec.eq('Prop 4.2: sums over s give D0,dE,dP,D+', p_, q_)
-    # undiscounted charge = info discarded about the future stream
-    for s in range(1, T + 1):
-        for K in range(0, T - s + 1):
-            lhs = sum(J.I([('U', s)], [('O', s + k + 1)], Z(s, k)) for k in range(K + 1))
-            seq = []
-            for k in range(K + 1):
-                seq += [('A', s + k), ('O', s + k + 1)]
-            rec.eq('Prop 4.1c: sum_k = I(U_s; future | M_s)', lhs, J.I([('U', s)], seq, [('M', s)]))
-    # discounted sum of defects = discounted sum of charges
-    lhs = sum(g ** (n - 1) * J.I([('h', n)], [('O', n + 1)], [('M', n), ('A', n)]) for n in range(1, T + 1))
-    rhs = sum(g ** (s - 1) * sum(g ** k * J.I([('U', s)], [('O', s + k + 1)], Z(s, k)) for k in range(T - s + 1))
-              for s in range(1, T + 1))
-    rec.eq('Prop 4.1a,b: sum g^n D_n = sum g^s C_s', lhs, rhs)
+def terms_k(J, t, k):
+    """The five terms of Definition 7.1 (k = 1 is Definition 6.1)."""
+    h, Ok, Ak, Ak1 = ('h', t), ('O', t + k + 1), ('A', t + k), ('A', t + k + 1)
+    Ys, Zs = Y(t, k), Z(t, k)
+    return dict(D=J.I([h], [Ok], Zs), D0=J.I([h], [Ok], Ys), dE=J.I([h], [Ak], Ys + [Ok]),
+                dP=J.I([h], [Ak1], Zs), Dp=J.I([h], [Ok], Zs + [Ak1]))
 
 
-def values(J, w):
+def check_steps(J, w, rec):
     T = w.T
-    v = {n: J.cexp(J.vals(('G', n)), [('h', n)])[0] for n in range(1, T + 1)}
-    v[T + 1] = [0.0] * J.N
-    return v
-
-
-def check_value(J, w, rec):
-    T, g = w.T, w.gamma
-    v = values(J, w)
     for t in range(1, T + 1):
-        ht, Mt, At = ('h', t), ('M', t), ('A', t)
-        Gt = J.vals(('G', t))
-        qh = J.cexp(Gt, [ht, At])[0]
-        qm = J.cexp(Gt, [Mt, At])[0]
-        S = [0.0] * J.N
-        for k in range(0, T - t + 1):
-            Zs, Ys, On, An, An1 = Z(t, k), Y(t, k), ('O', t + k + 1), ('A', t + k), ('A', t + k + 1)
-            Ph, Pz = J.cdist([On], [ht] + Zs), J.cdist([On], Zs)
-            _, vd = J.cexp(v[t + k + 1], Zs + [On])
-            kz, khz = J.keys(Zs), J.keys([ht] + Zs)
-            wfun = lambda zk, o: o[0] + g * vd.get(zk + (o,), 0.0)
-            c = []
-            DL = []
-            for i in range(J.N):
-                ph, pz = Ph[khz[i]], Pz[kz[i]]
-                c.append(sum((ph.get((o,), 0.0) - pzo) * wfun(kz[i], o) for (o,), pzo in pz.items()))
-                DL.append(sum(pho * math.log(pho / pz[(o,)]) for (o,), pho in ph.items() if pho > 0))
-            Dtk = J.I([ht], [On], Zs)
-            rec.eq('Prop 5.1: D_t,k = E[E_Z L log L]', Dtk, J.E(DL))
-            rec.eq('Prop 3.7a: D_t,k = D0+dE', Dtk, J.I([ht], [On], Ys) + J.I([ht], [An], Ys + [On]))
-            if t + k + 1 <= T + 1:
-                rec.eq('Prop 3.7a: D_t,k = dP+D+', Dtk, J.I([ht], [An1], Zs) + J.I([ht], [On], Zs + [An1]))
-            rec.le('Prop 3.7b: D_t,k <= D_t+k', Dtk,
-                   J.I([('h', t + k)], [On], [('M', t + k), An]))
-            # routes, second split: c = c^dP + c^D+
-            PAh, PAz = J.cdist([An1], [ht] + Zs), J.cdist([An1], Zs)
-            POha, POza = J.cdist([On], [ht] + Zs + [An1]), J.cdist([On], Zs + [An1])
-            for i in range(J.N):
-                zk, hzk = kz[i], khz[i]
-                cdp = 0.0
-                cdplus = 0.0
-                for (a1,), pza in PAz[zk].items():
-                    Wa = sum(po * wfun(zk, o) for (o,), po in POza[zk + (a1,)].items())
-                    cdp += (PAh[hzk].get((a1,), 0.0) - pza) * Wa
-                for (a1,), pha in PAh[hzk].items():
-                    if pha <= 0:
-                        continue
-                    pz_o = POza[zk + (a1,)]
-                    ph_o = POha[hzk + (a1,)]
-                    cdplus += pha * sum((ph_o.get((o,), 0.0) - pzo) * wfun(zk, o) for (o,), pzo in pz_o.items())
-                rec.eq('Prop 5.2a: c = c^dP + c^D+', c[i], cdp + cdplus)
-            # routes, first split (cost averaged over A_{t+k}): c = c^D0 + c^dE, and dE route has no reward
-            cbar = J.cexp(c, [ht] + Ys)[0]
-            ky, khy = J.keys(Ys), J.keys([ht] + Ys)
-            POhy, POy = J.cdist([On], [ht] + Ys), J.cdist([On], Ys)
-            PAyo, PAhyo = J.cdist([An], Ys + [On]), J.cdist([An], [ht] + Ys + [On])
-            for i in range(J.N):
-                yk, hyk = ky[i], khy[i]
-                cd0 = 0.0
-                cde = 0.0
-                for (o,), pyo in POy[yk].items():
-                    wbar = sum(pa * (o[0] + g * vd.get(yk + (a, o), 0.0)) for (a,), pa in PAyo[yk + (o,)].items())
-                    cd0 += (POhy[hyk].get((o,), 0.0) - pyo) * wbar
-                for (o,), pho in POhy[hyk].items():
-                    if pho <= 0:
-                        continue
-                    pa_h, pa_y = PAhyo[hyk + (o,)], PAyo[yk + (o,)]
-                    cde += pho * g * sum((pa_h.get((a,), 0.0) - pay) * vd.get(yk + (a, o), 0.0)
-                                         for (a,), pay in pa_y.items())
-                rec.eq('Prop 5.2b: cbar = c^D0 + c^dE (no reward in dE)', cbar[i], cd0 + cde)
-            S = [s_ + g ** k * ci for s_, ci in zip(S, c)]
-        ES = J.cexp(S, [ht, At])[0]
-        for i in range(J.N):
-            rec.eq('Prop 5.1: q(h,a)-q(M,a) = E[sum g^k c]', qh[i] - qm[i], ES[i])
-        vh = J.cexp(Gt, [ht])[0]
-        vm = J.cexp(Gt, [Mt])[0]
-        ESv = J.cexp(S, [ht])[0]
-        for i in range(J.N):
-            rec.eq('Prop 5.1: v(h)-v(M) = E[sum g^k c]', vh[i] - vm[i], ESv[i])
-        # bounds
-        gap_abs = J.E([abs(a - b) for a, b in zip(qh, qm)])
-        rec.le('Cor 5.6: first bound', gap_abs,
-               (1.0 / (1 - g)) * math.sqrt(0.5 * J.I([ht], [('G', t)], [Mt, At])))
-        rec.le('Cor 5.6: second bound', gap_abs,
-               (1.0 / (1 - g)) * sum(g ** k * math.sqrt(0.5 * J.I([ht], [('O', t + k + 1)], Z(t, k)))
-                                     for k in range(T - t + 1)))
-        # information routes to the return (relevant parts)
-        G = [('G', t)]
-        lhs = J.I([ht], G, [Mt, At])
-        rhs = 0.0
-        for j in range(0, T - t + 1):
-            rhs += J.CI([ht], [('A', t + j + 1)], G, Z(t, j)) + J.CI([ht], [('O', t + j + 1)], G, Z(t, j) + [('A', t + j + 1)])
-        rhs += J.I([ht], G, Z(t, T - t) + [('A', T + 1), ('O', T + 1)])
-        rec.eq('Prop 5.5: first line', lhs, rhs)
-        lhs = J.I([ht], G, [Mt])
-        rhs = 0.0
-        for j in range(0, T - t + 1):
-            rhs += J.CI([ht], [('O', t + j + 1)], G, Y(t, j)) + J.CI([ht], [('A', t + j)], G, Y(t, j) + [('O', t + j + 1)])
-        rhs += J.I([ht], G, Y(t, T - t + 1))
-        rec.eq('Prop 5.5: second line', lhs, rhs)
-        # TD bias
-        vM = J.cexp(v[t + 1], [('M', t + 1)])[0]
-        vU = J.cexp(v[t + 1], [('U', t + 1)])[0]
-        R1 = J.vals(('R', t + 1))
-        lhs = J.cexp(Gt, [Mt, At])[0]
-        rhs1 = J.cexp([r + g * a for r, a in zip(R1, vM)], [Mt, At])[0]
-        rhs2 = J.cexp([g * (a - b) for a, b in zip(vU, vM)], [Mt, At])[0]
-        for i in range(J.N):
-            rec.eq('Prop 5.4: Bellman on the memory', lhs[i], rhs1[i] + rhs2[i])
-        zero = J.cexp([a - b for a, b in zip(vU, vM)], [('M', t + 1)])[0]
-        for i in range(J.N):
-            rec.eq('Prop 5.4: E[v(U\')-v(M\')|M\'] = 0', zero[i], 0.0)
-        rec.le('Prop 5.4: size of the last term (shown)', -max(abs(x) for x in rhs2), 0.0)
-    # per-update value pieces
-    for n in range(1, T + 1):
-        Gn = J.vals(('G', n))
-        X0 = J.cexp(Gn, [('h', n), ('A', n)])[0]
-        Xn = J.cexp(Gn, [('M', n), ('A', n)])[0]
-        deltas = []
-        prev = X0
-        for s in range(1, n + 1):
-            Xs = J.cexp(Gn, Z(s, n - s))[0]
-            Xs_minus = J.cexp(Gn, [('U', s)] + Z(s, n - s))[0]
-            for i in range(J.N):
-                rec.eq('Prop 5.3: E[G|U_s,Z_s] = E[G|F_s-1]', Xs_minus[i], prev[i])
-            deltas.append([a - b for a, b in zip(Xs_minus, Xs)])
-            prev = Xs
-        tot = [sum(d[i] for d in deltas) for i in range(J.N)]
-        for i in range(J.N):
-            rec.eq('Prop 5.3: pieces sum to the error', tot[i], X0[i] - Xn[i])
-        for a in range(len(deltas)):
-            for b in range(a + 1, len(deltas)):
-                rec.eq('Prop 5.3: pieces uncorrelated', J.E([x * y for x, y in zip(deltas[a], deltas[b])]), 0.0)
-        rec.eq('Prop 5.3: MSE = sum of mean squares', J.E([(x - y) ** 2 for x, y in zip(X0, Xn)]),
-               sum(J.E([x * x for x in d]) for d in deltas))
-
-
-def check_merge(J, w, rec, alpha, lam, p):
-    """Gibbs identity and the exact loss of merging, at t = 1."""
-    t = 1
-    Gt = J.vals(('G', t))
-    _, qh = J.cexp(Gt, [('h', t), ('A', t)])
-    _, qm = J.cexp(Gt, [('M', t), ('A', t)])
-    hs = set(J.vals(('h', t)))
-    hm = dict(zip(J.vals(('h', t)), J.vals(('M', t))))
-    rng = random.Random(7)
-    for h in hs:
-        m = hm[h]
-        sh = {a: alpha * qh[(h, a)] for a in ACTS}
-        sm = {a: alpha * qm[(m, a)] for a in ACTS}
-        Zh = sum(p[a] * math.exp(sh[a] / lam) for a in ACTS)
-        Zm = sum(p[a] * math.exp(sm[a] / lam) for a in ACTS)
-        pih = {a: p[a] * math.exp(sh[a] / lam) / Zh for a in ACTS}
-        pim = {a: p[a] * math.exp(sm[a] / lam) / Zm for a in ACTS}
-        kl = lambda x, y: sum(x[a] * math.log(x[a] / y[a]) for a in ACTS)
-        pr = normalize([rng.random() + 0.1 for _ in ACTS])
-        pr = dict(zip(ACTS, pr))
-        rec.eq('Prop 6.4: variational identity', sum(pr[a] * sh[a] for a in ACTS) - lam * kl(pr, p),
-               lam * math.log(Zh) - lam * kl(pr, pih))
-        gap = {a: qh[(h, a)] - qm[(m, a)] for a in ACTS}
-        rec.eq('Prop 6.4: loss formula', lam * kl(pim, pih),
-               lam * math.log(sum(pim[a] * math.exp(alpha * gap[a] / lam) for a in ACTS))
-               - alpha * sum(pim[a] * gap[a] for a in ACTS))
-        loss_direct = (sum(pih[a] * sh[a] for a in ACTS) - lam * kl(pih, p)) - (sum(pim[a] * sh[a] for a in ACTS) - lam * kl(pim, p))
-        rec.eq('Prop 6.4: loss = lam KL(pi_m||pi_h)', lam * kl(pim, pih), loss_direct)
-
-
-# ---------------------------------------------------------------- objective and gradients
-def frozen_laws(J, w):
-    T = w.T
-    Pc = {n: J.cdist([('O', n + 1)], [('M', n), ('A', n)]) for n in range(1, T + 1)}
-    Pm = {n: J.cdist([('O', n + 1)], [])[()] for n in range(1, T + 1)}
-    return Pc, Pm
-
-
-def payoffs(J, w, p, alpha, lam, laws):
-    """Per-step payoff r~_n with the laws held fixed."""
-    Pc, Pm = laws
-    T, out = w.T, {}
-    for n in range(1, T + 1):
-        kma = J.keys([('M', n), ('A', n)])
-        On, Ms, As, Rs = J.vals(('O', n + 1)), J.vals(('M', n)), J.vals(('A', n)), J.vals(('R', n + 1))
-        out[n] = [alpha * Rs[i] + math.log(Pc[n][kma[i]][(On[i],)] / Pm[n][(On[i],)])
-                  - lam * math.log(w.pi[Ms[i]][As[i]] / p[As[i]]) for i in range(J.N)]
-    return out
-
-
-def objective(w, p, alpha, lam, mu=0.0, t_mem=None):
-    J = world_joint(w)
-    T, g = w.T, w.gamma
-    tot = 0.0
-    for n in range(1, T + 1):
-        ER = J.E(J.vals(('R', n + 1)))
-        info = J.I([('M', n), ('A', n)], [('O', n + 1)])
-        kl = J.E([sum(w.pi[m][a] * math.log(w.pi[m][a] / p[a]) for a in ACTS) for m in J.vals(('M', n))])
-        tot += g ** (n - 1) * (alpha * ER + info - lam * kl)
-    if t_mem is not None:
-        tot -= mu * g ** (t_mem - 1) * J.I([('M', t_mem)], [('h', t_mem)])
-    return tot, J
-
-
-def check_policy_gradient(w, rec, alpha, lam, p, eps=1e-5):
-    T, g = w.T, w.gamma
-    J0, J = objective(w, p, alpha, lam)
-    laws = frozen_laws(J, w)
-    r = payoffs(J, w, p, alpha, lam, laws)
-    # E[ ell_n | h_n, A_n ] = B_n(h,A) - d_n(h,M,A)  (Step 4)
-    Pc, Pm = laws
-    for n in range(1, T + 1):
-        Ph = J.cdist([('O', n + 1)], [('h', n), ('A', n)])
-        ell = [x - alpha * rr + lam * math.log(w.pi[m][a] / p[a]) for x, rr, m, a in
-               zip(r[n], J.vals(('R', n + 1)), J.vals(('M', n)), J.vals(('A', n)))]
-        lhs = J.cexp(ell, [('h', n), ('A', n)])[0]
-        khA, kmA = J.keys([('h', n), ('A', n)]), J.keys([('M', n), ('A', n)])
-        for i in range(J.N):
-            ph = Ph[khA[i]]
-            B = sum(po * math.log(po / Pm[n][o]) for o, po in ph.items())
-            d = sum(po * math.log(po / Pc[n][kmA[i]][o]) for o, po in ph.items())
-            rec.eq('Lem 6.1b: E[l|h,A] = B - d', lhs[i], B - d)
-    # gradient formula G(m,a)
-    Gf = {}
-    for m in MEMS:
-        for a in ACTS:
-            tot = 0.0
-            for j in range(1, T + 1):
-                Sj = [sum(g ** k * r[j + k][i] for k in range(T - j + 1)) for i in range(J.N)]
-                _, d = J.cexp(Sj, [('M', j), ('A', j)])
-                pm_ = sum(pp for pp, mm in zip(J.P, J.vals(('M', j))) if mm == m)
-                if pm_ > 0:
-                    tot += g ** (j - 1) * pm_ * (d[(m, a)] - lam)
-            Gf[(m, a)] = tot
-    for m in MEMS:
-        wp, wm = w.clone(), w.clone()
-        wp.pi[m][0] += eps
-        wp.pi[m][1] -= eps
-        wm.pi[m][0] -= eps
-        wm.pi[m][1] += eps
-        num = (objective(wp, p, alpha, lam)[0] - objective(wm, p, alpha, lam)[0]) / (2 * eps)
-        rec.fd('Prop 6.3: gradient (finite differences)', num, Gf[(m, 0)] - Gf[(m, 1)])
-
-
-def check_memory_gradient(w, rec, alpha, lam, mu, p, eps=1e-5):
-    t = w.rand_step
-    T, g = w.T, w.gamma
-    J0, J = objective(w, p, alpha, lam, mu, t)
-    laws = frozen_laws(J, w)
-    r = payoffs(J, w, p, alpha, lam, laws)
-    Pc, Pm = laws
-    # values under the objective V_n(h_n, M_n)
-    Vlist = {}
-    for n in range(1, T + 1):
-        S = [sum(g ** i * r[n + i][k] for i in range(T - n + 1)) for k in range(J.N)]
-        Vlist[n] = J.cexp(S, [('h', n), ('M', n)])[0]
-    Vlist[T + 1] = [0.0] * J.N
-    _, Vt = J.cexp(Vlist[t], [('h', t), ('M', t)])
-    _, Vm = J.cexp(Vlist[t], [('M', t)])
-    # (a) V_t(h,m) - V(m) = E[ sum_k g^k Cov_Z(L, W) | h, m ]
-    ht = ('h', t)
-    S = [0.0] * J.N
-    for k in range(0, T - t + 1):
-        Zs, On = Z(t, k), ('O', t + k + 1)
-        Ph, Pz = J.cdist([On], [ht] + Zs), J.cdist([On], Zs)
-        _, Vw = J.cexp(Vlist[t + k + 1], Zs + [On])
-        kz, khz = J.keys(Zs), J.keys([ht] + Zs)
-        Ms, As = J.vals(('M', t + k)), J.vals(('A', t + k))
-        for i in range(J.N):
+        h = ('h', t)
+        # Lemma 2.1 for every k
+        for k in range(0, T + 2 - t):
+            rec.eq('Lem 2.1 I(h_t;A_t+k|M_t,A_t,...,O_t+k)=0', J.I([h], [('A', t + k)], Y(t, k)), 0.0)
+        # two steps (needs A_{t+2})
+        if t + 2 <= T + 1:
+            seq = [('A', t), ('O', t + 1), ('A', t + 1), ('O', t + 2), ('A', t + 2)]
+            tot = J.I([h], seq, [('M', t)])
+            s0, s1 = terms_k(J, t, 0), terms_k(J, t, 1)
+            rec.eq('Prop 6.2 two steps = D_t + D_t,1', tot, s0['D'] + s1['D'])
+            rec.eq('Prop 6.3 two steps = D0+dE+D0_1+dE_1', tot, s0['D0'] + s0['dE'] + s1['D0'] + s1['dE'])
+            rec.eq('Prop 6.4 two steps = dP+D+ +dP_1+D+_1', tot, s0['dP'] + s0['Dp'] + s1['dP'] + s1['Dp'])
+            rec.eq('Cor 6.5 D_t,1 = D0_t,1 + dE_t,1', s1['D'], s1['D0'] + s1['dE'])
+            rec.eq('Cor 6.5 D_t,1 = dP_t,1 + D+_t,1', s1['D'], s1['dP'] + s1['Dp'])
+            # reward-first two-step expansion in the summary
+            M, A, O1, A1 = ('M', t), ('A', t), ('O', t + 1), ('A', t + 1)
+            rf = (J.I([h], [('R', t + 1)], [M, A]) + J.I([h], [('Ob', t + 1)], [M, A, ('R', t + 1)])
+                  + J.I([h], [('R', t + 2)], [M, A, O1, A1]) + J.I([h], [('Ob', t + 2)], [M, A, O1, A1, ('R', t + 2)]))
+            rec.eq('Sec 6 summary: reward-first two-step expansion', s0['D'] + s1['D'], rf)
+        # Lemma 6.6 and Proposition 6.7 (t+1 <= T)
+        if t + 1 <= T:
+            h1, M1 = ('h', t + 1), ('M', t + 1)
+            U = [('M', t), ('A', t), ('O', t + 1)]
+            combos = [([('O', t + 2)], [('A', t + 1)]), ([('O', t + 2)], []), ([('A', t + 1)], [('O', t + 2)]),
+                      ([('A', t + 2)], [('A', t + 1)]), ([('O', t + 2)], [('A', t + 1), ('A', t + 2)])]
+            names = ['D', 'D0', 'dE', 'dP', 'Dp']
+            s1 = terms_k(J, t, 1)
+            for (X, V), nm in zip(combos, names):
+                lhs = J.I([h1], X, [M1] + V)
+                rec.eq('Lem 6.6 one update', lhs, J.I([h], X, U + V) + J.I(U, X, [M1] + V))
+                rec.eq('Prop 6.7 ' + nm + '_t+1 = ' + nm + '_t,1 + update term', lhs, s1[nm] + J.I(U, X, [M1] + V))
+        # K steps
+        for K in range(1, T + 2 - t):
+            seq = []
+            for k in range(K):
+                seq += [('A', t + k), ('O', t + k + 1)]
+            seq += [('A', t + K)]
+            tot = J.I([h], seq, [('M', t)])
+            ts = [terms_k(J, t, k) for k in range(K)]
+            rec.eq('Prop 7.2 K steps = sum D_t,k', tot, sum(x['D'] for x in ts))
+            rec.eq('Prop 7.2 K steps = sum (D0+dE)_t,k', tot, sum(x['D0'] + x['dE'] for x in ts))
+            rec.eq('Prop 7.2 K steps = sum (dP+D+)_t,k', tot, sum(x['dP'] + x['Dp'] for x in ts))
+        for k in range(0, T + 1 - t):
+            x = terms_k(J, t, k)
+            rec.eq('Cor 7.3 D_t,k = D0_t,k + dE_t,k', x['D'], x['D0'] + x['dE'])
+            rec.eq('Cor 7.3 D_t,k = dP_t,k + D+_t,k', x['D'], x['dP'] + x['Dp'])
+        for k in range(1, T + 1 - t):
             n = t + k
-            ma = (Ms[i], As[i])
-            cov = 0.0
-            for (o,), pzo in Pz[kz[i]].items():
-                W = alpha * o[0] + math.log(Pc[n][ma][(o,)] / Pm[n][(o,)]) + g * Vw.get(kz[i] + (o,), 0.0)
-                cov += (Ph[khz[i]].get((o,), 0.0) - pzo) * W
-            S[i] += g ** k * cov
-    _, ES = J.cexp(S, [ht, ('M', t)])
-    for (h, m), val in ES.items():
-        rec.eq('Prop 6.5b: V_t(h,m)-V(m) = E[sum g^k Cov(L,W)]', Vt[(h, m)] - Vm[(m,)], val)
-    # (b) finite-difference derivative in q_t(m|h)
-    hv = J.vals(ht)
-    Ph_t = defaultdict(float)
-    for pp, hh in zip(J.P, hv):
-        Ph_t[hh] += pp
-    qm_ = defaultdict(float)
-    for pp, mm in zip(J.P, J.vals(('M', t))):
-        qm_[mm] += pp
-    hs = sorted(Ph_t, key=lambda x: -Ph_t[x])[:4]
-    for hh in hs:
-        q = w.enc(hh)
-        formula = g ** (t - 1) * Ph_t[hh] * ((Vt[(hh, 0)] - mu * math.log(q[0] / qm_[0]))
-                                             - (Vt[(hh, 1)] - mu * math.log(q[1] / qm_[1])))
-        wp, wm = w.clone(), w.clone()
-        wp._enc[hh] = {0: q[0] + eps, 1: q[1] - eps}
-        wm._enc[hh] = {0: q[0] - eps, 1: q[1] + eps}
-        num = (objective(wp, p, alpha, lam, mu, t)[0] - objective(wm, p, alpha, lam, mu, t)[0]) / (2 * eps)
-        rec.fd('Prop 6.5a: gradient (finite differences)', num, formula)
+            hn, Mn = ('h', n), ('M', n)
+            Yk = Y(t, k)
+            combos = [([('O', n + 1)], [('A', n)]), ([('O', n + 1)], []), ([('A', n)], [('O', n + 1)]),
+                      ([('A', n + 1)], [('A', n)]), ([('O', n + 1)], [('A', n), ('A', n + 1)])]
+            names = ['D', 'D0', 'dE', 'dP', 'Dp']
+            x = terms_k(J, t, k)
+            for (X, V), nm in zip(combos, names):
+                lhs = J.I([hn], X, [Mn] + V)
+                rec.eq('Lem 7.4 updates t+1..t+k', lhs, J.I([h], X, Yk + V) + J.I(Yk, X, [Mn] + V))
+                rec.eq('Prop 7.5 ' + nm + '_t+k = ' + nm + '_t,k + update term', lhs, x[nm] + J.I(Yk, X, [Mn] + V))
 
 
-# ---------------------------------------------------------------- the two examples
-def check_examples(rec):
-    bits = math.log(2)
-
-    def joint(rows):
-        P = [r[1] for r in rows]
-        return Joint(P, lambda a: [r[0][a] for r in rows])
-
-    # exclusive or: C uniform (= h), M constant, A uniform, R uniform, Obar = R xor C, A' = Obar
-    rows = []
-    for C in (0, 1):
-        for A in (0, 1):
-            for R in (0, 1):
-                Ob = R ^ C
-                rows.append(({('h', 1): C, ('M', 1): 0, ('A', 1): A, ('R', 2): R, ('Ob', 2): Ob,
-                              ('O', 2): (R, Ob), ('A', 2): Ob}, 1 / 8))
-    J = joint(rows)
-    h, M, A, R, B, O, A1 = ('h', 1), ('M', 1), ('A', 1), ('R', 2), ('Ob', 2), ('O', 2), ('A', 2)
-    rec.eq('Ex 7.3 (xor): D = 1 bit', J.I([h], [O], [M, A]) / bits, 1.0)
-    rec.eq('Ex 7.3 (xor): reward-first D parts (0,1)', J.I([h], [R], [M, A]) / bits + 10 * J.I([h], [B], [M, A, R]) / bits, 10.0)
-    rec.eq('Ex 7.3 (xor): rest-first D parts (1,0)', J.I([h], [R], [M, A, B]) / bits + 10 * J.I([h], [B], [M, A]) / bits, 1.0)
-    rec.eq('Ex 7.3 (xor): dP = 0', J.I([h], [A1], [M, A]) / bits, 0.0)
-    rec.eq('Ex 7.3 (xor): reward-first dP reward part -1',
-           (J.I([R], [A1], [M, A]) - J.I([R], [A1], [h, A])) / bits, -1.0)
-    rec.eq('Ex 7.3 (xor): reward-first dP rest part +1', J.I([h], [A1], [M, A, R]) / bits, 1.0)
-    rec.eq('Ex 7.3 (xor): rest-first dP parts (0,0)',
-           abs(J.I([h], [A1], [M, A, B])) / bits + abs(J.I([B], [A1], [M, A]) - J.I([B], [A1], [h, A])) / bits, 0.0)
-    rec.eq('Ex 7.3 (xor): co-information -1 bit', J.CI([h], [R], [B], [M, A]) / bits, -1.0)
-    # the observation shows the action: C uniform (= h), M constant, A uniform, R = 1{A=C}, Obar = A
-    rows = []
-    for C in (0, 1):
-        for Aa in (0, 1):
-            Rr = int(Aa == C)
-            rows.append(({('h', 1): C, ('M', 1): 0, ('A', 1): Aa, ('R', 2): Rr, ('Ob', 2): Aa,
-                          ('O', 2): (Rr, Aa)}, 1 / 4))
-    J = joint(rows)
-    rec.eq('Ex 7.4 (shows action): D = 1 bit', J.I([h], [O], [M, A]) / bits, 1.0)
-    rec.eq('Ex 7.4 (shows action): dE = 0', J.I([h], [A], [M, O]) / bits, 0.0)
-    rec.eq('Ex 7.4 (shows action): reward-first dE parts (1,-1)',
-           J.I([h], [A], [M, R]) / bits - 10 * (J.I([A], [B], [h, R]) - J.I([A], [B], [M, R])) / bits, 11.0)
-    rec.eq('Ex 7.4 (shows action): rest-first dE parts (0,0)',
-           abs(J.I([h], [A], [M, B])) / bits + abs(J.I([A], [R], [h, B]) - J.I([A], [R], [M, B])) / bits, 0.0)
-    rec.eq('Ex 7.4 (shows action): U^R = 1 bit (I(h;R|M,A)=1, I(h;Ob|M,A)=0)',
-           J.I([h], [R], [M, A]) / bits - J.I([h], [B], [M, A]) / bits, 1.0)
-
-
-# ---------------------------------------------------------------- main
 def main():
-    gamma, alpha, lam, mu = 0.9, 0.7, 0.5, 0.3
     rec = Rec()
-    check_examples(rec)
     for seed, T in ((1, 4), (2, 4), (3, 3), (4, 3), (5, 3)):
-        w = World(seed, T, gamma)
+        w = World(seed, T, 0.9)
         J = world_joint(w)
-        p = dict(zip(ACTS, normalize([random.Random(seed + 100).random() + 0.2 for _ in ACTS])))
-        check_four_terms(J, w, rec)
-        check_updates(J, w, rec)
-        check_value(J, w, rec)
-        check_merge(J, w, rec, alpha, lam, p)
-        check_policy_gradient(w, rec, alpha, lam, p)
+        check_one_step(J, w, rec)
+        check_steps(J, w, rec)
         print(f"seed {seed} (T={T}, {J.N} trajectories) done", flush=True)
-    for seed in (11, 12, 13):
-        w = World(seed, 3, gamma, rand_step=2)
-        p = dict(zip(ACTS, normalize([random.Random(seed + 100).random() + 0.2 for _ in ACTS])))
-        check_memory_gradient(w, rec, alpha, lam, mu, p)
-        print(f"memory seed {seed} done", flush=True)
     ok = rec.report()
     print("ALL PASS" if ok else "SOME CHECKS FAILED")
     sys.exit(0 if ok else 1)
