@@ -453,6 +453,43 @@ By the tower property, $v_\pi(h)-v_\pi(m)=\sum_{k\ge0}\gamma^k\big(\E[R_{t+k+1}\
 
 So, over an infinite horizon, the state value depends on the history beyond the memory through the parts of $D^0$ and $\dE$ along the agent's path that are relevant to later rewards, and the action value through the parts of $\dP$ and $D^+$. The uniform bound has the structure of the approximate information state of \citet{subramanian2022approximate}; the exact decomposition into relevant parts has not been checked against the literature.
 
+\subsection{The return as a whole}
+
+Propositions~\ref{prop:k-steps} and~\ref{prop:value} treat each later reward separately. The same lemma applies to the discounted return itself, $G_t=\sum_{k\ge0}\gamma^kR_{t+k+1}$ with $\gamma<1$, and then the remainder vanishes.
+
+\begin{proposition}[The return]\label{prop:return}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol},
+\begin{align*}
+I(h_t;G_t\mid M_t)&=\sum_{j=0}^{\infty}\Big[I(h_t;O_{t+j+1};G_t\mid Y_{t,j})+I(h_t;A_{t+j};G_t\mid Y_{t,j},O_{t+j+1})\Big],\\
+I(h_t;G_t\mid M_t,A_t)&=\sum_{j=0}^{\infty}\Big[I(h_t;A_{t+j+1};G_t\mid Z_{t,j})+I(h_t;O_{t+j+1};G_t\mid Z_{t,j},A_{t+j+1})\Big],
+\end{align*}
+where the series converge as sums of their partial sums. Each term is the part of a window term ($D^0_{t,j}$, $\dE_{t,j}$, $\dP_{t,j}$ or $D^+_{t,j}$) relevant to the return.
+\end{proposition}
+
+\begin{proof}
+Lemma~\ref{lem:relevant} with $W=G_t$ and the sequences of Proposition~\ref{prop:k-steps}, stopped after step $k-1$, gives the partial sums plus the remainder $I(h_t;G_t\mid Y_{t,k})$, respectively $I(h_t;G_t\mid Z_{t,k})$. We show that the remainder tends to $0$. Since $h_t$ takes finitely many values, $H(h_t)<\infty$ and
+\[
+I(h_t;G_t\mid Y_{t,k})=H(h_t\mid Y_{t,k})-H(h_t\mid Y_{t,k},G_t).
+\]
+As $k\to\infty$, the information in $Y_{t,k}$ increases to that of the whole future $Y_{t,\infty}$, and $G_t$ is a function of $Y_{t,\infty}$, because every reward is a component of an observation. By the martingale convergence theorem, the conditional entropy of a finite-valued variable given an increasing sequence of $\sigma$-algebras converges to its conditional entropy given their limit. Both terms therefore converge to $H(h_t\mid Y_{t,\infty})$, and the remainder tends to $0$. The same holds for $Z_{t,k}$.
+\end{proof}
+
+So the information the history carries about the future return beyond the memory is exactly the sum, along the agent's own future path, of the parts of the four terms that are relevant to the return: the parts of $D^0$ and $\dE$ without the action at $t$, and the parts of $\dP$ and $D^+$ with it. The discount does not appear explicitly; it enters through the law of $G_t$. Each part is at most its window term, which is at most the agent's own term by Lemma~\ref{lem:window}.
+
+\begin{proposition}[Value error through the return]\label{prop:value-return}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol},
+\begin{align*}
+\E\big|v_\pi(h_t)-v_\pi(M_t)\big|&\le\frac{\Delta R}{1-\gamma}\sqrt{\tfrac12\,I(h_t;G_t\mid M_t)},\\
+\E\big|q_\pi(h_t,A_t)-q_\pi(M_t,A_t)\big|&\le\frac{\Delta R}{1-\gamma}\sqrt{\tfrac12\,I(h_t;G_t\mid M_t,A_t)}.
+\end{align*}
+\end{proposition}
+
+\begin{proof}
+$v_\pi(h)=\E[G_t\mid h_t=h]$ and $v_\pi(m)=\E[G_t\mid M_t=m]$, and $G_t$ lies in an interval of length $\Delta R/(1-\gamma)$. The proof of Proposition~\ref{prop:reward-error} applies with $G_t$ in place of $R_{t+1}$: the difference of two expectations is at most the length of the interval times the total variation distance, Pinsker's inequality bounds the total variation by $\sqrt{\mathrm{KL}/2}$, and Jensen's inequality and the average of the KL divergences, $I(h_t;G_t\mid M_t)$, give the first bound. The second is the same with $A_t$ added to the conditioning.
+\end{proof}
+
+Together, Propositions~\ref{prop:return} and~\ref{prop:value-return} relate the four terms to the return exactly up to one inequality: the value error is controlled by the history's information about the return, and that information is the sum of the return-relevant parts of the four terms along the agent's path. The bound of Proposition~\ref{prop:value-return} and the per-reward bound of Proposition~\ref{prop:value} do not dominate each other.
+
 \subsection{Reward first or rest first, over many steps}
 
 In Proposition~\ref{prop:k-steps} the next observation enters each step as a whole. To separate the reward, we split $O_{t+j+1}$ into its two parts and place the action of that step between them, as in Section~4, where the sequence $(X,A_t,Y)$ gives the first split and $(X,A_{t+1},Y)$ the second split with the reward separated. For step $j$ write $(X_j,Y_j)=(R_{t+j+1},\Ob_{t+j+1})$ in the reward-first order and $(X_j,Y_j)=(\Ob_{t+j+1},R_{t+j+1})$ in the rest-first order.
