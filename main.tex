@@ -156,11 +156,17 @@ The last bound has the structure of the approximate information state of \citet{
 
 \section{What this gives for continual reinforcement learning}
 
-\paragraph{The objective that follows is known.} By the value-error result, a memory that keeps the history's information about the future return makes the critic, and with it the policy update, accurate. The corresponding objective, to keep $I(h_t;G_t\mid M_t,A_t)$ small, is a return-prediction objective; it is the approximate information state condition and the informational error with the return as the target, and it is not new.
+\paragraph{The condition that follows is known, and it does not solve the problem.} By the value-error result, a memory with $I(h_t;G_t\mid M_t,A_t)=0$ lets a critic represent the action value of the current policy exactly. This is the approximate information state condition, or the informational error with the return as the target, and it is not new. It is a sufficient condition for evaluating the current policy, not a method, for four reasons:
+\begin{itemize}
+\item a small agent in a large world cannot reach it: with a bounded memory the information is positive, and the condition does not say what to give up;
+\item $G_t$ is the return of the current policy, so the target moves as the policy improves, and what is irrelevant to the current return may be needed by a later policy;
+\item an accurate value of the current policy does not by itself produce a better policy; improvement and exploration are separate problems;
+\item the return is hard to predict from data, and in practice it is replaced by bootstrapped targets with their own bias.
+\end{itemize}
 
 \paragraph{What the decomposition adds.} It says where this return-relevant information travels: through the agent's own next decisions or through the environment, and, within each observation, through the reward alone, the rest alone, both, or only both together. In continual reinforcement learning, a change of the world that the observation does not show and the rewards reveal is carried by the reward's own part $U^R$. A memory trained to predict the whole observation weighs this part by its share of the observation, which can be small even when it is all the return-relevant information.
 
-\paragraph{A candidate, not a result.} This suggests giving the reward's own part more weight in the memory's training when the observation does not reveal changes of the world. We have not derived that this improves the return, and it has not been tested.
+\paragraph{With limited capacity the question is what to drop.} With at most $N$ memory values, the problem is to choose the update $f$ that keeps the most return-relevant information, for a target that changes with the policy and, in continual reinforcement learning, with the world. The decomposition suggests an order of what to drop, which we have not derived: information that the world tells again whatever the agent does (the routes through $D^0$) is cheap to drop, because it comes back; information that only acting reveals ($\dE$, which vanishes once the policy is deterministic) and information that only the rewards reveal ($U^R$) is expensive to drop, because the observation will not show it again. Whether such an order of priorities improves the return of a memory with fixed capacity is open, and it has not been tested.
 
 \section{Open questions}
 
