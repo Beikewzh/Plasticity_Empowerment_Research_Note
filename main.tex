@@ -154,6 +154,51 @@ A critic that reads the memory can represent the action value up to an average e
 
 The last bound has the structure of the approximate information state of \citet{subramanian2022approximate}.
 
+\section{The best memory and policy for reward and information}\label{sec:optimal}
+
+\citet{still2012information} choose the policy of a fully observed agent by one objective that combines the return, the predictive power of the state and action about the next state, and the coding cost of the policy. We write the same objective for an agent that acts on its memory, and add the coding cost of the memory, as in \citet{still2009information}:
+\[
+F=\alpha\,\E\big[Q(h_t,A_t)\big]+I(M_t,A_t;O_{t+1})-\lambda\,I(A_t;M_t)-\mu\,I(M_t;h_t).
+\]
+The first term is the return of the action taken, with $Q$ the action value of the history under the current policy. The second is how much the memory and the action tell about the next observation. The third is the number of bits the policy uses to choose an action, and the fourth the number of bits the memory keeps about the history; $\lambda$ and $\mu$ set their prices, and a memory with $N$ values has $I(M_t;h_t)\le\log N$. To make the problem smooth we let the memory be a randomised encoding $q(m\mid h)$ of the history and hold $Q$ fixed during the optimisation, as \citet{still2012information} do.
+
+\begin{result}[The information term contains the defect; Proposition~\ref{prop:opt-identity}]
+$I(M_t,A_t;O_{t+1})=I(h_t,A_t;O_{t+1})-D_t=I(h_t,A_t;O_{t+1})-D^0_t-\dE_t.$
+\end{result}
+
+In words: the predictive power the agent gets from its memory is what it would get from the whole history, minus the state defect, and the shortfall is the first split.
+
+\begin{result}[The best policy; Proposition~\ref{prop:opt-policy}]
+For a fixed memory, the best policy is
+\[
+\pi(a\mid m)\ \propto\ p(a)\exp\Big(\tfrac1\lambda\big[\alpha\,Q(m,a)+B_m(a)\big]\Big),\qquad B_m(a)=\E\big[B_{h_t}(a)\mid M_t=m\big]-D(m,a),
+\]
+where $Q(m,a)$ is the action value a critic on the memory learns, $B_h(a)$ is the KL divergence between the next observation after action $a$ in history $h$ and its average, and $D(m,a)=I(h_t;O_{t+1}\mid M_t=m,A_t=a)$ is the defect of action $a$ at $m$.
+\end{result}
+
+In words: the agent prefers actions with high value and actions whose outcome it can learn from. Because it judges what it can learn with its memory, it undervalues each action by exactly the defect of that action: an action whose outcome depends on what the memory has forgotten looks less informative than it is.
+
+\begin{result}[The best memory; Proposition~\ref{prop:opt-memory}]
+For a fixed policy, the best memory sends history $h$ to memory value $m$ with probability
+\begin{align*}
+q(m\mid h)\ \propto\ q(m)\exp\Big(\tfrac1\mu\Big[&\sum_a\pi(a\mid m)\big(\alpha\,Q(h,a)+B_h(a)-d_{h,m}(a)\big)\\
+&-\lambda\,\mathrm{KL}\big(\pi(\cdot\mid m)\,\|\,p(A)\big)\Big]\Big),
+\end{align*}
+where $d_{h,m}(a)=\mathrm{KL}\big(P(O_{t+1}\mid h,a)\,\|\,P(O_{t+1}\mid m,a)\big)$ is how badly the memory value $m$ predicts the next observation of history $h$ after action $a$.
+\end{result}
+
+In words: a history is grouped with others under the memory value whose policy (i) takes actions of high value for this history, (ii) takes actions that are informative for this history, and (iii) predicts this history's next observation well under those actions, and whose policy is simple; $\mu$ sets how finely histories can be told apart.
+
+\paragraph{What the memory should keep more, and what less.} Reading the best memory term by term:
+\begin{itemize}
+\item \emph{Keep} the distinctions between histories that call for different actions, that is, whose values $Q(h,a)$ differ on the actions the policy uses. Their weight is $\alpha$. These are the distinctions that matter for the return; merging them biases the critic, by Result~6.
+\item \emph{Keep} the distinctions between histories that lead to different next observations under the actions the policy uses. The average penalty for merging is $\sum_a\pi(a\mid m)D(m,a)=D(m)=D^0(m)+\dE(m)$. The part $\dE$ disappears as the policy becomes deterministic, so distinctions that only a varied action would reveal stop being rewarded by this objective once the agent stops varying its actions.
+\item \emph{Drop} the distinctions that matter only under actions the policy does not take, since their terms have weight $\pi(a\mid m)=0$, and the distinctions that change neither the value nor the prediction.
+\item \emph{Capacity} decides the rest: as $\mu$ grows, the memory merges first the histories whose combined difference in value and prediction is smallest.
+\end{itemize}
+
+These equations hold for the relaxed problem: a randomised encoding of the history instead of a recursive update, one step at a time with $Q$ held fixed, and they are conditions for a local optimum that are solved by alternating the two updates. They have not been checked against the literature beyond \citet{still2009information} and \citet{still2012information}.
+
 \section{What this gives for continual reinforcement learning}
 
 \paragraph{The condition that follows is known, and it does not solve the problem.} By the value-error result, a memory with $I(h_t;G_t\mid M_t,A_t)=0$ lets a critic represent the action value of the current policy exactly. This is the approximate information state condition, or the informational error with the return as the target, and it is not new. It is a sufficient condition for evaluating the current policy, not a method, for four reasons:
@@ -166,7 +211,7 @@ The last bound has the structure of the approximate information state of \citet{
 
 \paragraph{What the decomposition adds.} It says where this return-relevant information travels: through the agent's own next decisions or through the environment, and, within each observation, through the reward alone, the rest alone, both, or only both together. In continual reinforcement learning, a change of the world that the observation does not show and the rewards reveal is carried by the reward's own part $U^R$. A memory trained to predict the whole observation weighs this part by its share of the observation, which can be small even when it is all the return-relevant information.
 
-\paragraph{With limited capacity the question is what to drop.} With at most $N$ memory values, the problem is to choose the update $f$ that keeps the most return-relevant information, for a target that changes with the policy and, in continual reinforcement learning, with the world. The decomposition suggests an order of what to drop, which we have not derived: information that the world tells again whatever the agent does (the routes through $D^0$) is cheap to drop, because it comes back; information that only acting reveals ($\dE$, which vanishes once the policy is deterministic) and information that only the rewards reveal ($U^R$) is expensive to drop, because the observation will not show it again. Whether such an order of priorities improves the return of a memory with fixed capacity is open, and it has not been tested.
+\paragraph{With limited capacity the question is what to drop.} Section~\ref{sec:optimal} answers this for one objective that combines the return with information: keep the distinctions that change the value of the actions in use or the prediction of the next observation under those actions, weighted by $\alpha$ and by one, and drop the rest first as capacity shrinks. What it does not yet capture is the cost of dropping something that comes back later, through the observation or only through the rewards; the objective is local in time, and extending it over the future is the next step.
 
 \section{Open questions}
 
@@ -696,6 +741,51 @@ Under Assumptions~\ref{as:mem} and~\ref{as:pol}:
 
 \paragraph{Reading for continual RL.}
 The rest-first reward routes measure the information about later rewards that reaches the agent only through rewards, because the rest of the observation does not show it. By Proposition~\ref{prop:order-many}(b) they vanish in worlds where the reward can be computed from what the agent sees and does. They are positive in worlds where a change is hidden from the observation and revealed only by the rewards, such as a switch of the rewarding option that the agent does not see. The reward-first reward routes measure all the information about later rewards that the intermediate rewards carry, including what the observation also shows. The two attributions differ step by step by co-informations, as in Proposition~\ref{prop:orders}; their totals, and the value bounds, are the same.
+
+
+\section{The best memory and policy: derivations}\label{app:optimal}
+
+Fix the law $p(h)$ of the history at time $t$, the environment $P(o'\mid h,a)$ and the action values $Q(h,a)$. The memory is a randomised encoding $q(m\mid h)$ and the policy is $\pi(a\mid m)$, so the joint law is $p(h)\,q(m\mid h)\,\pi(a\mid m)\,P(o'\mid h,a)$. Write $q(m)=\sum_hp(h)q(m\mid h)$, $p(a)=\sum_mq(m)\pi(a\mid m)$, $P(o'\mid m,a)=\sum_hp(h\mid m)P(o'\mid h,a)$, $Q(m,a)=\sum_hp(h\mid m)Q(h,a)$, $P(o')$ for the marginal of $O_{t+1}$, $B_h(a)=\mathrm{KL}(P(O_{t+1}\mid h,a)\|P(O_{t+1}))$, $B_m(a)=\mathrm{KL}(P(O_{t+1}\mid m,a)\|P(O_{t+1}))$ and $d_{h,m}(a)=\mathrm{KL}(P(O_{t+1}\mid h,a)\|P(O_{t+1}\mid m,a))$. The objective is
+\[
+F[q,\pi]=\alpha\sum_{h,m,a}p(h)q(m\mid h)\pi(a\mid m)Q(h,a)+I(M_t,A_t;O_{t+1})-\lambda I(A_t;M_t)-\mu I(M_t;h_t).
+\]
+
+\begin{proposition}\label{prop:opt-identity}
+$I(M_t,A_t;O_{t+1})=I(h_t,A_t;O_{t+1})-D_t$ and $D_t=D^0_t+\dE_t$. Moreover, for every $(m,a)$, $\E[B_{h_t}(a)\mid M_t=m]=B_m(a)+D(m,a)$.
+\end{proposition}
+
+\begin{proof}
+$O_{t+1}$ depends on $(h_t,M_t,A_t)$ only through $(h_t,A_t)$, so by the chain rule $I(h_t,A_t;O_{t+1})=I(h_t,M_t,A_t;O_{t+1})=I(M_t,A_t;O_{t+1})+I(h_t;O_{t+1}\mid M_t,A_t)$, and the last term is $D_t$. The split $D_t=D^0_t+\dE_t$ is the first proof of Proposition~\ref{prop:splits}, which uses only $I(h_t;A_t\mid M_t)=0$; this holds because the action depends on the history only through $M_t$. For the last claim, $p(h\mid m,a)=p(h\mid m)$ and $P(o'\mid m,a)$ is the average of $P(o'\mid h,a)$ over $p(h\mid m)$, so for any law $R$, $\sum_hp(h\mid m)\mathrm{KL}(P(\cdot\mid h,a)\|R)=\mathrm{KL}(P(\cdot\mid m,a)\|R)+\sum_hp(h\mid m)\mathrm{KL}(P(\cdot\mid h,a)\|P(\cdot\mid m,a))$; take $R=P(O_{t+1})$, and the last sum is $D(m,a)$.
+\end{proof}
+
+\begin{proposition}[Best policy]\label{prop:opt-policy}
+For fixed $q$, a stationary point of $F$ in $\pi$ satisfies $\pi(a\mid m)\propto p(a)\exp\big(\tfrac1\lambda[\alpha Q(m,a)+B_m(a)]\big)$.
+\end{proposition}
+
+\begin{proof}
+We differentiate each term with respect to $\pi(a\mid m)$, up to terms that do not depend on $a$ and are absorbed by the normalisation of $\pi(\cdot\mid m)$. The return term gives $\alpha q(m)Q(m,a)$. Writing $I(M_t,A_t;O_{t+1})=\sum_{m,a}q(m)\pi(a\mid m)\mathrm{KL}(P(\cdot\mid m,a)\|P(O_{t+1}))$ and differentiating, including through $P(o')=\sum_{m,a}q(m)\pi(a\mid m)P(o'\mid m,a)$, gives $q(m)B_m(a)$ plus a constant. The coding cost of the policy gives $\lambda q(m)\log(\pi(a\mid m)/p(a))$ plus a constant. Setting the derivative to zero and dividing by $q(m)\lambda$ gives the result. With Proposition~\ref{prop:opt-identity}, $B_m(a)=\E[B_{h_t}(a)\mid M_t=m]-D(m,a)$.
+\end{proof}
+
+\begin{proposition}[Best memory]\label{prop:opt-memory}
+For fixed $\pi$, a stationary point of $F$ in $q$ satisfies
+\[
+\mu\log\frac{q(m\mid h)}{q(m)}=\sum_a\pi(a\mid m)\big[\alpha Q(h,a)+B_h(a)-d_{h,m}(a)\big]-\lambda\,\mathrm{KL}\big(\pi(\cdot\mid m)\|p(A)\big)+c(h),
+\]
+with $c(h)$ fixed by normalisation. Averaged over the histories behind $m$, $\sum_hp(h\mid m)\sum_a\pi(a\mid m)d_{h,m}(a)=D(m)=D^0(m)+\dE(m)$.
+\end{proposition}
+
+\begin{proof}
+We differentiate each term with respect to $q(m\mid h)$, up to terms that depend only on $h$.
+\begin{itemize}
+\item Return: $\alpha p(h)\sum_a\pi(a\mid m)Q(h,a)$.
+\item Predictive power: write $I(M_t,A_t;O_{t+1})=\sum_{m,a,o'}\pi(a\mid m)J\log J-\sum_mq(m)\log q(m)-\sum_{o'}P(o')\log P(o')$ with $J(m,a,o')=\sum_hp(h)q(m\mid h)P(o'\mid h,a)=q(m)P(o'\mid m,a)$. The derivative is $p(h)\sum_a\pi(a\mid m)\sum_{o'}P(o'\mid h,a)\log\frac{P(o'\mid m,a)}{P(o')}$, which equals $p(h)\sum_a\pi(a\mid m)[B_h(a)-d_{h,m}(a)]$.
+\item Coding cost of the policy: $I(A_t;M_t)=\sum_mq(m)\sum_a\pi(a\mid m)\log\pi(a\mid m)-\sum_ap(a)\log p(a)$, with derivative $p(h)\,\mathrm{KL}(\pi(\cdot\mid m)\|p(A))$ plus a constant.
+\item Coding cost of the memory: the derivative of $I(M_t;h_t)$ is $p(h)\log(q(m\mid h)/q(m))$.
+\end{itemize}
+Setting the derivative of $F$ plus a multiplier for $\sum_mq(m\mid h)=1$ to zero and dividing by $p(h)$ gives the stationarity condition. The average of $d_{h,m}(a)$ over $p(h\mid m)$ is $D(m,a)$ (Proposition~\ref{prop:opt-identity}), and $\sum_a\pi(a\mid m)D(m,a)=I(h_t;O_{t+1}\mid M_t=m,A_t)=D(m)$, which splits as $D^0(m)+\dE(m)$.
+\end{proof}
+
+\paragraph{Remarks.} (i) The memory here is a randomised encoding of the whole history; a recursive update $M_{t+1}=f(M_t,A_t,O_{t+1})$ is a constraint that the stationary point need not satisfy, so the equations describe which histories should share a memory value, not how to compute it step by step. (ii) Lemma~\ref{lem:ci}(b) uses the recursive update, so the second split and the bound $\dP_t\le P_{t+1}(M)\le I(M_{t+1};A_{t+1})$, which links $\dP$ to the coding cost of the next policy, hold for recursive memories but not in general for the relaxed encoding. (iii) The optimisation is local in time, with $Q$ and the law of the history held fixed, as in \citet{still2012information}.
 
 
 \bibliographystyle{plainnat}
