@@ -36,7 +36,7 @@
 \maketitle
 
 \begin{abstract}
-For an agent that acts on a memory, we derive the empowerment and plasticity mismatches between the history and the memory, the two splits of the state defect, three ways to separate the reward inside them, the expansion of the information the history carries about the next two and the next $K$ steps, and the matching expansion of the gap between the history's and the memory's value of the return over the same steps. Every derivation is written term by term, and every cancellation names the assumption or lemma that allows it.
+For an agent that acts on a memory, we derive the empowerment and plasticity mismatches between the history and the memory, the two splits of the state defect, three ways to separate the reward inside them, the expansion of the information the history carries about the next two and the next $K$ steps, and the gap between the history's value of the return and the value the agent computes from its memory by the Bellman recursion, over two, $K$ and infinitely many steps, as a discounted sum of comparisons of the same two predictions as the agent's one-step defects, with bounds by these defects. Every derivation is written term by term, and every cancellation names the assumption or lemma that allows it.
 \end{abstract}
 
 \section{Setting}\label{sec:setting}
@@ -67,7 +67,7 @@ $M_1=f_1(O_1)$ and $M_{t+1}=f(M_t,A_t,O_{t+1})$ for fixed maps $f_1,f$. Hence $M
 $P(A_t=a\mid h_t)=\pi(a\mid M_t)$: the action depends on the history only through the memory.
 \end{assumption}
 
-Every identity in this note was checked numerically. The script \texttt{checks/verify\_note.py} computes the exact law of all trajectories in small random environments whose next observation depends on the whole history, and tests each numbered statement; the largest error is $10^{-13}$.
+Every identity in this note was checked numerically. The script \texttt{checks/verify\_note.py} computes the exact law of all trajectories in small random environments whose next observation depends on the whole history, and tests each numbered statement for finitely many steps; the largest error is $10^{-13}$. The infinite-horizon statements are limits of the finite ones.
 
 \section{Tools}\label{sec:tools}
 
@@ -611,93 +611,102 @@ So over two steps, every term of Sections~\ref{sec:splits} and~\ref{sec:reward} 
 
 \subsection*{The return over two steps}
 
-Write $r(o)$ for the reward contained in an observation $o$, and $G_{t:t+2}=R_{t+1}+\gamma R_{t+2}$, with $\gamma\in[0,1]$, for the return over the same interval as $D_{t:t+2}$. The values of a history and of a memory value are
+Write $r(o)$ for the reward contained in an observation $o$, and $G_{t:t+2}=R_{t+1}+\gamma R_{t+2}$, with $\gamma\in[0,1]$, for the return over the same interval as $D_{t:t+2}$. The values of a history at $t$ and at $t+1$ are
 \[
-q_{t:t+2}(h,a)=\E[G_{t:t+2}\mid h_t=h,A_t=a],\qquad q_{t:t+2}(m,a)=\E[G_{t:t+2}\mid M_t=m,A_t=a],
+q_{t:t+2}(h,a)=\E[G_{t:t+2}\mid h_t=h,A_t=a],\qquad q_{t+1:t+2}(h,a)=\E[R_{t+2}\mid h_{t+1}=h,A_{t+1}=a].
 \]
-and over the single step from $t+1$ to $t+2$, $q_{t+1:t+2}(h,a)=\E[R_{t+2}\mid h_{t+1}=h,A_{t+1}=a]$ and $q_{t+1:t+2}(m,a)=\E[R_{t+2}\mid M_{t+1}=m,A_{t+1}=a]$. A critic that reads the memory can at best learn $q_{t:t+2}(m,a)$, which is the average of $q_{t:t+2}(h,a)$ over the histories behind $m$.
+The agent does not have the history. At each time it has its memory, the prediction of the next observation made from the memory, the update $f$ and the policy, and the value it can compute from these is the following.
+
+\begin{definition}[The memory's Bellman value over two steps]\label{def:bellman-two}
+For memory values $m$ and actions $a$ that occur,
+\begin{align*}
+\hat q_{t+1:t+2}(m,a)&=\sum_oP(O_{t+2}=o\mid M_{t+1}=m,A_{t+1}=a)\,r(o),\\
+\hat v_{t+1:t+2}(m)&=\sum_a\pi(a\mid m)\,\hat q_{t+1:t+2}(m,a),\\
+\hat q_{t:t+2}(m,a)&=\sum_oP(O_{t+1}=o\mid M_t=m,A_t=a)\big[r(o)+\gamma\,\hat v_{t+1:t+2}(f(m,a,o))\big].
+\end{align*}
+\end{definition}
+
+This is the Bellman recursion on the memory, with the memory's prediction of the next observation in place of the environment. A critic that reads the memory and bootstraps on its own value at the next memory estimates $\hat q_{t:t+2}$; a critic fitted to the observed return estimates $\E[G_{t:t+2}\mid M_t,A_t]$ instead, and Remark~\ref{rem:mc-two} compares the two.
 
 \begin{proposition}[The return gap over two steps]\label{prop:two-return}
 Under Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol}, for every history $h_t$ and action $a$,
 \[
-q_{t:t+2}(h_t,a)-q_{t:t+2}(M_t,a)=c_t(h_t,a)+\gamma\,\E\big[c_{t+1}(h_{t+1},A_{t+1})-u_{t+1}\,\big|\,h_t,A_t=a\big],
+q_{t:t+2}(h_t,a)-\hat q_{t:t+2}(M_t,a)=c_t(h_t,a)+\gamma\,\E\big[c_{t+1}(h_{t+1},A_{t+1})\,\big|\,h_t,A_t=a\big],
 \]
 where
 \begin{align*}
 c_t(h_t,a)&=\sum_o\big[P(O_{t+1}=o\mid h_t,a)-P(O_{t+1}=o\mid M_t,a)\big]\\
-&\qquad\times\big[r(o)+\gamma\,\E[R_{t+2}\mid M_t,A_t=a,O_{t+1}=o]\big],\\
-c_{t+1}(h_{t+1},a')&=\sum_o\big[P(O_{t+2}=o\mid h_{t+1},a')-P(O_{t+2}=o\mid M_{t+1},a')\big]\,r(o),\\
-u_{t+1}&=\E[R_{t+2}\mid M_t,A_t,O_{t+1}]-\E[R_{t+2}\mid M_{t+1}].
+&\qquad\times\big[r(o)+\gamma\,\hat v_{t+1:t+2}(f(M_t,a,o))\big],\\
+c_{t+1}(h_{t+1},a')&=\sum_o\big[P(O_{t+2}=o\mid h_{t+1},a')-P(O_{t+2}=o\mid M_{t+1},a')\big]\,r(o).
 \end{align*}
 \end{proposition}
 
 \begin{proof}
-\emph{Step 1: the first reward.} The reward is part of the observation, so
+\emph{Step 1: the gap at $t+1$.} The reward is part of the observation, so $q_{t+1:t+2}(h_{t+1},a')=\sum_oP(O_{t+2}=o\mid h_{t+1},a')\,r(o)$. Subtract the first line of Definition~\ref{def:bellman-two} at $m=M_{t+1}$:
 \[
-\E[R_{t+1}\mid h_t,a]-\E[R_{t+1}\mid M_t,a]=\sum_o\big[P(O_{t+1}=o\mid h_t,a)-P(O_{t+1}=o\mid M_t,a)\big]\,r(o).
-\]
-The same at $t+1$ gives $q_{t+1:t+2}(h_{t+1},a')-q_{t+1:t+2}(M_{t+1},a')=c_{t+1}(h_{t+1},a')$.
-
-\emph{Step 2: the second reward, from the history.} Condition on $(O_{t+1},A_{t+1})$ (tower property). By (T5) the conditioning variables $(h_t,a,o)$ are $h_{t+1}$, and by Assumption~\ref{as:pol} the law of $A_{t+1}$ given $h_{t+1}$ is $\pi(\cdot\mid M_{t+1})$:
-\[
-\E[R_{t+2}\mid h_t,a]=\sum_oP(O_{t+1}=o\mid h_t,a)\sum_{a'}\pi(a'\mid M_{t+1})\,q_{t+1:t+2}(h_{t+1},a').
+q_{t+1:t+2}(h_{t+1},a')-\hat q_{t+1:t+2}(M_{t+1},a')=c_{t+1}(h_{t+1},a').
 \]
 
-\emph{Step 3: the second reward, from the memory.} Condition on $O_{t+1}$ (tower property):
+\emph{Step 2: the history's value at $t$.} Condition on $(O_{t+1},A_{t+1})$ (tower property). By (T5) the conditioning variables $(h_t,a,o)$ are $h_{t+1}$, by Assumption~\ref{as:mem} the memory is then $M_{t+1}=f(M_t,a,o)$, and by Assumption~\ref{as:pol} the law of $A_{t+1}$ given $h_{t+1}$ is $\pi(\cdot\mid M_{t+1})$:
 \[
-\E[R_{t+2}\mid M_t,a]=\sum_oP(O_{t+1}=o\mid M_t,a)\,\E[R_{t+2}\mid M_t,a,o].
+q_{t:t+2}(h_t,a)=\sum_oP(O_{t+1}=o\mid h_t,a)\Big[r(o)+\gamma\sum_{a'}\pi(a'\mid M_{t+1})\,q_{t+1:t+2}(h_{t+1},a')\Big].
 \]
 
-\emph{Step 4: subtract.} Subtract Step 3 from Step 2, and add and subtract $\sum_oP(O_{t+1}=o\mid h_t,a)\,\E[R_{t+2}\mid M_t,a,o]$:
+\emph{Step 3: subtract.} Subtract the third line of Definition~\ref{def:bellman-two} at $m=M_t$, and add and subtract $\sum_oP(O_{t+1}=o\mid h_t,a)\big[r(o)+\gamma\,\hat v_{t+1:t+2}(M_{t+1})\big]$:
 \begin{align*}
-&\E[R_{t+2}\mid h_t,a]-\E[R_{t+2}\mid M_t,a]\\
-&\quad=\sum_o\big[P(O_{t+1}=o\mid h_t,a)-P(O_{t+1}=o\mid M_t,a)\big]\,\E[R_{t+2}\mid M_t,a,o]\\
-&\qquad+\sum_oP(O_{t+1}=o\mid h_t,a)\Big[\sum_{a'}\pi(a'\mid M_{t+1})\,q_{t+1:t+2}(h_{t+1},a')-\E[R_{t+2}\mid M_t,a,o]\Big].
+&q_{t:t+2}(h_t,a)-\hat q_{t:t+2}(M_t,a)\\
+&\quad=\sum_o\big[P(O_{t+1}=o\mid h_t,a)-P(O_{t+1}=o\mid M_t,a)\big]\big[r(o)+\gamma\,\hat v_{t+1:t+2}(M_{t+1})\big] \why{$=c_t(h_t,a)$}\\
+&\qquad+\gamma\sum_oP(O_{t+1}=o\mid h_t,a)\Big[\sum_{a'}\pi(a'\mid M_{t+1})\,q_{t+1:t+2}(h_{t+1},a')-\hat v_{t+1:t+2}(M_{t+1})\Big].
 \end{align*}
 
-\emph{Step 5: the bracket.} By the definition of $u_{t+1}$, $\E[R_{t+2}\mid M_t,a,o]=\E[R_{t+2}\mid M_{t+1}]+u_{t+1}$. By the tower property over $A_{t+1}$, whose law given $M_{t+1}$ is $\pi(\cdot\mid M_{t+1})$, $\E[R_{t+2}\mid M_{t+1}]=\sum_{a'}\pi(a'\mid M_{t+1})\,q_{t+1:t+2}(M_{t+1},a')$. So the bracket is
-\begin{align*}
-&\sum_{a'}\pi(a'\mid M_{t+1})\big[q_{t+1:t+2}(h_{t+1},a')-q_{t+1:t+2}(M_{t+1},a')\big]-u_{t+1}\\
-&\quad=\E\big[c_{t+1}(h_{t+1},A_{t+1})\,\big|\,h_{t+1}\big]-u_{t+1},
-\end{align*}
-using Step 1 at $t+1$.
-
-\emph{Step 6: combine.} $q_{t:t+2}(h_t,a)-q_{t:t+2}(M_t,a)$ is Step 1 plus $\gamma$ times Step 4. The first sums of the two combine into $c_t(h_t,a)$, and the second sum of Step 4 with Step 5 is $\E[c_{t+1}(h_{t+1},A_{t+1})-u_{t+1}\mid h_t,A_t=a]$.
+\emph{Step 4: the bracket.} By the second line of Definition~\ref{def:bellman-two}, $\hat v_{t+1:t+2}(M_{t+1})=\sum_{a'}\pi(a'\mid M_{t+1})\,\hat q_{t+1:t+2}(M_{t+1},a')$, so by Step 1 and Assumption~\ref{as:pol} the bracket is
+\[
+\sum_{a'}\pi(a'\mid M_{t+1})\,c_{t+1}(h_{t+1},a')=\E\big[c_{t+1}(h_{t+1},A_{t+1})\,\big|\,h_{t+1}\big].
+\]
+The sum over $o$ with the weights $P(O_{t+1}=o\mid h_t,a)$ is then $\E[c_{t+1}(h_{t+1},A_{t+1})\mid h_t,A_t=a]$ (tower property).
 \end{proof}
 
-In words: the return gap over two steps has the same three pieces as $D_{t:t+2}=D_t+D_{t+1}-I(M_t,A_t,O_{t+1};O_{t+2}\mid M_{t+1},A_{t+1})$. The term $c_t$ compares the same two predictions of $O_{t+1}$ as $D_t$, the history's and the memory's, weighted by the reward plus the discounted expected next reward as the memory sees it. The term $c_{t+1}$ compares the same two predictions of $O_{t+2}$ as $D_{t+1}$, for the agent's own memory at $t+1$, weighted by the reward. The term $u_{t+1}$ is how much the update $M_{t+1}=f(M_t,A_t,O_{t+1})$ changed the expected next reward by discarding part of its input.
+In words: the gap between the history's value and the memory's Bellman value is a comparison of the two predictions of $O_{t+1}$ that $D_t$ compares, weighted by the reward plus the discounted Bellman value of the next memory, plus $\gamma$ times a comparison of the two predictions of $O_{t+2}$ that $D_{t+1}$ compares, for the agent's own memory at $t+1$, weighted by the reward. The update $f$ enters only through the weight; no term is left for what it discards.
 
-\begin{proposition}[When the three pieces vanish]\label{prop:two-return-zero}
+\begin{proposition}[When the pieces vanish]\label{prop:two-return-zero}
 Under Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol}:
 \begin{enumerate}
-\item[(a)] If $D_t=0$, then $c_t(h_t,a)=0$ for every $(h_t,a)$ that occurs; if $D_{t+1}=0$, then $c_{t+1}(h_{t+1},a')=0$ for every $(h_{t+1},a')$ that occurs.
+\item[(a)] If $D_t=0$, then $c_t(h_t,a)=0$ for every $(h_t,a)$ that occurs; if $D_{t+1}=0$, then $c_{t+1}(h_{t+1},a')=0$ for every $(h_{t+1},a')$ that occurs. If $D_t=0$ and $D_{t+1}=0$, then $q_{t:t+2}(h_t,a)=\hat q_{t:t+2}(M_t,a)$ for every $(h_t,a)$ that occurs.
 \item[(b)] In the reward-first order, $c_t=c^R_t+c^{\Ob}_t$ with
 \begin{align*}
 c^R_t(h_t,a)&=\sum_\rho\big[P(R_{t+1}=\rho\mid h_t,a)-P(R_{t+1}=\rho\mid M_t,a)\big]\\
-&\qquad\times\big[\rho+\gamma\,\E[R_{t+2}\mid M_t,a,R_{t+1}=\rho]\big],\\
+&\qquad\times\Big[\rho+\gamma\sum_{\bar o}P(\Ob_{t+1}=\bar o\mid M_t,a,\rho)\,\hat v_{t+1:t+2}(f(M_t,a,(\rho,\bar o)))\Big],\\
 c^{\Ob}_t(h_t,a)&=\gamma\sum_\rho P(R_{t+1}=\rho\mid h_t,a)\\
 &\qquad\times\sum_{\bar o}\big[P(\Ob_{t+1}=\bar o\mid h_t,a,\rho)-P(\Ob_{t+1}=\bar o\mid M_t,a,\rho)\big]\\
-&\qquad\times\E[R_{t+2}\mid M_t,a,\rho,\bar o].
+&\qquad\times\hat v_{t+1:t+2}(f(M_t,a,(\rho,\bar o))).
 \end{align*}
-$c^R_t$ is zero for every $(h_t,a)$ that occurs when the reward part $I(h_t;R_{t+1}\mid M_t,A_t)$ of $D_t$ is zero, and $c^{\Ob}_t$ when the rest part $I(h_t;\Ob_{t+1}\mid M_t,A_t,R_{t+1})$ is zero. The rest of the observation enters the return only through the expected next reward, so $c^{\Ob}_t=0$ when $\gamma=0$, and $c_{t+1}$ has a reward part only.
-\item[(c)] If the subtracted term of Proposition~\ref{prop:two} is zero, $I(M_t,A_t,O_{t+1};O_{t+2}\mid M_{t+1},A_{t+1})=0$, then $u_{t+1}=0$ for every value of $(M_t,A_t,O_{t+1})$ that occurs.
+$c^R_t$ is zero for every $(h_t,a)$ that occurs when the reward part $I(h_t;R_{t+1}\mid M_t,A_t)$ of $D_t$ is zero, and $c^{\Ob}_t$ when the rest part $I(h_t;\Ob_{t+1}\mid M_t,A_t,R_{t+1})$ is zero. The rest of the observation enters only through the Bellman value of the next memory, so $c^{\Ob}_t=0$ when $\gamma=0$, and $c_{t+1}$ has a reward part only.
 \end{enumerate}
-In particular, if $D_t=0$ and $D_{t+1}=0$, the memory's two-step value equals the history's.
 \end{proposition}
 
 \begin{proof}
-(a) By (T1), $D_t=\E\big[\sum_oP(o\mid h_t,A_t)\log\frac{P(o\mid h_t,A_t)}{P(o\mid M_t,A_t)}\big]$, an average of divergences between the two predictions; it is zero exactly when the two predictions are equal for every $(h_t,a)$ that occurs, and then every term of the sum defining $c_t$ is zero. The same holds at $t+1$.
+(a) By (T1), $D_t=\E\big[\sum_oP(o\mid h_t,A_t)\log\frac{P(o\mid h_t,A_t)}{P(o\mid M_t,A_t)}\big]$, an average of divergences between the two predictions; it is zero exactly when the two predictions are equal for every $(h_t,a)$ that occurs, and then every term of the sum defining $c_t$ is zero. The same holds at $t+1$. The last sentence follows from Proposition~\ref{prop:two-return}.
 
 (b) Write $P(o\mid\cdot)=P(\rho\mid\cdot)\,P(\bar o\mid\cdot,\rho)$ for $o=(\rho,\bar o)$, and add and subtract $P(\rho\mid h_t,a)P(\bar o\mid M_t,a,\rho)$:
 \begin{align*}
 P(o\mid h_t,a)-P(o\mid M_t,a)&=\big[P(\rho\mid h_t,a)-P(\rho\mid M_t,a)\big]P(\bar o\mid M_t,a,\rho)\\
 &\quad+P(\rho\mid h_t,a)\big[P(\bar o\mid h_t,a,\rho)-P(\bar o\mid M_t,a,\rho)\big].
 \end{align*}
-Multiply by the weight $\rho+\gamma\E[R_{t+2}\mid M_t,a,\rho,\bar o]$ and sum. In the first part, the sum over $\bar o$ of $P(\bar o\mid M_t,a,\rho)$ times the weight is $\rho+\gamma\E[R_{t+2}\mid M_t,a,\rho]$ (tower property). In the second part, $\rho$ does not depend on $\bar o$ and $\sum_{\bar o}[P(\bar o\mid h_t,a,\rho)-P(\bar o\mid M_t,a,\rho)]=0$, so only the $\gamma$ term remains. The reward part of $D_t$ is the average divergence between $P(R_{t+1}\mid h_t,a)$ and $P(R_{t+1}\mid M_t,a)$, and the rest part between $P(\Ob_{t+1}\mid h_t,a,R_{t+1})$ and $P(\Ob_{t+1}\mid M_t,a,R_{t+1})$, so each vanishes exactly when the corresponding pair of predictions agrees, as in (a). For $c_{t+1}$ the weight is $r(o)=\rho$ alone, so its second part is zero.
+Multiply by the weight $\rho+\gamma\,\hat v_{t+1:t+2}(f(M_t,a,(\rho,\bar o)))$ and sum over $(\rho,\bar o)$. The first part gives $c^R_t$. In the second part, $\rho$ does not depend on $\bar o$ and $\sum_{\bar o}[P(\bar o\mid h_t,a,\rho)-P(\bar o\mid M_t,a,\rho)]=0$, so only the $\gamma$ term remains, which is $c^{\Ob}_t$. The reward part of $D_t$ is the average divergence between $P(R_{t+1}\mid h_t,a)$ and $P(R_{t+1}\mid M_t,a)$, and the rest part between $P(\Ob_{t+1}\mid h_t,a,R_{t+1})$ and $P(\Ob_{t+1}\mid M_t,a,R_{t+1})$, so each vanishes exactly when the corresponding pair of predictions agrees, as in (a). For $c_{t+1}$ the weight is $r(o)=\rho$ alone, so its second part is zero.
+\end{proof}
 
-(c) By the proof of Proposition~\ref{prop:two-splits} (first bracket), $I(M_t,A_t,O_{t+1};O_{t+2},A_{t+1}\mid M_{t+1})=I(M_t,A_t,O_{t+1};O_{t+2}\mid M_{t+1},A_{t+1})=0$. So $(A_{t+1},O_{t+2})$, and with it $R_{t+2}$, is independent of $(M_t,A_t,O_{t+1})$ given $M_{t+1}$ (T3). Since $M_{t+1}$ is a function of $(M_t,A_t,O_{t+1})$, $\E[R_{t+2}\mid M_t,A_t,O_{t+1}]=\E[R_{t+2}\mid M_t,A_t,O_{t+1},M_{t+1}]=\E[R_{t+2}\mid M_{t+1}]$, which is $u_{t+1}=0$.
+\begin{remark}[The value fitted to the observed return]\label{rem:mc-two}
+Under Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol}, for every $(M_t,a)$ that occurs,
+\begin{align*}
+&\E[G_{t:t+2}\mid M_t,A_t=a]-\hat q_{t:t+2}(M_t,a)\\
+&\quad=\gamma\,\E\Big[\sum_o\big[P(O_{t+2}=o\mid M_t,A_t,O_{t+1},A_{t+1})-P(O_{t+2}=o\mid M_{t+1},A_{t+1})\big]\\
+&\qquad\qquad\times r(o)\ \Big|\ M_t,A_t=a\Big].
+\end{align*}
+The two predictions inside are those of the subtracted term of Proposition~\ref{prop:two}, made from the input of the update at $t+1$ and from its output, so the two values of the memory are equal when that term is zero, and differ in general.
+\end{remark}
 
-For the last sentence: by Lemma~\ref{lem:update1}, the subtracted term of Proposition~\ref{prop:two} is at most $D_{t+1}$, so it is zero; then (a) and (c) make all three pieces zero.
+\begin{proof}
+By the tower property and (T4), $\E[G_{t:t+2}\mid M_t,A_t=a]=\E[q_{t:t+2}(h_t,a)\mid M_t,A_t=a]$. Average Proposition~\ref{prop:two-return} over $h_t$ given $(M_t,A_t=a)$. In $c_t$ the weight depends on $(M_t,a,o)$ only, and $\E[P(O_{t+1}=o\mid h_t,a)\mid M_t,A_t=a]=P(O_{t+1}=o\mid M_t,a)$ (tower property), so $c_t$ averages to zero. In $c_{t+1}$, average first over $h_{t+1}$ given $(M_t,A_t,O_{t+1},A_{t+1})$, which is a function of $(h_{t+1},A_{t+1})$ by (T5) and (T4): $P(O_{t+2}=o\mid h_{t+1},A_{t+1})$ averages to $P(O_{t+2}=o\mid M_t,A_t,O_{t+1},A_{t+1})$ (tower property), and $P(O_{t+2}=o\mid M_{t+1},A_{t+1})$ is unchanged, since $M_{t+1}$ is a function of $(M_t,A_t,O_{t+1})$ (Assumption~\ref{as:mem}). If the subtracted term of Proposition~\ref{prop:two} is zero, the two predictions agree for every value that occurs, as in Proposition~\ref{prop:two-return-zero}(a).
 \end{proof}
 
 
@@ -784,46 +793,87 @@ The first two equalities follow from Proposition~\ref{prop:K} and Propositions~\
 
 \subsection*{The return over $K$ steps}
 
-Let $G_{t:t+K}=\sum_{k=0}^{K-1}\gamma^kR_{t+k+1}$, and for $t\le n\le t+K$ let $G_{n:t+K}=\sum_{j=0}^{t+K-n-1}\gamma^jR_{n+j+1}$ be the part of it after time $n$, with $G_{t+K:t+K}=0$. For a history $h$ and a memory value $m$ at time $n$, write $q_{n:t+K}(h,a)=\E[G_{n:t+K}\mid h_n=h,A_n=a]$, $q_{n:t+K}(m,a)=\E[G_{n:t+K}\mid M_n=m,A_n=a]$ and $v_{n:t+K}(h)=\E[G_{n:t+K}\mid h_n=h]$.
+Let $G_{t:t+K}=\sum_{k=0}^{K-1}\gamma^kR_{t+k+1}$, and for $t\le n\le t+K$ let $G_{n:t+K}=\sum_{j=0}^{t+K-n-1}\gamma^jR_{n+j+1}$ be the part of it after time $n$, with $G_{t+K:t+K}=0$. For a history $h$ at time $n$, write $q_{n:t+K}(h,a)=\E[G_{n:t+K}\mid h_n=h,A_n=a]$ and $v_{n:t+K}(h)=\E[G_{n:t+K}\mid h_n=h]$.
+
+\begin{definition}[The memory's Bellman value over $K$ steps]\label{def:bellman-K}
+Let $\hat v_{t+K:t+K}=0$. For $n=t+K-1,\dots,t$, and memory values $m$ and actions $a$ that occur at time $n$,
+\begin{align*}
+\hat q_{n:t+K}(m,a)&=\sum_oP(O_{n+1}=o\mid M_n=m,A_n=a)\big[r(o)+\gamma\,\hat v_{n+1:t+K}(f(m,a,o))\big],\\
+\hat v_{n:t+K}(m)&=\sum_a\pi(a\mid m)\,\hat q_{n:t+K}(m,a).
+\end{align*}
+For $K=2$ this is Definition~\ref{def:bellman-two}.
+\end{definition}
 
 \begin{proposition}[One step of the return gap]\label{prop:K-return-step}
 Under Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol}, for $t\le n<t+K$, every history $h_n$ and action $a$,
 \begin{align*}
-&q_{n:t+K}(h_n,a)-q_{n:t+K}(M_n,a)\\
-&\quad=c_n(h_n,a)+\gamma\,\E\big[q_{n+1:t+K}(h_{n+1},A_{n+1})-q_{n+1:t+K}(M_{n+1},A_{n+1})-u_{n+1}\,\big|\,h_n,A_n=a\big],
+&q_{n:t+K}(h_n,a)-\hat q_{n:t+K}(M_n,a)\\
+&\quad=c_n(h_n,a)+\gamma\,\E\big[q_{n+1:t+K}(h_{n+1},A_{n+1})-\hat q_{n+1:t+K}(M_{n+1},A_{n+1})\,\big|\,h_n,A_n=a\big],
 \end{align*}
 where
 \begin{align*}
 c_n(h_n,a)&=\sum_o\big[P(O_{n+1}=o\mid h_n,a)-P(O_{n+1}=o\mid M_n,a)\big]\\
-&\qquad\times\big[r(o)+\gamma\,\E[v_{n+1:t+K}(h_{n+1})\mid M_n,A_n=a,O_{n+1}=o]\big],\\
-u_{n+1}&=\E[v_{n+1:t+K}(h_{n+1})\mid M_n,A_n,O_{n+1}]-\E[v_{n+1:t+K}(h_{n+1})\mid M_{n+1}],
+&\qquad\times\big[r(o)+\gamma\,\hat v_{n+1:t+K}(f(M_n,a,o))\big],
 \end{align*}
-and the term in $\gamma$ is zero when $n+1=t+K$.
+and the term in $\gamma$ is zero when $n+1=t+K$. For $K=2$, $c_t$ and $c_{t+1}$ are those of Proposition~\ref{prop:two-return}.
 \end{proposition}
 
 \begin{proof}
-The proof of Proposition~\ref{prop:two-return}, with $G_{n:t+K}=R_{n+1}+\gamma G_{n+1:t+K}$ in place of $R_{t+1}+\gamma R_{t+2}$. Step 1 is unchanged at time $n$. In Steps 2 to 5, $R_{t+2}$ is replaced by $G_{n+1:t+K}$, and $\E[G_{n+1:t+K}\mid h_{n+1}]=v_{n+1:t+K}(h_{n+1})$, $\E[G_{n+1:t+K}\mid M_n,A_n,O_{n+1}]=\E[v_{n+1:t+K}(h_{n+1})\mid M_n,A_n,O_{n+1}]$ and $\E[G_{n+1:t+K}\mid M_{n+1}]=\E[v_{n+1:t+K}(h_{n+1})\mid M_{n+1}]$, each by the tower property, because $(M_n,A_n,O_{n+1})$ and $M_{n+1}$ are functions of $h_{n+1}$. Step 5 uses $\E[v_{n+1:t+K}(h_{n+1})\mid M_{n+1}]=\sum_{a'}\pi(a'\mid M_{n+1})\,q_{n+1:t+K}(M_{n+1},a')$ and $v_{n+1:t+K}(h_{n+1})=\sum_{a'}\pi(a'\mid M_{n+1})\,q_{n+1:t+K}(h_{n+1},a')$.
+Steps 2 to 4 of the proof of Proposition~\ref{prop:two-return}, with $G_{n:t+K}=R_{n+1}+\gamma G_{n+1:t+K}$ in place of $R_{t+1}+\gamma R_{t+2}$. Step 2, by the tower property, (T5) and Assumptions~\ref{as:mem} and~\ref{as:pol}:
+\[
+q_{n:t+K}(h_n,a)=\sum_oP(O_{n+1}=o\mid h_n,a)\Big[r(o)+\gamma\sum_{a'}\pi(a'\mid M_{n+1})\,q_{n+1:t+K}(h_{n+1},a')\Big].
+\]
+Step 3, subtracting the first line of Definition~\ref{def:bellman-K} at $m=M_n$ and adding and subtracting $\sum_oP(O_{n+1}=o\mid h_n,a)\big[r(o)+\gamma\,\hat v_{n+1:t+K}(M_{n+1})\big]$:
+\begin{align*}
+&q_{n:t+K}(h_n,a)-\hat q_{n:t+K}(M_n,a)\\
+&\quad=c_n(h_n,a)\\
+&\qquad+\gamma\sum_oP(O_{n+1}=o\mid h_n,a)\Big[\sum_{a'}\pi(a'\mid M_{n+1})\,q_{n+1:t+K}(h_{n+1},a')-\hat v_{n+1:t+K}(M_{n+1})\Big].
+\end{align*}
+Step 4, by the second line of Definition~\ref{def:bellman-K} and Assumption~\ref{as:pol}, the bracket is $\sum_{a'}\pi(a'\mid M_{n+1})\big[q_{n+1:t+K}(h_{n+1},a')-\hat q_{n+1:t+K}(M_{n+1},a')\big]$, the conditional expectation given $h_{n+1}$ of the gap at $n+1$; the sum over $o$ is then the conditional expectation given $(h_n,A_n=a)$ (tower property). When $n+1=t+K$, $q_{t+K:t+K}=0$ and $\hat v_{t+K:t+K}=0$, so the term in $\gamma$ is zero.
 \end{proof}
 
 \begin{proposition}[The return gap over $K$ steps]\label{prop:K-return}
 Under Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol}, for every history $h_t$ and action $a$,
 \[
-q_{t:t+K}(h_t,a)-q_{t:t+K}(M_t,a)=\E\Big[\sum_{k=0}^{K-1}\gamma^k\,c_{t+k}(h_{t+k},A_{t+k})-\sum_{k=1}^{K-1}\gamma^k\,u_{t+k}\ \Big|\ h_t,A_t=a\Big].
+q_{t:t+K}(h_t,a)-\hat q_{t:t+K}(M_t,a)=\E\Big[\sum_{k=0}^{K-1}\gamma^k\,c_{t+k}(h_{t+k},A_{t+k})\ \Big|\ h_t,A_t=a\Big].
 \]
 \end{proposition}
 
 \begin{proof}
-Apply Proposition~\ref{prop:K-return-step} at $n=t$. Inside the conditional expectation, the term $q_{t+1:t+K}(h_{t+1},A_{t+1})-q_{t+1:t+K}(M_{t+1},A_{t+1})$ is again of the form of the left side, at $n=t+1$; apply Proposition~\ref{prop:K-return-step} to it, and use the tower property, since $(h_t,A_t)$ is a function of $(h_{t+1},A_{t+1})$. Repeat until $n=t+K-1$, where the term in $\gamma$ is zero.
+Apply Proposition~\ref{prop:K-return-step} at $n=t$. Inside the conditional expectation, the gap at $n=t+1$ is again of the form of the left side; apply Proposition~\ref{prop:K-return-step} to it, and use the tower property, since $(h_t,A_t)$ is a function of $(h_{t+1},A_{t+1})$. Repeat until $n=t+K-1$, where the term in $\gamma$ is zero.
 \end{proof}
 
-In words: over $K$ steps the return gap is the discounted sum, along the agent's path, of the one-step comparisons $c_{t+k}$, minus the value each update removed. This is the same structure as Proposition~\ref{prop:K}: $c_{t+k}$ compares the two predictions of $O_{t+k+1}$ that $D_{t+k}$ compares, and $u_{t+k}$ is the effect of the update $M_{t+k}=f(M_{t+k-1},A_{t+k-1},O_{t+k})$ on the value. As in Proposition~\ref{prop:two-return-zero}, each $c_{t+k}$ is zero when $D_{t+k}=0$ and splits into a reward part and a rest part that vanish with the reward part and the rest part of $D_{t+k}$, the rest part entering only through the value of what follows. By the argument of Proposition~\ref{prop:two-return-zero}(c), $u_{t+k}=0$ when the update at $t+k$ discards nothing that predicts the later observations, that is, when $I(M_{t+k-1},A_{t+k-1},O_{t+k};A_{t+k},O_{t+k+1},\dots,O_{t+K}\mid M_{t+k})=0$, because $G_{t+k:t+K}$ is a function of these later observations.
+In words: over $K$ steps the gap between the history's value and the memory's Bellman value is the discounted sum, along the agent's path, of one comparison per step. The comparison $c_{t+k}$ is of the same two predictions of $O_{t+k+1}$ as $D_{t+k}$, the history's and the agent's own memory's at that time, weighted by the reward plus the discounted Bellman value of the next memory. As in Proposition~\ref{prop:two-return-zero}, each $c_{t+k}$ is zero when $D_{t+k}=0$ and splits into a reward part and a rest part that vanish with the reward part and the rest part of $D_{t+k}$, the rest part entering only through the Bellman value of the next memory; so if $D_{t+k}=0$ for $k=0,\dots,K-1$, the two values are equal. Averaged over the histories behind $M_t$, the term $k=0$ vanishes as in Remark~\ref{rem:mc-two}, so $\E[G_{t:t+K}\mid M_t,A_t=a]-\hat q_{t:t+K}(M_t,a)=\E\big[\sum_{k=1}^{K-1}\gamma^kc_{t+k}(h_{t+k},A_{t+k})\mid M_t,A_t=a\big]$.
+
+\subsection*{The infinite horizon}
+
+Let $\gamma<1$, let the rewards lie in an interval $[r_{\min},r_{\max}]$, let $\bar r=\max(|r_{\min}|,|r_{\max}|)$, and let Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol} hold at every time. Write $q_{t:\infty}(h,a)=\E\big[\sum_{k\ge0}\gamma^kR_{t+k+1}\mid h_t=h,A_t=a\big]$.
+
+\begin{proposition}[The return gap over the infinite horizon]\label{prop:inf-return}
+For every $n\ge t$ and every $(m,a)$ that occurs at time $n$, the limits $\hat q_{n:\infty}(m,a)=\lim_{K\to\infty}\hat q_{n:t+K}(m,a)$ and $\hat v_{n:\infty}(m)=\lim_{K\to\infty}\hat v_{n:t+K}(m)$ exist and satisfy the two lines of Definition~\ref{def:bellman-K} with $\infty$ in place of $t+K$. For every history $h_t$ and action $a$,
+\[
+q_{t:\infty}(h_t,a)-\hat q_{t:\infty}(M_t,a)=\E\Big[\sum_{k\ge0}\gamma^k\,c_{t+k}(h_{t+k},A_{t+k})\ \Big|\ h_t,A_t=a\Big],
+\]
+where $c_n$ is defined as in Proposition~\ref{prop:K-return-step} with $\hat v_{n+1:\infty}$ in place of $\hat v_{n+1:t+K}$.
+\end{proposition}
+
+\begin{proof}
+\emph{The limits.} Fix $n$ and let $d^K_n=\max_m\big|\hat v_{n:t+K+1}(m)-\hat v_{n:t+K}(m)\big|$, over the memory values that occur at time $n$, for $t+K\ge n$. At $n=t+K$, $\hat v_{t+K:t+K}=0$ and $\hat v_{t+K:t+K+1}(m)$ is an average of rewards, so $d^K_{t+K}\le\bar r$. For $n<t+K$, the first line of Definition~\ref{def:bellman-K} gives
+\begin{align*}
+&\big|\hat q_{n:t+K+1}(m,a)-\hat q_{n:t+K}(m,a)\big|\\
+&\quad=\gamma\,\Big|\sum_oP(O_{n+1}=o\mid M_n=m,A_n=a)\big[\hat v_{n+1:t+K+1}-\hat v_{n+1:t+K}\big](f(m,a,o))\Big|\le\gamma\,d^K_{n+1},
+\end{align*}
+and the second line, an average over $a$, gives $d^K_n\le\gamma\,d^K_{n+1}$. Hence $d^K_n\le\gamma^{t+K-n}\bar r$, which is summable in $K$, so $\hat v_{n:t+K}(m)$ and then $\hat q_{n:t+K}(m,a)$ converge as $K\to\infty$. Both lines of Definition~\ref{def:bellman-K} are finite sums, so they hold in the limit.
+
+\emph{The identity.} Let $K\to\infty$ in Proposition~\ref{prop:K-return}. On the left, $|G_{t:\infty}-G_{t:t+K}|\le\gamma^K\bar r/(1-\gamma)$, so $q_{t:t+K}(h_t,a)\to q_{t:\infty}(h_t,a)$, and $\hat q_{t:t+K}(M_t,a)\to\hat q_{t:\infty}(M_t,a)$ by the first part. On the right, each $c_{t+k}$ converges to its version with $\hat v_{t+k+1:\infty}$, a finite sum of converging terms, and $|\gamma^kc_{t+k}|\le2\gamma^k\bar r/(1-\gamma)$, because the weight is at most $\bar r+\gamma\bar r/(1-\gamma)$ in absolute value and $\sum_o|P(o\mid h_n,a)-P(o\mid M_n,a)|\le2$. These bounds are summable over $k$, so the sum and the conditional expectation converge to those of the limit (dominated convergence).
+\end{proof}
 
 
-\paragraph{Summary.} Over $K$ steps, the history's information beyond the memory and the action at $t$ is the sum of the agent's own one-step defects at $t,\dots,t+K-1$, minus what the memory updates removed and still predicts the next observation (Proposition~\ref{prop:K}). Every term splits in the two ways of Section~\ref{sec:splits} and into a reward part and a rest part as in Section~\ref{sec:reward}, the agent's terms and the subtracted terms alike. The gap between the history's and the memory's value of the return over the same interval has the same structure (Proposition~\ref{prop:K-return}): the discounted sum of one-step comparisons of the same two predictions as each $D_{t+k}$, minus the value removed by each update.
+\paragraph{Summary.} Over $K$ steps, the history's information beyond the memory and the action at $t$ is the sum of the agent's own one-step defects at $t,\dots,t+K-1$, minus what the memory updates removed and still predicts the next observation (Proposition~\ref{prop:K}). Every term splits in the two ways of Section~\ref{sec:splits} and into a reward part and a rest part as in Section~\ref{sec:reward}, the agent's terms and the subtracted terms alike. The gap between the history's value of the return and the value the agent computes from its memory by the Bellman recursion is, over $K$ steps and over the infinite horizon, the discounted sum of one comparison per step of the same two predictions as the agent's own defect $D_{t+k}$ at that step (Propositions~\ref{prop:K-return} and~\ref{prop:inf-return}); no term for the updates remains. The updates enter only the value fitted to the observed return (Remark~\ref{rem:mc-two}).
 
 \section{Information and value}\label{sec:info-value}
 
-The defects of Sections~\ref{sec:splits}--\ref{sec:K} and the return gaps of Propositions~\ref{prop:two-return} and~\ref{prop:K-return} compare the same pairs of predictions, one made from the history and one made from the memory. A defect averages the logarithm of their ratio; a return gap takes the difference of the expectations of a weight under them. This section relates the two, first by an exact identity and then by bounds. Throughout, the rewards lie in an interval of length $\Delta R$.
+The return gaps of Propositions~\ref{prop:two-return}, \ref{prop:K-return} and~\ref{prop:inf-return} are sums of comparisons $c_n$ of the same pairs of predictions as the defects $D_n$, one made from the history and one from the memory. A defect averages the logarithm of their ratio; a comparison $c_n$ takes the difference of the expectations of a weight under them. This section relates the two, first by an exact identity and then by bounds. Throughout, the rewards lie in an interval of length $\Delta R$.
 
 \begin{lemma}[Information and the difference of an expectation]\label{lem:dv}
 Let $P$ and $Q$ be laws on a finite set with $P(x)>0$ only where $Q(x)>0$, let $w$ be a real function on the set, and for a real number $\lambda$ let $Q_\lambda(x)=Q(x)e^{\lambda w(x)}/\sum_yQ(y)e^{\lambda w(y)}$, the law $Q$ reweighted by $e^{\lambda w}$. Then
@@ -869,88 +919,92 @@ D_t&=H(O_{t+1}\mid M_t,A_t)-H(O_{t+1}\mid h_t,A_t)=\E\Big[\log\frac{P(O_{t+1}\mi
 \end{align*}
 and $P(O_{t+1}\mid M_t,a)$ is the average of $P(O_{t+1}\mid h_t,a)$ over the histories behind $M_t$, since $P(h_t\mid M_t,A_t)=P(h_t\mid M_t)$ by Lemma~\ref{lem:action}.
 
-\begin{proposition}[The pieces of the two-step return gap]\label{prop:iv-two}
+\begin{proposition}[Two steps]\label{prop:iv-two}
 Under Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol}, with the expectations over the agent's experience,
 \begin{align*}
 \E\big|c_t(h_t,A_t)\big|&\le(1+\gamma)\Delta R\sqrt{D_t/2},\\
 \E\big|c^R_t(h_t,A_t)\big|&\le(1+\gamma)\Delta R\sqrt{I(h_t;R_{t+1}\mid M_t,A_t)/2},\\
 \E\big|c^{\Ob}_t(h_t,A_t)\big|&\le\gamma\,\Delta R\sqrt{I(h_t;\Ob_{t+1}\mid M_t,A_t,R_{t+1})/2},\\
-\E\big|c_{t+1}(h_{t+1},A_{t+1})\big|&\le\Delta R\sqrt{I(h_{t+1};R_{t+2}\mid M_{t+1},A_{t+1})/2}\ \le\ \Delta R\sqrt{D_{t+1}/2},\\
-\E\big|u_{t+1}\big|&\le\Delta R\sqrt{I(M_t,A_t,O_{t+1};O_{t+2}\mid M_{t+1},A_{t+1})/2}.
+\E\big|c_{t+1}(h_{t+1},A_{t+1})\big|&\le\Delta R\sqrt{I(h_{t+1};R_{t+2}\mid M_{t+1},A_{t+1})/2}\ \le\ \Delta R\sqrt{D_{t+1}/2},
 \end{align*}
+and hence
+\[
+\E\big|q_{t:t+2}(h_t,A_t)-\hat q_{t:t+2}(M_t,A_t)\big|\le(1+\gamma)\Delta R\sqrt{D_t/2}+\gamma\,\Delta R\sqrt{D_{t+1}/2}.
+\]
 \end{proposition}
 
 \begin{proof}
 Each piece is, for fixed conditioning values, a difference of the expectations of a weight under two predictions, so Lemma~\ref{lem:dv} holds for it exactly and Corollary~\ref{cor:pinsker} bounds it. After the bound, average over the agent's experience and use $\E\sqrt{X}\le\sqrt{\E X}$ (Jensen's inequality, the square root being concave).
 
-$c_t$: the two predictions are $P(O_{t+1}\mid h_t,a)$ and $P(O_{t+1}\mid M_t,a)$, and the weight $r(o)+\gamma\E[R_{t+2}\mid M_t,a,o]$ lies in an interval of length $(1+\gamma)\Delta R$. The average of the divergence is $D_t$.
+$c_t$: the two predictions are $P(O_{t+1}\mid h_t,a)$ and $P(O_{t+1}\mid M_t,a)$. The Bellman value $\hat v_{t+1:t+2}$ is an average of rewards, so it lies in the reward interval, and the weight $r(o)+\gamma\,\hat v_{t+1:t+2}(f(M_t,a,o))$ lies in an interval of length $(1+\gamma)\Delta R$. The average of the divergence is $D_t$.
 
-$c^R_t$: the two predictions are $P(R_{t+1}\mid h_t,a)$ and $P(R_{t+1}\mid M_t,a)$, the weight $\rho+\gamma\E[R_{t+2}\mid M_t,a,\rho]$ has range at most $(1+\gamma)\Delta R$, and the average divergence is $I(h_t;R_{t+1}\mid M_t,A_t)$.
+$c^R_t$: the two predictions are $P(R_{t+1}\mid h_t,a)$ and $P(R_{t+1}\mid M_t,a)$, the weight has range at most $(1+\gamma)\Delta R$ for the same reason, and the average divergence is $I(h_t;R_{t+1}\mid M_t,A_t)$.
 
-$c^{\Ob}_t$: for each $\rho$, the inner sum is a difference of expectations of $\E[R_{t+2}\mid M_t,a,\rho,\bar o]$, of range $\Delta R$, under $P(\Ob_{t+1}\mid h_t,a,\rho)$ and $P(\Ob_{t+1}\mid M_t,a,\rho)$. So $|c^{\Ob}_t|\le\gamma\Delta R\sum_\rho P(\rho\mid h_t,a)\sqrt{\KL_\rho/2}\le\gamma\Delta R\sqrt{\sum_\rho P(\rho\mid h_t,a)\KL_\rho/2}$, with $\KL_\rho$ the divergence for $\rho$, and the average of $\sum_\rho P(\rho\mid h_t,a)\KL_\rho$ is $I(h_t;\Ob_{t+1}\mid M_t,A_t,R_{t+1})$.
+$c^{\Ob}_t$: for each $\rho$, the inner sum is a difference of expectations of $\hat v_{t+1:t+2}(f(M_t,a,(\rho,\bar o)))$, of range $\Delta R$, under $P(\Ob_{t+1}\mid h_t,a,\rho)$ and $P(\Ob_{t+1}\mid M_t,a,\rho)$. So $|c^{\Ob}_t|\le\gamma\Delta R\sum_\rho P(\rho\mid h_t,a)\sqrt{\KL_\rho/2}\le\gamma\Delta R\sqrt{\sum_\rho P(\rho\mid h_t,a)\KL_\rho/2}$, with $\KL_\rho$ the divergence for $\rho$, and the average of $\sum_\rho P(\rho\mid h_t,a)\KL_\rho$ is $I(h_t;\Ob_{t+1}\mid M_t,A_t,R_{t+1})$.
 
-$c_{t+1}$: it is $\E[R_{t+2}\mid h_{t+1},a']-\E[R_{t+2}\mid M_{t+1},a']$, a difference of expectations of the reward under $P(R_{t+2}\mid h_{t+1},a')$ and $P(R_{t+2}\mid M_{t+1},a')$; the average divergence is $I(h_{t+1};R_{t+2}\mid M_{t+1},A_{t+1})$, the reward part of $D_{t+1}$ in the reward-first order, which is at most $D_{t+1}$ by Proposition~\ref{prop:xy-D}.
+$c_{t+1}$: it is a difference of expectations of the reward under $P(R_{t+2}\mid h_{t+1},a')$ and $P(R_{t+2}\mid M_{t+1},a')$; the average divergence is $I(h_{t+1};R_{t+2}\mid M_{t+1},A_{t+1})$, the reward part of $D_{t+1}$ in the reward-first order, which is at most $D_{t+1}$ by Proposition~\ref{prop:xy-D}.
 
-$u_{t+1}$: it is $\E[R_{t+2}\mid M_t,A_t,O_{t+1}]-\E[R_{t+2}\mid M_{t+1}]$, a difference of expectations of the reward under $P(R_{t+2}\mid M_t,A_t,O_{t+1})$ and $P(R_{t+2}\mid M_{t+1})$; the second is the average of the first over the values of $(M_t,A_t,O_{t+1})$ behind $M_{t+1}$, because $M_{t+1}$ is a function of them. So the average divergence is $I(M_t,A_t,O_{t+1};R_{t+2}\mid M_{t+1})$. By (T2), (T3) and (T4), since $R_{t+2}$ is part of $O_{t+2}$, it is at most $I(M_t,A_t,O_{t+1};A_{t+1},O_{t+2}\mid M_{t+1})$, which equals $I(M_t,A_t,O_{t+1};O_{t+2}\mid M_{t+1},A_{t+1})$ by the first bracket in the proof of Proposition~\ref{prop:two-splits}.
+The last line: take absolute values in Proposition~\ref{prop:two-return}, use the triangle inequality and $\E\big|\E[c_{t+1}\mid h_t,A_t]\big|\le\E|c_{t+1}|$, and insert the first and fourth lines.
 \end{proof}
 
-\begin{proposition}[The two-step return gap and the two-step defect]\label{prop:iv-two-whole}
-Under Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol}:
+\begin{proposition}[$K$ steps and the infinite horizon]\label{prop:iv-K}
+Under Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol}, let $\ell_n=\Delta R\sum_{j=0}^{t+K-n-1}\gamma^j$ for $t\le n\le t+K$, the length of the interval of $G_{n:t+K}$. Then:
 \begin{enumerate}
-\item[(a)] for every $(h_t,a)$ and every real $\lambda$, with $P=P(G_{t:t+2}\mid h_t,a)$ and $Q=P(G_{t:t+2}\mid M_t,a)$,
+\item[(a)] for $t\le n<t+K$, $\E|c_n(h_n,A_n)|\le\ell_n\sqrt{D_n/2}$, and with $c_n=c^R_n+c^{\Ob}_n$ split as in Proposition~\ref{prop:two-return-zero}(b) at time $n$,
 \begin{align*}
-\lambda\big[q_{t:t+2}(h_t,a)-q_{t:t+2}(M_t,a)\big]&=\KL(P\|Q)+\log\E_Q\big[e^{\lambda(G_{t:t+2}-q_{t:t+2}(M_t,a))}\big]\\
-&\quad-\KL(P\|Q_\lambda);
+\E|c^R_n|&\le\ell_n\sqrt{I(h_n;R_{n+1}\mid M_n,A_n)/2},\\
+\E|c^{\Ob}_n|&\le\gamma\,\ell_{n+1}\sqrt{I(h_n;\Ob_{n+1}\mid M_n,A_n,R_{n+1})/2};
 \end{align*}
-\item[(b)] the average of $\KL(P\|Q)$ over the agent's experience is $I(h_t;G_{t:t+2}\mid M_t,A_t)$, and
+\item[(b)] over $K$ steps,
 \[
-I(h_t;G_{t:t+2}\mid M_t,A_t)=D_{t:t+2}-I(h_t;O_{t+1},A_{t+1},O_{t+2}\mid M_t,A_t,G_{t:t+2});
+\E\big|q_{t:t+K}(h_t,A_t)-\hat q_{t:t+K}(M_t,A_t)\big|\le\sum_{k=0}^{K-1}\gamma^k\,\ell_{t+k}\sqrt{D_{t+k}/2};
 \]
-\item[(c)] hence
+\item[(c)] over the infinite horizon, with $\gamma<1$,
 \begin{align*}
-\E\big|q_{t:t+2}(h_t,A_t)-q_{t:t+2}(M_t,A_t)\big|&\le(1+\gamma)\Delta R\sqrt{I(h_t;G_{t:t+2}\mid M_t,A_t)/2}\\
-&\le(1+\gamma)\Delta R\sqrt{D_{t:t+2}/2}.
+\E\big|q_{t:\infty}(h_t,A_t)-\hat q_{t:\infty}(M_t,A_t)\big|&\le\frac{\Delta R}{1-\gamma}\sum_{k\ge0}\gamma^k\sqrt{D_{t+k}/2}\\
+&\le\frac{\Delta R}{(1-\gamma)^{3/2}}\sqrt{\frac12\sum_{k\ge0}\gamma^kD_{t+k}},
 \end{align*}
+and if $D_n\le\bar D$ for every $n\ge t$, the right side is at most $\Delta R\sqrt{\bar D/2}/(1-\gamma)^2$.
 \end{enumerate}
 \end{proposition}
 
 \begin{proof}
-(a) Lemma~\ref{lem:dv} with $w$ the value of the return, since $\E_P[G_{t:t+2}]=q_{t:t+2}(h_t,a)$ and $\E_Q[G_{t:t+2}]=q_{t:t+2}(M_t,a)$.
+(a) As for $c_t$ in Proposition~\ref{prop:iv-two}. The Bellman value $\hat v_{n+1:t+K}$ is a discounted sum of $t+K-n-1$ averages of rewards, so it lies in an interval of length $\ell_{n+1}$, and the weight $r(o)+\gamma\,\hat v_{n+1:t+K}(f(M_n,a,o))$ in one of length $\Delta R+\gamma\ell_{n+1}=\ell_n$. For $c^{\Ob}_n$ the inner weight is $\hat v_{n+1:t+K}$, of range $\ell_{n+1}$.
 
-(b) $Q$ is the average of $P$ over the histories behind $M_t$, as in the remark after Corollary~\ref{cor:pinsker}, so the average of $\KL(P\|Q)$ is $I(h_t;G_{t:t+2}\mid M_t,A_t)$. The return is a function of $(R_{t+1},R_{t+2})$, which are parts of $(O_{t+1},O_{t+2})$, so
-\begin{align*}
-D_{t:t+2}&=I(h_t;O_{t+1},A_{t+1},O_{t+2}\mid M_t,A_t) \why{Definition~\ref{def:two}}\\
-&=I(h_t;O_{t+1},A_{t+1},O_{t+2},G_{t:t+2}\mid M_t,A_t) \why{T4}\\
-&=I(h_t;G_{t:t+2}\mid M_t,A_t)+I(h_t;O_{t+1},A_{t+1},O_{t+2}\mid M_t,A_t,G_{t:t+2}) \why{T2}.
-\end{align*}
+(b) Take absolute values in Proposition~\ref{prop:K-return}, use the triangle inequality and $\E\big|\E[c_{t+k}\mid h_t,A_t]\big|\le\E|c_{t+k}|$, and insert (a).
 
-(c) Corollary~\ref{cor:pinsker} with $\ell=(1+\gamma)\Delta R$, the length of the interval of the return, Jensen's inequality as before, and (b) with (T3).
+(c) Over the infinite horizon $\hat v_{n+1:\infty}$ lies in an interval of length $\Delta R/(1-\gamma)$, so the weight of every $c_n$ lies in one of length $\Delta R+\gamma\Delta R/(1-\gamma)=\Delta R/(1-\gamma)$, and (a) holds with $\ell_n=\Delta R/(1-\gamma)$. Take absolute values in Proposition~\ref{prop:inf-return} and proceed as in (b); the infinite sum of nonnegative terms may be exchanged with the expectation (monotone convergence). For the second line, write $\gamma^k\sqrt{x_k}=\gamma^{k/2}\cdot\gamma^{k/2}\sqrt{x_k}$ and apply the Cauchy--Schwarz inequality:
+\[
+\sum_{k\ge0}\gamma^k\sqrt{x_k}\le\Big(\sum_{k\ge0}\gamma^k\Big)^{1/2}\Big(\sum_{k\ge0}\gamma^kx_k\Big)^{1/2}=(1-\gamma)^{-1/2}\Big(\sum_{k\ge0}\gamma^kx_k\Big)^{1/2},
+\]
+with $x_k=D_{t+k}/2$. If $D_n\le\bar D$, then $\sum_k\gamma^kD_{t+k}\le\bar D/(1-\gamma)$.
 \end{proof}
 
-In words: the information the history carries about the two-step return is the two-step defect minus what the history tells about the two steps that the return does not record. The return gap is bounded by this information, and by Proposition~\ref{prop:two} also by $(1+\gamma)\Delta R\sqrt{(D_t+D_{t+1})/2}$. Proposition~\ref{prop:iv-two} bounds the three pieces of Proposition~\ref{prop:two-return} separately: the first by $D_t$, the second only by the reward part of $D_{t+1}$, and the correction by the subtracted term of Proposition~\ref{prop:two}.
+So for a finite and for the infinite horizon, the gap between the history's value and the value the agent computes from its memory is controlled by the agent's own one-step defects, one per step, discounted; within each step, the reward part enters with the whole weight and the rest part only through the discounted value of what follows. In each case the exact identity of Lemma~\ref{lem:dv} says what the bound leaves out: the part of the history's information that does not lie along the weight.
 
-\begin{proposition}[$K$ steps]\label{prop:iv-K}
-Under Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol}, let $\ell_n=\Delta R\sum_{j=0}^{t+K-n-1}\gamma^j$, the length of the interval of $G_{n:t+K}$. Then
-\begin{align*}
-\E\big|q_{t:t+K}(h_t,A_t)-q_{t:t+K}(M_t,A_t)\big|&\le\ell_t\sqrt{I(h_t;G_{t:t+K}\mid M_t,A_t)/2}\\
-&\le\ell_t\sqrt{D_{t:t+K}/2},\\
-I(h_t;G_{t:t+K}\mid M_t,A_t)&=D_{t:t+K}\\
-&\quad-I(h_t;O_{t+1:t+K},A_{t+1:t+K-1}\mid M_t,A_t,G_{t:t+K}),
-\end{align*}
-and, for the pieces of Proposition~\ref{prop:K-return}, $\E|c_n|\le\ell_n\sqrt{D_n/2}$ and
+\begin{remark}[The value fitted to the observed return, and $D_{t:t+K}$]\label{rem:iv-mc}
+Under Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol}, for the value $\E[G_{t:t+K}\mid M_t,A_t]$ of Remark~\ref{rem:mc-two}, Lemma~\ref{lem:dv} holds exactly with $P=P(G_{t:t+K}\mid h_t,a)$, $Q=P(G_{t:t+K}\mid M_t,a)$ and $w$ the value of the return. The average of $\KL(P\|Q)$ over the agent's experience is
 \[
-\E|u_n|\le\ell_n\sqrt{I\big(M_{n-1},A_{n-1},O_n;\,A_{n:t+K-1},O_{n+1:t+K}\,\big|\,M_n\big)/2},
+I(h_t;G_{t:t+K}\mid M_t,A_t)=D_{t:t+K}-I(h_t;O_{t+1:t+K},A_{t+1:t+K-1}\mid M_t,A_t,G_{t:t+K}),
 \]
-the information the update at $n$ discarded about the rest of the interval.
-\end{proposition}
+and hence
+\[
+\E\big|q_{t:t+K}(h_t,A_t)-\E[G_{t:t+K}\mid M_t,A_t]\big|\le\ell_t\sqrt{I(h_t;G_{t:t+K}\mid M_t,A_t)/2}\le\ell_t\sqrt{D_{t:t+K}/2}.
+\]
+So the defect over an interval, $D_{t:t+K}$, is the information that matches the value of the memory at the single time $t$ fitted to the observed return, and the sequence $D_t,\dots,D_{t+K-1}$ the information that matches the value the agent computes by the Bellman recursion on its memory at every time.
+\end{remark}
 
 \begin{proof}
-The first two lines are the proof of Proposition~\ref{prop:iv-two-whole} with $G_{t:t+K}$, a function of the rewards in $O_{t+1:t+K}$, and Definition~\ref{def:K}. For $c_n$, the weight $r(o)+\gamma\E[v_{n+1:t+K}(h_{n+1})\mid M_n,a,o]$ lies in an interval of length $\Delta R+\gamma\ell_{n+1}=\ell_n$, and the proof of Proposition~\ref{prop:iv-two} for $c_t$ applies. For $u_n$, by the tower property, $u_n=\E[G_{n:t+K}\mid M_{n-1},A_{n-1},O_n]-\E[G_{n:t+K}\mid M_n]$, a difference of expectations of $G_{n:t+K}$, of range $\ell_n$; the average divergence is $I(M_{n-1},A_{n-1},O_n;G_{n:t+K}\mid M_n)$, which is at most the stated information by (T2), (T3) and (T4), because $G_{n:t+K}$ is a function of $O_{n+1:t+K}$.
+$Q$ is the average of $P$ over the histories behind $M_t$, as in the remark after Corollary~\ref{cor:pinsker}, so the average of $\KL(P\|Q)$ is $I(h_t;G_{t:t+K}\mid M_t,A_t)$. The return is a function of the rewards in $O_{t+1:t+K}$, so
+\begin{align*}
+D_{t:t+K}&=I(h_t;O_{t+1:t+K},A_{t+1:t+K-1}\mid M_t,A_t) \why{Definition~\ref{def:K}}\\
+&=I(h_t;O_{t+1:t+K},A_{t+1:t+K-1},G_{t:t+K}\mid M_t,A_t) \why{T4}\\
+&=I(h_t;G_{t:t+K}\mid M_t,A_t)+I(h_t;O_{t+1:t+K},A_{t+1:t+K-1}\mid M_t,A_t,G_{t:t+K}) \why{T2}.
+\end{align*}
+The bound follows from Corollary~\ref{cor:pinsker} with $\ell=\ell_t$, Jensen's inequality as before, and (T3).
 \end{proof}
 
-So the information quantities of this note control the return gap in two ways. As a whole, the gap over an interval is controlled by the history's information about the return over that interval, which is the defect over the interval minus what the return does not record. Piece by piece, each one-step comparison is controlled by the defect of its step, the rest of the observation only through the discount factor, and each correction by what its update discarded about the rest of the interval. In each case the exact identity of Lemma~\ref{lem:dv} says what the bound leaves out: the part of the history's information that does not lie along the weight.
-
-\paragraph{What is known.} The one-step empowerment and plasticity are those of \citet{abel2025plasticity}; the chain rule, the identity of Lemma~\ref{lem:dv}, Pinsker's inequality and the other tools are standard; the partial information decomposition is that of \citet{williams2010nonnegative}, with the conditional form of \citet{matthias2025novel} and the measure of \citet{bertschinger2014quantifying}. The terms $D^0_t$, $D^+_t$, the two splits, the reward parts and the multi-step defects and their expansions are defined and derived here; a short search did not find them elsewhere.
+\paragraph{What is known.} The one-step empowerment and plasticity are those of \citet{abel2025plasticity}; the chain rule, the identity of Lemma~\ref{lem:dv}, Pinsker's inequality and the other tools are standard; the partial information decomposition is that of \citet{williams2010nonnegative}, with the conditional form of \citet{matthias2025novel} and the measure of \citet{bertschinger2014quantifying}. The telescoping of Proposition~\ref{prop:K-return} has the form of the simulation lemma \citep{kearns2002near}, with the history's and the memory's predictions as the two models, and bounds of a value error by the one-step prediction error of an agent state, with the factor $(1-\gamma)^{-2}$, are known for approximate information states \citep{subramanian2022approximate}. The terms $D^0_t$, $D^+_t$, the two splits, the reward parts, the multi-step defects and their expansions, and the bounds by the agent's own defects with their reward and rest parts are defined and derived here; a short search did not find them elsewhere.
 
 \bibliographystyle{plainnat}
 \bibliography{references}

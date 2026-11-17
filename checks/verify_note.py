@@ -385,84 +385,94 @@ def check_steps(J, w, rec):
                 rec.eq('Lem 7.3 updates from t to t+k', J.I([hn], X, [Mn] + V), J.I([h], X, W + V) + J.I(W, X, [Mn] + V))
 
 
+def bellman_pieces(J, w, t, K):
+    """The memory's Bellman value over [t, t+K] (Definitions 6.7 and 7.6) and, for each n,
+    the comparisons c_n, c^R_n, c^Obar_n over all trajectories (Propositions 6.8, 6.9, 7.7)."""
+    g, N = w.gamma, J.N
+    Qh, Vh = {}, {t + K: defaultdict(float)}
+    c, cR, cB = {}, {}, {}
+    for n in range(t + K - 1, t - 1, -1):
+        hn, Mn, An, On1 = ('h', n), ('M', n), ('A', n), ('O', n + 1)
+        Rn1, Bn1 = ('R', n + 1), ('Ob', n + 1)
+        PM, Ph = J.cdist([On1], [Mn, An]), J.cdist([On1], [hn, An])
+        V1 = Vh[n + 1]
+
+        def wt(m, a, o):
+            return o[0] + g * V1[w.f[(m, a, o)]]
+
+        Q = {(m, a): sum(p * wt(m, a, o) for (o,), p in d.items()) for (m, a), d in PM.items()}
+        V = {m: sum(w.pi[m][a] * Q[(m, a)] for a in ACTS) for m in MEMS if all((m, a) in Q for a in ACTS)}
+        Qh[n], Vh[n] = Q, V
+        kh, kM = J.keys([hn, An]), J.keys([Mn, An])
+        PRh, PRM = J.cdist([Rn1], [hn, An]), J.cdist([Rn1], [Mn, An])
+        PBh, PBM = J.cdist([Bn1], [hn, An, Rn1]), J.cdist([Bn1], [Mn, An, Rn1])
+        cn, cRn, cBn = [], [], []
+        for i in range(N):
+            m, a = kM[i]
+            cn.append(sum((Ph[kh[i]].get((o,), 0.0) - p) * wt(m, a, o) for (o,), p in PM[kM[i]].items()))
+            cRn.append(sum((PRh[kh[i]].get((r,), 0.0) - pr)
+                           * (r + g * sum(pb * V1[w.f[(m, a, (r, b))]] for (b,), pb in PBM[(m, a, r)].items()))
+                           for (r,), pr in PRM[kM[i]].items()))
+            tot = 0.0
+            for (r,), phr in PRh[kh[i]].items():
+                tot += phr * g * sum((PBh[kh[i] + (r,)].get((b,), 0.0) - pb) * V1[w.f[(m, a, (r, b))]]
+                                     for (b,), pb in PBM[(m, a, r)].items())
+            cBn.append(tot)
+        c[n], cR[n], cB[n] = cn, cRn, cBn
+    return Qh, Vh, c, cR, cB
+
+
+def returns(J, w, t, K):
+    g, N = w.gamma, J.N
+    R = {n: J.vals(('R', n)) for n in range(t + 1, t + K + 1)}
+    return {n: [sum(g ** j * R[n + j + 1][i] for j in range(t + K - n)) for i in range(N)] for n in range(t, t + K + 1)}
+
+
 def check_return(J, w, rec):
-    T, g = w.T, w.gamma
-    N = J.N
-    R = {n: J.vals(('R', n)) for n in range(1, T + 2)}
+    T, g, N = w.T, w.gamma, J.N
     for t in range(1, T + 1):
         h, M, A = ('h', t), ('M', t), ('A', t)
-        kh, kM = J.keys([h, A]), J.keys([M, A])
-        # two steps (needs R_{t+2})
-        if t + 1 <= T:
-            h1, M1, A1, O1, O2 = ('h', t + 1), ('M', t + 1), ('A', t + 1), ('O', t + 1), ('O', t + 2)
-            G2 = [R[t + 1][i] + g * R[t + 2][i] for i in range(N)]
-            lhs = [x - y for x, y in zip(J.cexp(G2, [h, A])[0], J.cexp(G2, [M, A])[0])]
-            Ph, PM = J.cdist([O1], [h, A]), J.cdist([O1], [M, A])
-            _, ER2 = J.cexp(R[t + 2], [M, A, O1])
-            ct, cR, cB = [], [], []
-            PRh, PRM = J.cdist([('R', t + 1)], [h, A]), J.cdist([('R', t + 1)], [M, A])
-            PBh, PBM = J.cdist([('Ob', t + 1)], [h, A, ('R', t + 1)]), J.cdist([('Ob', t + 1)], [M, A, ('R', t + 1)])
-            _, ER2r = J.cexp(R[t + 2], [M, A, ('R', t + 1)])
-            _, ER2rb = J.cexp(R[t + 2], [M, A, ('R', t + 1), ('Ob', t + 1)])
-            for i in range(N):
-                ph, pm = Ph[kh[i]], PM[kM[i]]
-                ct.append(sum((ph.get((o,), 0.0) - pmo) * (o[0] + g * ER2[kM[i] + (o,)]) for (o,), pmo in pm.items()))
-                cR.append(sum((PRh[kh[i]].get((r,), 0.0) - pmr) * (r + g * ER2r[kM[i] + (r,)]) for (r,), pmr in PRM[kM[i]].items()))
-                tot = 0.0
-                for (r,), phr in PRh[kh[i]].items():
-                    pbm = PBM[kM[i] + (r,)]
-                    pbh = PBh[kh[i] + (r,)]
-                    tot += phr * g * sum((pbh.get((b,), 0.0) - pmb) * ER2rb[kM[i] + (r, b)] for (b,), pmb in pbm.items())
-                cB.append(tot)
-            for i in range(N):
-                rec.eq('Prop 6.8(b) c_t = c^R_t + c^Obar_t', ct[i], cR[i] + cB[i])
-            kh1, kM1 = J.keys([h1, A1]), J.keys([M1, A1])
-            Ph1, PM1 = J.cdist([O2], [h1, A1]), J.cdist([O2], [M1, A1])
-            c1 = [sum((Ph1[kh1[i]].get((o,), 0.0) - pmo) * o[0] for (o,), pmo in PM1[kM1[i]].items()) for i in range(N)]
-            q1 = [x - y for x, y in zip(J.cexp(R[t + 2], [h1, A1])[0], J.cexp(R[t + 2], [M1, A1])[0])]
-            for i in range(N):
-                rec.eq('Prop 6.7 c_t+1 = one-step gap at t+1', c1[i], q1[i])
-            u = [x - y for x, y in zip(J.cexp(R[t + 2], [M, A, O1])[0], J.cexp(R[t + 2], [M1])[0])]
-            inner = J.cexp([a - b for a, b in zip(c1, u)], [h, A])[0]
-            for i in range(N):
-                rec.eq('Prop 6.7 two-step return gap', lhs[i], ct[i] + g * inner[i])
-            rec.le('Prop 6.7 size of the update term (shown)', -max(abs(x) for x in u), 0.0)
-        # K steps
+        kM = J.keys([M, A])
         for K in range(1, T + 2 - t):
-            Gn = {}
-            for n in range(t, t + K + 1):
-                Gn[n] = [sum(g ** j * R[n + j + 1][i] for j in range(t + K - n)) for i in range(N)]
-            v = {n: J.cexp(Gn[n], [('h', n)])[0] for n in range(t, t + K + 1)}
-            c, u = {}, {}
+            Qh, Vh, c, cR, cB = bellman_pieces(J, w, t, K)
+            Gn = returns(J, w, t, K)
             for n in range(t, t + K):
-                hn, Mn, An, On1 = ('h', n), ('M', n), ('A', n), ('O', n + 1)
-                khn, kMn = J.keys([hn, An]), J.keys([Mn, An])
-                Phn, PMn = J.cdist([On1], [hn, An]), J.cdist([On1], [Mn, An])
-                _, Ev = J.cexp(v[n + 1], [Mn, An, On1])
-                c[n] = [sum((Phn[khn[i]].get((o,), 0.0) - pmo) * (o[0] + g * Ev[kMn[i] + (o,)]) for (o,), pmo in PMn[kMn[i]].items())
-                        for i in range(N)]
-                if n > t:
-                    Un = [('M', n - 1), ('A', n - 1), ('O', n)]
-                    u[n] = [x - y for x, y in zip(J.cexp(v[n], Un)[0], J.cexp(v[n], [Mn])[0])]
-            # one-step recursion (Prop 7.6) at each n
+                for i in range(N):
+                    rec.eq('Prop 6.9(b) c_n = c^R_n + c^Obar_n', c[n][i], cR[n][i] + cB[n][i])
+            # Proposition 7.7 at each n
             for n in range(t, t + K):
                 hn, Mn, An = ('h', n), ('M', n), ('A', n)
-                gap_n = [x - y for x, y in zip(J.cexp(Gn[n], [hn, An])[0], J.cexp(Gn[n], [Mn, An])[0])]
+                kMn = J.keys([Mn, An])
+                gap_n = [x - Qh[n][kMn[i]] for i, x in enumerate(J.cexp(Gn[n], [hn, An])[0])]
                 if n + 1 < t + K:
                     h1, M1, A1 = ('h', n + 1), ('M', n + 1), ('A', n + 1)
-                    gap_1 = [x - y for x, y in zip(J.cexp(Gn[n + 1], [h1, A1])[0], J.cexp(Gn[n + 1], [M1, A1])[0])]
-                    inner = J.cexp([a - b for a, b in zip(gap_1, u[n + 1])], [hn, An])[0]
+                    kM1 = J.keys([M1, A1])
+                    gap_1 = [x - Qh[n + 1][kM1[i]] for i, x in enumerate(J.cexp(Gn[n + 1], [h1, A1])[0])]
+                    inner = J.cexp(gap_1, [hn, An])[0]
                 else:
                     inner = [0.0] * N
                 for i in range(N):
-                    rec.eq('Prop 7.6 one step of the return gap', gap_n[i], c[n][i] + g * inner[i])
-            # full K-step formula (Prop 7.7)
-            tot = [sum(g ** (n - t) * c[n][i] for n in range(t, t + K)) - sum(g ** (n - t) * u[n][i] for n in range(t + 1, t + K))
-                   for i in range(N)]
-            rhs = J.cexp(tot, [h, A])[0]
-            lhs = [x - y for x, y in zip(J.cexp(Gn[t], [h, A])[0], J.cexp(Gn[t], [M, A])[0])]
+                    rec.eq('Prop 7.7 one step of the return gap (Bellman value)', gap_n[i], c[n][i] + g * inner[i])
+            # Propositions 6.8 (K=2) and 7.8
+            lhs = [x - Qh[t][kM[i]] for i, x in enumerate(J.cexp(Gn[t], [h, A])[0])]
+            rhs = J.cexp([sum(g ** (n - t) * c[n][i] for n in range(t, t + K)) for i in range(N)], [h, A])[0]
+            name = 'Prop 6.8 two-step return gap' if K == 2 else 'Prop 7.8 K-step return gap'
             for i in range(N):
-                rec.eq('Prop 7.7 K-step return gap', lhs[i], rhs[i])
+                rec.eq(name, lhs[i], rhs[i])
+            # value fitted to the observed return (Remark 6.10, end of Section 7)
+            mc = J.cexp(Gn[t], [M, A])[0]
+            later = J.cexp([sum(g ** (n - t) * c[n][i] for n in range(t + 1, t + K)) for i in range(N)], [M, A])[0]
+            for i in range(N):
+                rec.eq('Sec 7 E[G|M_t,a] - hat q(M_t,a) = E[sum_k>=1 g^k c_t+k | M_t,a]', mc[i] - Qh[t][kM[i]], later[i])
+            if K == 2:
+                M1, A1, O1, O2 = ('M', t + 1), ('A', t + 1), ('O', t + 1), ('O', t + 2)
+                R2 = J.vals(('R', t + 2))
+                e = [x - y for x, y in zip(J.cexp(R2, [M, A, O1, A1])[0], J.cexp(R2, [M1, A1])[0])]
+                ee = J.cexp(e, [M, A])[0]
+                for i in range(N):
+                    rec.eq('Rem 6.10 E[G|M_t,a] - hat q(M_t,a) = g E[update difference]', mc[i] - Qh[t][kM[i]], g * ee[i])
+                GAPS['|E[G|M_t,a] - hat q(M_t,a)| (two steps)'] = max(GAPS['|E[G|M_t,a] - hat q(M_t,a)| (two steps)'],
+                                                                      max(abs(mc[i] - Qh[t][kM[i]]) for i in range(N)))
 
 
 def kl(P, Q):
@@ -470,73 +480,66 @@ def kl(P, Q):
 
 
 def check_info_value(J, w, rec):
-    T, g = w.T, w.gamma
-    N = J.N
+    T, g, N = w.T, w.gamma, J.N
     dR = 1.0
-    R = {n: J.vals(('R', n)) for n in range(1, T + 2)}
     for t in range(1, T + 1):
         h, M, A, O1 = ('h', t), ('M', t), ('A', t), ('O', t + 1)
         kh, kM = J.keys([h, A]), J.keys([M, A])
-        if t + 1 <= T:
-            h1, M1, A1, O2 = ('h', t + 1), ('M', t + 1), ('A', t + 1), ('O', t + 2)
-            Ph, PM = J.cdist([O1], [h, A]), J.cdist([O1], [M, A])
-            _, ER2 = J.cexp(R[t + 2], [M, A, O1])
-            # Lemma 8.1 exact and Corollary 8.2 on the pair behind c_t
-            seen = set()
-            absc, KLs = [], []
-            for i in range(N):
-                P, Q = Ph[kh[i]], PM[kM[i]]
-                wf = {x: x[0][0] + g * ER2[kM[i] + x] for x in Q}
-                c = sum(P.get(x, 0.0) * wf[x] for x in Q) - sum(Q[x] * wf[x] for x in Q)
-                K_ = kl(P, Q)
-                absc.append(abs(c)); KLs.append(K_)
-                if kh[i] not in seen and len(seen) < 40:
-                    seen.add(kh[i])
-                    EQ = sum(Q[x] * wf[x] for x in Q)
-                    for lam in (-2.0, -0.5, 0.7, 3.0):
-                        Z = sum(Q[x] * math.exp(lam * wf[x]) for x in Q)
-                        Ql = {x: Q[x] * math.exp(lam * wf[x]) / Z for x in Q}
-                        rhs = K_ + math.log(sum(Q[x] * math.exp(lam * (wf[x] - EQ)) for x in Q)) - kl(P, Ql)
-                        rec.eq('Lem 8.1 exact identity', lam * c, rhs)
-                    rec.le('Cor 8.2 |E_P w - E_Q w| <= l sqrt(KL/2)', abs(c), (1 + g) * dR * math.sqrt(K_ / 2))
-            Dt = J.I([h], [O1], [M, A])
-            rec.eq('Sec 8 D_t = E[KL(P(O|h,A)||P(O|M,A))]', Dt, J.E(KLs))
-            rec.le('Prop 8.3 E|c_t| <= (1+g) dR sqrt(D_t/2)', J.E(absc), (1 + g) * dR * math.sqrt(Dt / 2))
-            # reward and rest routes
-            PRh, PRM = J.cdist([('R', t + 1)], [h, A]), J.cdist([('R', t + 1)], [M, A])
-            PBh, PBM = J.cdist([('Ob', t + 1)], [h, A, ('R', t + 1)]), J.cdist([('Ob', t + 1)], [M, A, ('R', t + 1)])
-            _, ER2r = J.cexp(R[t + 2], [M, A, ('R', t + 1)])
-            _, ER2rb = J.cexp(R[t + 2], [M, A, ('R', t + 1), ('Ob', t + 1)])
-            cR, cB = [], []
-            for i in range(N):
-                cR.append(abs(sum((PRh[kh[i]].get((r,), 0.0) - pmr) * (r + g * ER2r[kM[i] + (r,)]) for (r,), pmr in PRM[kM[i]].items())))
-                tot = 0.0
-                for (r,), phr in PRh[kh[i]].items():
-                    tot += phr * g * sum((PBh[kh[i] + (r,)].get((b,), 0.0) - pmb) * ER2rb[kM[i] + (r, b)] for (b,), pmb in PBM[kM[i] + (r,)].items())
-                cB.append(abs(tot))
-            rec.le('Prop 8.3 E|c^R_t| <= (1+g) dR sqrt(reward part/2)', J.E(cR), (1 + g) * dR * math.sqrt(J.I([h], [('R', t + 1)], [M, A]) / 2))
-            rec.le('Prop 8.3 E|c^Obar_t| <= g dR sqrt(rest part/2)', J.E(cB), g * dR * math.sqrt(J.I([h], [('Ob', t + 1)], [M, A, ('R', t + 1)]) / 2))
-            c1 = [x - y for x, y in zip(J.cexp(R[t + 2], [h1, A1])[0], J.cexp(R[t + 2], [M1, A1])[0])]
-            rp1 = J.I([h1], [('R', t + 2)], [M1, A1])
-            rec.le('Prop 8.3 E|c_t+1| <= dR sqrt(reward part of D_t+1 /2)', J.E([abs(x) for x in c1]), dR * math.sqrt(rp1 / 2))
-            rec.le('Prop 8.3 reward part of D_t+1 <= D_t+1', rp1, J.I([h1], [O2], [M1, A1]))
-            U = [M, A, O1]
-            u = [x - y for x, y in zip(J.cexp(R[t + 2], U)[0], J.cexp(R[t + 2], [M1])[0])]
-            rec.le('Prop 8.3 E|u_t+1| <= dR sqrt(update term/2)', J.E([abs(x) for x in u]), dR * math.sqrt(J.I(U, [O2], [M1, A1]) / 2))
-            # Proposition 8.4
-            key = ('G2', t)
-            J._vals[key] = [R[t + 1][i] + g * R[t + 2][i] for i in range(N)]
-            IG = J.I([h], [key], [M, A])
-            D2 = J.I([h], [O1, A1, O2], [M, A])
-            rec.eq('Prop 8.4(b) I(h;G|M,A) = D_t:t+2 - I(h;stream|M,A,G)', IG, D2 - J.I([h], [O1, A1, O2], [M, A, key]))
-            gap = [x - y for x, y in zip(J.cexp(J._vals[key], [h, A])[0], J.cexp(J._vals[key], [M, A])[0])]
-            rec.le('Prop 8.4(c) E|gap| <= (1+g) dR sqrt(I(h;G|M,A)/2)', J.E([abs(x) for x in gap]), (1 + g) * dR * math.sqrt(IG / 2))
-            rec.le('Prop 8.4(c) I(h;G|M,A) <= D_t:t+2', IG, D2)
-        # Proposition 8.5
+        Ph, PM = J.cdist([O1], [h, A]), J.cdist([O1], [M, A])
+        Dt = J.I([h], [O1], [M, A])
+        KLs = [kl(Ph[kh[i]], PM[kM[i]]) for i in range(N)]
+        rec.eq('Sec 8 D_t = E[KL(P(O|h,A)||P(O|M,A))]', Dt, J.E(KLs))
         for K in range(1, T + 2 - t):
+            Qh, Vh, c, cR, cB = bellman_pieces(J, w, t, K)
+            ell = {n: dR * sum(g ** j for j in range(t + K - n)) for n in range(t, t + K + 1)}
+            # Lemma 8.1 and Corollary 8.2 on the pair behind c_t, with the weight of c_t
+            V1 = Vh[t + 1]
+            seen = set()
+            for i in range(N):
+                if kh[i] in seen or len(seen) >= 12:
+                    continue
+                seen.add(kh[i])
+                m, a = kM[i]
+                P, Q = Ph[kh[i]], PM[kM[i]]
+                wf = {x: x[0][0] + g * V1[w.f[(m, a, x[0])]] for x in Q}
+                diff = sum(P.get(x, 0.0) * wf[x] for x in Q) - sum(Q[x] * wf[x] for x in Q)
+                rec.eq('Lem 8.1 / c_t is that difference of expectations', diff, c[t][i])
+                EQ = sum(Q[x] * wf[x] for x in Q)
+                K_ = kl(P, Q)
+                for lam in (-2.0, -0.5, 0.7, 3.0):
+                    Z = sum(Q[x] * math.exp(lam * wf[x]) for x in Q)
+                    Ql = {x: Q[x] * math.exp(lam * wf[x]) / Z for x in Q}
+                    rhs = K_ + math.log(sum(Q[x] * math.exp(lam * (wf[x] - EQ)) for x in Q)) - kl(P, Ql)
+                    rec.eq('Lem 8.1 exact identity', lam * diff, rhs)
+                rec.le('Cor 8.2 |E_P w - E_Q w| <= l sqrt(KL/2)', abs(diff), ell[t] * math.sqrt(K_ / 2))
+            # Proposition 8.4(a): every piece
+            bound = 0.0
+            for n in range(t, t + K):
+                hn, Mn, An, On1, Rn1, Bn1 = ('h', n), ('M', n), ('A', n), ('O', n + 1), ('R', n + 1), ('Ob', n + 1)
+                Dn = J.I([hn], [On1], [Mn, An])
+                rew, rst = J.I([hn], [Rn1], [Mn, An]), J.I([hn], [Bn1], [Mn, An, Rn1])
+                rec.le('Prop 8.4(a) E|c_n| <= l_n sqrt(D_n/2)', J.E([abs(x) for x in c[n]]), ell[n] * math.sqrt(Dn / 2))
+                rec.le('Prop 8.4(a) E|c^R_n| <= l_n sqrt(reward part/2)', J.E([abs(x) for x in cR[n]]), ell[n] * math.sqrt(rew / 2))
+                rec.le('Prop 8.4(a) E|c^Obar_n| <= g l_n+1 sqrt(rest part/2)', J.E([abs(x) for x in cB[n]]), g * ell[n + 1] * math.sqrt(rst / 2))
+                bound += g ** (n - t) * ell[n] * math.sqrt(Dn / 2)
+            Gn = returns(J, w, t, K)
+            gap = [x - Qh[t][kM[i]] for i, x in enumerate(J.cexp(Gn[t], [h, A])[0])]
+            Egap = J.E([abs(x) for x in gap])
+            rec.le('Prop 8.4(b) E|q(h,A) - hat q(M,A)| <= sum g^k l sqrt(D_t+k/2)', Egap, bound)
+            if K == 2:
+                h1, M1, A1, O2 = ('h', t + 1), ('M', t + 1), ('A', t + 1), ('O', t + 2)
+                D1 = J.I([h1], [O2], [M1, A1])
+                rp1 = J.I([h1], [('R', t + 2)], [M1, A1])
+                rew0, rst0 = J.I([h], [('R', t + 1)], [M, A]), J.I([h], [('Ob', t + 1)], [M, A, ('R', t + 1)])
+                rec.le('Prop 8.3 E|c_t| <= (1+g) dR sqrt(D_t/2)', J.E([abs(x) for x in c[t]]), (1 + g) * dR * math.sqrt(Dt / 2))
+                rec.le('Prop 8.3 E|c^R_t| <= (1+g) dR sqrt(reward part/2)', J.E([abs(x) for x in cR[t]]), (1 + g) * dR * math.sqrt(rew0 / 2))
+                rec.le('Prop 8.3 E|c^Obar_t| <= g dR sqrt(rest part/2)', J.E([abs(x) for x in cB[t]]), g * dR * math.sqrt(rst0 / 2))
+                rec.le('Prop 8.3 E|c_t+1| <= dR sqrt(reward part of D_t+1 /2)', J.E([abs(x) for x in c[t + 1]]), dR * math.sqrt(rp1 / 2))
+                rec.le('Prop 8.3 reward part of D_t+1 <= D_t+1', rp1, D1)
+                rec.le('Prop 8.3 two-step gap bound', Egap, (1 + g) * dR * math.sqrt(Dt / 2) + g * dR * math.sqrt(D1 / 2))
+            # Remark 8.5
             key = ('GK', t * 100 + K)
-            Gt = [sum(g ** k * R[t + k + 1][i] for k in range(K)) for i in range(N)]
-            J._vals[key] = Gt
+            J._vals[key] = Gn[t]
             preds = []
             for k in range(1, K + 1):
                 preds.append(('O', t + k))
@@ -544,27 +547,10 @@ def check_info_value(J, w, rec):
                     preds.append(('A', t + k))
             DK = J.I([h], preds, [M, A])
             IG = J.I([h], [key], [M, A])
-            rec.eq('Prop 8.5 I(h;G_t:t+K|M,A) = D_t:t+K - I(h;stream|M,A,G)', IG, DK - J.I([h], preds, [M, A, key]))
-            lt = dR * sum(g ** j for j in range(K))
-            gap = [x - y for x, y in zip(J.cexp(Gt, [h, A])[0], J.cexp(Gt, [M, A])[0])]
-            rec.le('Prop 8.5 E|gap| <= l_t sqrt(D_t:t+K/2)', J.E([abs(x) for x in gap]), lt * math.sqrt(DK / 2))
-            # pieces
-            Gn = {n: [sum(g ** j * R[n + j + 1][i] for j in range(t + K - n)) for i in range(N)] for n in range(t, t + K + 1)}
-            v = {n: J.cexp(Gn[n], [('h', n)])[0] for n in range(t, t + K + 1)}
-            for n in range(t, t + K):
-                hn, Mn, An, On1 = ('h', n), ('M', n), ('A', n), ('O', n + 1)
-                khn, kMn = J.keys([hn, An]), J.keys([Mn, An])
-                Phn, PMn = J.cdist([On1], [hn, An]), J.cdist([On1], [Mn, An])
-                _, Ev = J.cexp(v[n + 1], [Mn, An, On1])
-                cn = [abs(sum((Phn[khn[i]].get((o,), 0.0) - pmo) * (o[0] + g * Ev[kMn[i] + (o,)]) for (o,), pmo in PMn[kMn[i]].items()))
-                      for i in range(N)]
-                ln = dR * sum(g ** j for j in range(t + K - n))
-                rec.le('Prop 8.5 E|c_n| <= l_n sqrt(D_n/2)', J.E(cn), ln * math.sqrt(J.I([hn], [On1], [Mn, An]) / 2))
-                if n > t:
-                    Un = [('M', n - 1), ('A', n - 1), ('O', n)]
-                    un = [abs(x - y) for x, y in zip(J.cexp(v[n], Un)[0], J.cexp(v[n], [Mn])[0])]
-                    after = [('A', n)] + [x for j in range(n + 1, t + K + 1) for x in (('O', j),) + ((('A', j),) if j < t + K else ())]
-                    rec.le('Prop 8.5 E|u_n| <= l_n sqrt(I(update; rest of interval)/2)', J.E(un), ln * math.sqrt(J.I(Un, after, [Mn]) / 2))
+            rec.eq('Rem 8.5 I(h;G_t:t+K|M,A) = D_t:t+K - I(h;stream|M,A,G)', IG, DK - J.I([h], preds, [M, A, key]))
+            mcgap = [x - y for x, y in zip(J.cexp(Gn[t], [h, A])[0], J.cexp(Gn[t], [M, A])[0])]
+            rec.le('Rem 8.5 E|q(h,A) - E[G|M,A]| <= l_t sqrt(I(h;G|M,A)/2)', J.E([abs(x) for x in mcgap]), ell[t] * math.sqrt(IG / 2))
+            rec.le('Rem 8.5 I(h;G|M,A) <= D_t:t+K', IG, DK)
 
 
 def main():

@@ -60,30 +60,32 @@ Prop 7.5 subtracted term, second split                                          
 Lem 7.3 updates from t to t+k                                                           147    2.66e-15       0.1494  PASS
 Cor 2.2 I(X;A_t+k|...)=0 for X=(M_t-1,A_t-1,O_t)                                         33    2.13e-14       0.0000  PASS
 Cor 2.2 I(X;A_t+k|...)=0 for X=O_t                                                       33    2.49e-14       0.0000  PASS
-Prop 6.8(b) c_t = c^R_t + c^Obar_t                                                   221184    3.40e-15       0.4300  PASS
-Prop 6.7 c_t+1 = one-step gap at t+1                                                 221184    3.33e-15       0.4432  PASS
-Prop 6.7 two-step return gap                                                         221184    6.83e-15       0.5401  PASS
-Prop 6.7 size of the update term (shown)                                                 12    0.00e+00       0.2101  PASS
-Prop 7.6 one step of the return gap                                                  1433600    1.41e-14       0.5401  PASS
-Prop 7.7 K-step return gap                                                           729088    1.55e-14       0.5401  PASS
-Lem 8.1 exact identity                                                                 1280    1.17e-14       1.2465  PASS
-Cor 8.2 |E_P w - E_Q w| <= l sqrt(KL/2)                                                 320    0.00e+00       1.0484  PASS
-Sec 8 D_t = E[KL(P(O|h,A)||P(O|M,A))]                                                    12    7.08e-15       0.1494  PASS
+Prop 6.9(b) c_n = c^R_n + c^Obar_n                                                   1433600    3.37e-15       0.4432  PASS
+Prop 7.7 one step of the return gap (Bellman value)                                  1433600    7.15e-15       0.5448  PASS
+Prop 7.8 K-step return gap                                                           507904    6.29e-15       0.4432  PASS
+Sec 7 E[G|M_t,a] - hat q(M_t,a) = E[sum_k>=1 g^k c_t+k | M_t,a]                      729088    9.31e-15       0.0927  PASS
+Prop 6.8 two-step return gap                                                         221184    3.94e-15       0.5448  PASS
+Rem 6.10 E[G|M_t,a] - hat q(M_t,a) = g E[update difference]                          221184    6.16e-15       0.0698  PASS
+Sec 8 D_t = E[KL(P(O|h,A)||P(O|M,A))]                                                    17    1.12e-14       0.1494  PASS
+Lem 8.1 / c_t is that difference of expectations                                        388    3.89e-16       0.3490  PASS
+Lem 8.1 exact identity                                                                 1552    2.07e-14       1.0469  PASS
+Cor 8.2 |E_P w - E_Q w| <= l sqrt(KL/2)                                                 388    0.00e+00       1.2250  PASS
+Prop 8.4(a) E|c_n| <= l_n sqrt(D_n/2)                                                    70    0.00e+00       0.7448  PASS
+Prop 8.4(a) E|c^R_n| <= l_n sqrt(reward part/2)                                          70    0.00e+00       0.4739  PASS
+Prop 8.4(a) E|c^Obar_n| <= g l_n+1 sqrt(rest part/2)                                     70    0.00e+00       0.5097  PASS
+Prop 8.4(b) E|q(h,A) - hat q(M,A)| <= sum g^k l sqrt(D_t+k/2)                            38    0.00e+00       1.9778  PASS
+Rem 8.5 I(h;G_t:t+K|M,A) = D_t:t+K - I(h;stream|M,A,G)                                   38    1.78e-15       0.0753  PASS
+Rem 8.5 E|q(h,A) - E[G|M,A]| <= l_t sqrt(I(h;G|M,A)/2)                                   38    0.00e+00       0.5259  PASS
+Rem 8.5 I(h;G|M,A) <= D_t:t+K                                                            38    0.00e+00       0.3767  PASS
 Prop 8.3 E|c_t| <= (1+g) dR sqrt(D_t/2)                                                  12    0.00e+00       0.5192  PASS
 Prop 8.3 E|c^R_t| <= (1+g) dR sqrt(reward part/2)                                        12    0.00e+00       0.3322  PASS
 Prop 8.3 E|c^Obar_t| <= g dR sqrt(rest part/2)                                           12    0.00e+00       0.1916  PASS
 Prop 8.3 E|c_t+1| <= dR sqrt(reward part of D_t+1 /2)                                    12    0.00e+00       0.1749  PASS
 Prop 8.3 reward part of D_t+1 <= D_t+1                                                   12    0.00e+00       0.1494  PASS
-Prop 8.3 E|u_t+1| <= dR sqrt(update term/2)                                              12    0.00e+00       0.1990  PASS
-Prop 8.4(b) I(h;G|M,A) = D_t:t+2 - I(h;stream|M,A,G)                                     12    8.88e-16       0.0716  PASS
-Prop 8.4(c) E|gap| <= (1+g) dR sqrt(I(h;G|M,A)/2)                                        12    0.00e+00       0.3595  PASS
-Prop 8.4(c) I(h;G|M,A) <= D_t:t+2                                                        12    0.00e+00       0.2609  PASS
-Prop 8.5 I(h;G_t:t+K|M,A) = D_t:t+K - I(h;stream|M,A,G)                                  38    1.78e-15       0.0753  PASS
-Prop 8.5 E|gap| <= l_t sqrt(D_t:t+K/2)                                                   38    0.00e+00       1.3155  PASS
-Prop 8.5 E|c_n| <= l_n sqrt(D_n/2)                                                       70    0.00e+00       0.7448  PASS
-Prop 8.5 E|u_n| <= l_n sqrt(I(update; rest of interval)/2)                               32    0.00e+00       0.9511  PASS
+Prop 8.3 two-step gap bound                                                              12    0.00e+00       0.7416  PASS
 largest value over all worlds and times (shows the three orders differ):
   dP_t (lost by A_t+1 in the condition): 0.0027
   I(h_t;A_t+1|M_t,A_t,O_t+1,O_t+2) (lost by leaving A_t+1 out): 0.0622
   D_t - I(h_t;O_t+1,O_t+2|M_t,A_t,A_t+1) (largest shortfall below D_t): -0.0268
+  |E[G|M_t,a] - hat q(M_t,a)| (two steps): 0.0698
 ALL PASS
