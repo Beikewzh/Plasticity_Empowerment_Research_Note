@@ -458,7 +458,7 @@ So the reward-first order gives the reward the shared part, the rest-first order
 
 Sections~\ref{sec:splits} and~\ref{sec:reward} hold at every time. The defect at time $n$ concerns the observation $O_{n+1}=(R_{n+1},\Ob_{n+1})$, so the reward in it is $R_{n+1}$: $D_t$ contains $R_{t+1}$, $D_{t+1}$ contains $R_{t+2}$, and $D_{t+2}$ contains $R_{t+3}$.
 
-\subsection{The terms at $t$, $t+1$ and $t+2$}
+\subsection{The terms at $t$, $t+1$ and $t+2$, reward first}\label{sec:sum-rew}
 
 By Propositions~\ref{prop:split1} and~\ref{prop:split2} and the reward-first lines of Section~\ref{sec:reward}, with $t$, $t+1$ and $t+2$ in place of $t$. In each of the last five lines of each block, the first term is the reward part and the second the rest part.
 
@@ -496,10 +496,51 @@ D^+_{t+2}&=I(h_{t+2};R_{t+3}\mid M_{t+2},A_{t+2},A_{t+3})+I(h_{t+2};\Ob_{t+3}\mi
 &\quad+I(h_{t+2};A_{t+3}\mid M_{t+2},A_{t+2},R_{t+3}).
 \end{align*}
 
+\subsection{The terms at $t$, $t+1$ and $t+2$, observation first}\label{sec:sum-obs}
+
+By Propositions~\ref{prop:split1} and~\ref{prop:split2} and the rest-first lines of Section~\ref{sec:reward}, with $t$, $t+1$ and $t+2$ in place of $t$. In each of the last five lines of each block, the first term is the rest part, taken first, and the second the reward part.
+
+\paragraph{At $t$.}
+\begin{align*}
+D_t&=D^0_t+\dE_t=\dP_t+D^+_t,\\
+D_t&=I(h_t;\Ob_{t+1}\mid M_t,A_t)+I(h_t;R_{t+1}\mid M_t,A_t,\Ob_{t+1}),\\
+D^0_t&=I(h_t;\Ob_{t+1}\mid M_t)+I(h_t;R_{t+1}\mid M_t,\Ob_{t+1}),\\
+D^+_t&=I(h_t;\Ob_{t+1}\mid M_t,A_t,A_{t+1})\\
+&\quad+I(h_t;R_{t+1}\mid M_t,A_t,A_{t+1},\Ob_{t+1}),\\
+\dE_t&=I(h_t;A_t\mid M_t,\Ob_{t+1})\\
+&\quad+\big[I(A_t;R_{t+1}\mid h_t,\Ob_{t+1})-I(A_t;R_{t+1}\mid M_t,\Ob_{t+1})\big],\\
+\dP_t&=\big[I(\Ob_{t+1};A_{t+1}\mid M_t,A_t)-I(\Ob_{t+1};A_{t+1}\mid h_t,A_t)\big]\\
+&\quad+I(h_t;A_{t+1}\mid M_t,A_t,\Ob_{t+1}).
+\end{align*}
+\paragraph{At $t+1$.}
+\begin{align*}
+D_{t+1}&=D^0_{t+1}+\dE_{t+1}=\dP_{t+1}+D^+_{t+1},\\
+D_{t+1}&=I(h_{t+1};\Ob_{t+2}\mid M_{t+1},A_{t+1})+I(h_{t+1};R_{t+2}\mid M_{t+1},A_{t+1},\Ob_{t+2}),\\
+D^0_{t+1}&=I(h_{t+1};\Ob_{t+2}\mid M_{t+1})+I(h_{t+1};R_{t+2}\mid M_{t+1},\Ob_{t+2}),\\
+D^+_{t+1}&=I(h_{t+1};\Ob_{t+2}\mid M_{t+1},A_{t+1},A_{t+2})\\
+&\quad+I(h_{t+1};R_{t+2}\mid M_{t+1},A_{t+1},A_{t+2},\Ob_{t+2}),\\
+\dE_{t+1}&=I(h_{t+1};A_{t+1}\mid M_{t+1},\Ob_{t+2})\\
+&\quad+\big[I(A_{t+1};R_{t+2}\mid h_{t+1},\Ob_{t+2})-I(A_{t+1};R_{t+2}\mid M_{t+1},\Ob_{t+2})\big],\\
+\dP_{t+1}&=\big[I(\Ob_{t+2};A_{t+2}\mid M_{t+1},A_{t+1})-I(\Ob_{t+2};A_{t+2}\mid h_{t+1},A_{t+1})\big]\\
+&\quad+I(h_{t+1};A_{t+2}\mid M_{t+1},A_{t+1},\Ob_{t+2}).
+\end{align*}
+\paragraph{At $t+2$.}
+\begin{align*}
+D_{t+2}&=D^0_{t+2}+\dE_{t+2}=\dP_{t+2}+D^+_{t+2},\\
+D_{t+2}&=I(h_{t+2};\Ob_{t+3}\mid M_{t+2},A_{t+2})+I(h_{t+2};R_{t+3}\mid M_{t+2},A_{t+2},\Ob_{t+3}),\\
+D^0_{t+2}&=I(h_{t+2};\Ob_{t+3}\mid M_{t+2})+I(h_{t+2};R_{t+3}\mid M_{t+2},\Ob_{t+3}),\\
+D^+_{t+2}&=I(h_{t+2};\Ob_{t+3}\mid M_{t+2},A_{t+2},A_{t+3})\\
+&\quad+I(h_{t+2};R_{t+3}\mid M_{t+2},A_{t+2},A_{t+3},\Ob_{t+3}),\\
+\dE_{t+2}&=I(h_{t+2};A_{t+2}\mid M_{t+2},\Ob_{t+3})\\
+&\quad+\big[I(A_{t+2};R_{t+3}\mid h_{t+2},\Ob_{t+3})-I(A_{t+2};R_{t+3}\mid M_{t+2},\Ob_{t+3})\big],\\
+\dP_{t+2}&=\big[I(\Ob_{t+3};A_{t+3}\mid M_{t+2},A_{t+2})-I(\Ob_{t+3};A_{t+3}\mid h_{t+2},A_{t+2})\big]\\
+&\quad+I(h_{t+2};A_{t+3}\mid M_{t+2},A_{t+2},\Ob_{t+3}).
+\end{align*}
+
 \subsection{The sum}
 
-\begin{proposition}[The sum of the three defects]\label{prop:sum}
-Under Assumptions~\ref{as:mem} and~\ref{as:pol},
+\begin{proposition}[The sum, reward first]\label{prop:sum}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol}, in the reward-first order,
 \begin{align*}
 D_t+D_{t+1}+D_{t+2}&=\big(D^0_t+D^0_{t+1}+D^0_{t+2}\big)+\big(\dE_t+\dE_{t+1}+\dE_{t+2}\big)\\
 &=\big(\dP_t+\dP_{t+1}+\dP_{t+2}\big)+\big(D^+_t+D^+_{t+1}+D^+_{t+2}\big),
@@ -533,14 +574,59 @@ where
 \text{reward terms of }D^+:&\quad I(h_t;R_{t+1}\mid M_t,A_t,A_{t+1})+I(h_{t+1};R_{t+2}\mid M_{t+1},A_{t+1},A_{t+2})\\
 &\quad+I(h_{t+2};R_{t+3}\mid M_{t+2},A_{t+2},A_{t+3}),
 \end{align*}
-and the rest terms split in the same two ways, into the rest terms of $D^0$ and $\dE$, and of $\dP$ and $D^+$, as listed in the three blocks above.
+and the rest terms split in the same two ways, into the rest terms of $D^0$ and $\dE$, and of $\dP$ and $D^+$, as listed in the three blocks of Section~\ref{sec:sum-rew}.
 \end{proposition}
 
 \begin{proof}
 At each time $n=t,t+1,t+2$: $D_n=D^0_n+\dE_n=\dP_n+D^+_n$ (Propositions~\ref{prop:split1} and~\ref{prop:split2}); $D_n$ is its reward part plus its rest part (Proposition~\ref{prop:xy-D} with $X=R_{n+1}$, $Y=\Ob_{n+1}$); and the reward part of $D_n$ is the reward part of $D^0_n$ plus that of $\dE_n$, and the reward part of $\dP_n$ plus that of $D^+_n$, and the same for the rest part (Proposition~\ref{prop:xy-splits} with $X=R_{n+1}$, $Y=\Ob_{n+1}$). Add the three times.
 \end{proof}
 
-In the sum, the reward terms are the reward parts of $D_t$, $D_{t+1}$ and $D_{t+2}$, one for each of the rewards $R_{t+1}$, $R_{t+2}$ and $R_{t+3}$, each taken at the agent's own memory at its own time.
+\begin{proposition}[The sum, observation first]\label{prop:sum-obs}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol}, in the observation-first order,
+\[
+D_t+D_{t+1}+D_{t+2}=\text{(rest terms)}+\text{(reward terms)},
+\]
+with the rest terms
+\begin{align*}
+&I(h_t;\Ob_{t+1}\mid M_t,A_t)+I(h_{t+1};\Ob_{t+2}\mid M_{t+1},A_{t+1})\\
+&\quad+I(h_{t+2};\Ob_{t+3}\mid M_{t+2},A_{t+2})
+\end{align*}
+and the reward terms
+\begin{align*}
+&I(h_t;R_{t+1}\mid M_t,A_t,\Ob_{t+1})+I(h_{t+1};R_{t+2}\mid M_{t+1},A_{t+1},\Ob_{t+2})\\
+&\quad+I(h_{t+2};R_{t+3}\mid M_{t+2},A_{t+2},\Ob_{t+3}).
+\end{align*}
+The reward terms split in the two ways,
+\begin{align*}
+\text{reward terms}&=(\text{reward terms of }D^0)+(\text{reward terms of }\dE)\\
+&=(\text{reward terms of }\dP)+(\text{reward terms of }D^+),
+\end{align*}
+where
+\begin{align*}
+\text{reward terms of $D^0$}:&\quad I(h_t;R_{t+1}\mid M_t,\Ob_{t+1})+I(h_{t+1};R_{t+2}\mid M_{t+1},\Ob_{t+2})\\
+&\quad+I(h_{t+2};R_{t+3}\mid M_{t+2},\Ob_{t+3}),\\
+\text{reward terms of $\dE$}:&\quad \big[I(A_t;R_{t+1}\mid h_t,\Ob_{t+1})-I(A_t;R_{t+1}\mid M_t,\Ob_{t+1})\big]\\
+&\quad+\big[I(A_{t+1};R_{t+2}\mid h_{t+1},\Ob_{t+2})-I(A_{t+1};R_{t+2}\mid M_{t+1},\Ob_{t+2})\big]\\
+&\quad+\big[I(A_{t+2};R_{t+3}\mid h_{t+2},\Ob_{t+3})-I(A_{t+2};R_{t+3}\mid M_{t+2},\Ob_{t+3})\big],\\
+\text{reward terms of $\dP$}:&\quad I(h_t;A_{t+1}\mid M_t,A_t,\Ob_{t+1})+I(h_{t+1};A_{t+2}\mid M_{t+1},A_{t+1},\Ob_{t+2})\\
+&\quad+I(h_{t+2};A_{t+3}\mid M_{t+2},A_{t+2},\Ob_{t+3}),\\
+\text{reward terms of $D^+$}:&\quad I(h_t;R_{t+1}\mid M_t,A_t,A_{t+1},\Ob_{t+1})\\
+&\quad+I(h_{t+1};R_{t+2}\mid M_{t+1},A_{t+1},A_{t+2},\Ob_{t+2})\\
+&\quad+I(h_{t+2};R_{t+3}\mid M_{t+2},A_{t+2},A_{t+3},\Ob_{t+3}),
+\end{align*}
+and the rest terms split in the same two ways, as listed in the three blocks of Section~\ref{sec:sum-obs}. The reward terms in the reward-first order (Proposition~\ref{prop:sum}) minus those in the observation-first order are
+\begin{align*}
+&I(h_t;R_{t+1};\Ob_{t+1}\mid M_t,A_t)+I(h_{t+1};R_{t+2};\Ob_{t+2}\mid M_{t+1},A_{t+1})\\
+&\quad+I(h_{t+2};R_{t+3};\Ob_{t+3}\mid M_{t+2},A_{t+2}),
+\end{align*}
+the sum of the co-informations of Proposition~\ref{prop:orderdiff} at the three times; the rest terms differ by the same amount with the opposite sign.
+\end{proposition}
+
+\begin{proof}
+As for Proposition~\ref{prop:sum}, with $X=\Ob_{n+1}$ and $Y=R_{n+1}$ in Propositions~\ref{prop:xy-D} and~\ref{prop:xy-splits}. The last statement is Proposition~\ref{prop:orderdiff} for $D_n$ at $n=t,t+1,t+2$, added.
+\end{proof}
+
+In either order, the reward terms of the sum are the reward parts of $D_t$, $D_{t+1}$ and $D_{t+2}$, one for each of the rewards $R_{t+1}$, $R_{t+2}$ and $R_{t+3}$, each taken at the agent's own memory at its own time.
 
 \paragraph{What is known.} The one-step empowerment and plasticity are those of \citet{abel2025plasticity}; the chain rule and the other tools are standard; the partial information decomposition is that of \citet{williams2010nonnegative}, with the conditional form of \citet{matthias2025novel} and the measure of \citet{bertschinger2014quantifying}. The terms $D^0_t$, $D^+_t$, the two splits and the reward parts are defined and derived here; a short search did not find them elsewhere.
 

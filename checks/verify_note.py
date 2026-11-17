@@ -318,6 +318,26 @@ def check_sum(J, w, rec):
         rec.eq('Prop 6.1 sum dE = its reward + rest terms', tot['dE'], tot['rdE'] + tot['sdE'])
         rec.eq('Prop 6.1 sum dP = its reward + rest terms', tot['dP'], tot['rdP'] + tot['sdP'])
         rec.eq('Prop 6.1 sum D+ = its reward + rest terms', tot['Dp'], tot['rDp'] + tot['sDp'])
+        # Proposition 6.2, observation first
+        o = {k: 0.0 for k in ('rD', 'sD', 'rD0', 'sD0', 'rdE', 'sdE', 'rdP', 'sdP', 'rDp', 'sDp', 'co')}
+        for n in (t, t + 1, t + 2):
+            h, M, A, A1, R1, B1 = ('h', n), ('M', n), ('A', n), ('A', n + 1), ('R', n + 1), ('Ob', n + 1)
+            I = J.I
+            o['sD'] += I([h], [B1], [M, A]); o['rD'] += I([h], [R1], [M, A, B1])
+            o['sD0'] += I([h], [B1], [M]); o['rD0'] += I([h], [R1], [M, B1])
+            o['sdE'] += I([h], [A], [M, B1]); o['rdE'] += I([A], [R1], [h, B1]) - I([A], [R1], [M, B1])
+            o['sdP'] += I([B1], [A1], [M, A]) - I([B1], [A1], [h, A]); o['rdP'] += I([h], [A1], [M, A, B1])
+            o['sDp'] += I([h], [B1], [M, A, A1]); o['rDp'] += I([h], [R1], [M, A, A1, B1])
+            o['co'] += I([h], [R1], [M, A]) - I([h], [R1], [M, A, B1])
+        rec.eq('Prop 6.2 sum D = rest terms + reward terms', tot['D'], o['sD'] + o['rD'])
+        rec.eq('Prop 6.2 reward terms = D0 + dE reward terms', o['rD'], o['rD0'] + o['rdE'])
+        rec.eq('Prop 6.2 reward terms = dP + D+ reward terms', o['rD'], o['rdP'] + o['rDp'])
+        rec.eq('Prop 6.2 rest terms = D0 + dE rest terms', o['sD'], o['sD0'] + o['sdE'])
+        rec.eq('Prop 6.2 rest terms = dP + D+ rest terms', o['sD'], o['sdP'] + o['sDp'])
+        rec.eq('Prop 6.2 sums of D0, dE, dP, D+ = their rest + reward terms',
+               tot['D0'] + tot['dE'] + tot['dP'] + tot['Dp'], o['sD0'] + o['rD0'] + o['sdE'] + o['rdE'] + o['sdP'] + o['rdP'] + o['sDp'] + o['rDp'])
+        rec.eq('Prop 6.2 reward terms (reward first) - (observation first) = sum of co-informations', tot['rD'] - o['rD'], o['co'])
+        rec.eq('Prop 6.2 rest terms differ by minus the same', tot['sD'] - o['sD'], -o['co'])
 
 
 def main():
