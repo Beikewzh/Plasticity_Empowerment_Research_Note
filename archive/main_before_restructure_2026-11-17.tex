@@ -1,0 +1,1344 @@
+\documentclass{article}
+\usepackage[preprint]{neurips_2024}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[colorlinks=true,linkcolor=black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{cancel}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
+
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{example}{Example}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\dE}{\Delta E}
+\newcommand{\dP}{\Delta P}
+\newcommand{\Ob}{\bar O}
+\newcommand{\indep}{\perp\!\!\!\perp}
+
+\newtheorem{result}{Result}
+
+\title{The State Defect, Plasticity, Empowerment and the Return}
+
+\author{XXX}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+A small agent keeps a memory that merges histories. The state defect measures how much better the history predicts the next observation than the memory does. We split the defect into four terms, show that two of them are the errors the memory makes about the agent's own empowerment and plasticity, separate the part that concerns the reward, and follow the defect forward in time to the return. The main text states the results and what they mean; the appendix gives the full statements and proofs.
+\end{abstract}
+
+\section{Setting}
+
+\begin{center}
+\begin{tikzpicture}[>={Stealth[length=2.5mm]}, node distance=10mm and 16mm,
+  box/.style={draw, rounded corners=3pt, minimum height=10mm, minimum width=27mm, align=center, font=\small}]
+\node[box] (world) {environment\\ $e(O_{t+1}\mid h_t, A_t)$};
+\node[box, right=of world] (mem) {memory\\ $M_t = f(M_{t-1}, A_{t-1}, O_t)$};
+\node[box, right=of mem] (pol) {policy\\ $A_t \sim \pi(\cdot \mid M_t)$};
+\draw[->, thick] (world) -- node[above, font=\small] {$O_t$} (mem);
+\draw[->, thick] (mem) -- node[above, font=\small] {$M_t$} (pol);
+\draw[->, thick] (pol.south) -- ++(0,-7mm) -| node[pos=0.25, below, font=\small] {$A_t$} (world.south);
+\end{tikzpicture}
+\end{center}
+
+The agent sees observations $O_t$, which contain the reward: $O_t=(R_t,\Ob_t)$, with $\Ob_t$ the rest of the observation. The history is $h_t=(O_1,A_1,\dots,A_{t-1},O_t)$. All sets are finite and the rewards lie in an interval of length $\Delta R$. We make three assumptions.
+
+\begin{assumption}[Environment]\label{as:env}
+The next observation may depend on the whole history: $O_{t+1}\sim e(\cdot\mid h_t,A_t)$. No Markov or stationarity condition is imposed.
+\end{assumption}
+
+\begin{assumption}[Memory]\label{as:mem}
+The memory is updated recursively, $M_{t+1}=f(M_t,A_t,O_{t+1})$, so it is a function of the history.
+\end{assumption}
+
+\begin{assumption}[Policy]\label{as:pol}
+The policy depends on the history only through the memory: $P(A_t=a\mid h_t)=\pi(a\mid M_t)$.
+\end{assumption}
+
+All information quantities are taken under the distribution of the agent's own experience.
+
+\section{The state defect and its four terms}
+
+The state defect is
+\[
+D_t=I(h_t;O_{t+1}\mid M_t,A_t)=\E\left[\log\frac{P(O_{t+1}\mid h_t,A_t)}{P(O_{t+1}\mid M_t,A_t)}\right].
+\]
+In words: how much better, in expected log-likelihood, the history predicts the next observation than the memory does, for the action the agent takes. It is zero exactly when the memory predicts the next observation as well as the history on everything the agent encounters.
+
+Every quantity below has the same form: \emph{how much better the history predicts something than the memory does}. They differ only in what is predicted and what is given.
+
+\begin{center}
+\begin{tabular}{llll}
+\toprule
+term & what is predicted & what is given & in words\\
+\midrule
+$D_t$ & next observation & action & the defect\\
+$D^0_t$ & next observation & nothing & before the action is known\\
+$\dE_t$ & action & next observation & the action read from its outcome\\
+$\dP_t$ & next action & action & the agent's next decision\\
+$D^+_t$ & next observation & both actions & after both decisions are known\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{result}[Two splits; Proposition~\ref{prop:splits}]
+$D_t=D^0_t+\dE_t=\dP_t+D^+_t$.
+\end{result}
+
+\begin{result}[Empowerment and plasticity; Proposition~\ref{prop:mismatch}]
+$\dE_t$ is the empowerment of the action computed from the history minus that computed from the memory, and $\dP_t$ is the plasticity of the next action computed from the memory minus that computed from the history, in the one-step form of \citet{abel2025plasticity}. Both are nonnegative.
+\end{result}
+
+In words: a memory that merges histories under-estimates how much the agent's actions influence what it sees, and over-estimates how much its next action responds to what it sees. $\dE_t$ vanishes when the policy is deterministic, and $\dP_t$ vanishes when the next action ignores the observation.
+
+\section{The reward inside the defect}
+
+The observation contains the reward, so each term can be split into a part about the reward and a part about the rest of the observation. Done with the chain rule, the split depends on which part is taken first.
+
+\begin{result}[Two orders; Propositions~\ref{prop:split-xy} and~\ref{prop:orders}]
+The totals of the four terms do not depend on the order. The reward parts in the reward-first and the rest-first order differ by a co-information between the reward and the rest of the observation. Two parts can be negative. In both of our examples, a negative part in one order comes with a positive part of the same size, and both vanish in the other order.
+\end{result}
+
+In words: the reward and the rest of the observation can tell the agent the same thing about its past (redundancy) or tell it something only together (synergy, as in an exclusive or). The order decides whom the shared and the joint information is credited to.
+
+\begin{result}[An order-free split; Section~\ref{sec:pid}]
+A partial information decomposition \citep{williams2010nonnegative} splits the defect into information carried by both the reward and the rest, only by the reward, only by the rest, and only by the two together: $D_t=\mathrm{Red}_t+U^R_t+U^{\Ob}_t+\mathrm{Syn}_t$. The reward-first order credits the reward with $\mathrm{Red}_t+U^R_t$, the rest-first order with $U^R_t+\mathrm{Syn}_t$. The reward's own part $U^R_t$ is bounded, for every choice of decomposition, between $\max(0,\,I(h_t;R_{t+1}\mid M_t,A_t)-I(h_t;\Ob_{t+1}\mid M_t,A_t))$ and the smaller of the two reward parts.
+\end{result}
+
+\begin{center}
+\begin{tabular}{lcccc}
+\toprule
+example & shared & reward only & rest only & together\\
+\midrule
+exclusive or (Example~\ref{ex:xor}) & 0 & 0 & 0 & 1 bit\\
+the observation shows the action (Example~\ref{ex:show}) & 0 & 1 bit & 0 & 0\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+In the second example the observation shows the action, so $\dE_t=0$, yet the reward alone carries one bit about the agent's past. A measured $\dE_t\approx0$ therefore does not mean that the reward has no action-dependent hidden part.
+
+With the measure of \citet{bertschinger2014quantifying}, $U^R_t>0$ means that there is a decision problem in which seeing the reward is strictly better than seeing the rest of the observation.
+
+\section{From the defect to the return}
+
+Let $G_t=\sum_{k\ge0}\gamma^kR_{t+k+1}$ with $\gamma<1$, and let $q_\pi(h,a)=\E[G_t\mid h_t=h,A_t=a]$ and $v_\pi(h)=\E[G_t\mid h_t=h]$ be the action value and state value of the history under the policy. A critic that reads the memory can at best learn their averages over the histories behind each memory value, $q_\pi(m,a)=\E[G_t\mid M_t=m,A_t=a]$ and $v_\pi(m)=\E[G_t\mid M_t=m]$. Write $Z_{t,k}=(M_t,A_t,O_{t+1},\dots,O_{t+k},A_{t+k})$ for the memory at $t$ together with what the agent saw and did from $t$ to $t+k$. The history can reach the future return only through what happens next: the observations the agent will see and the actions it will take. Following these routes step by step gives an exact account.
+
+\begin{result}[The return; Proposition~\ref{prop:return}]\label{res:return}
+The information the history carries about the future return beyond the memory and the action is the sum, over the agent's future path, of the parts of $\dP$ and $D^+$ that are relevant to the return:
+\[
+I(h_t;G_t\mid M_t,A_t)=\sum_{j\ge0}\Big[\text{part of }\dP\text{ at step }j+\text{part of }D^+\text{ at step }j\Big].
+\]
+Without the action, the same holds with $D^0$ and $\dE$ in place of $\dP$ and $D^+$. Each part is at most the agent's own term at that step.
+\end{result}
+
+In words: the second split describes how the past reaches the action value, through the agent's own next decisions and through the environment once the decisions are made; the first split describes how it reaches the state value.
+
+Result~\ref{res:return} counts information. The value itself can be written exactly as well, and the exact form shows which part of the defect reaches the return.
+
+\begin{result}[The error of the critic is a value; Proposition~\ref{prop:gap}]\label{res:gap}
+For every history $h_t$ and action $a$,
+\[
+q_\pi(h_t,a)-q_\pi(M_t,a)=\E\Big[\sum_{k\ge0}\gamma^k\,c_{t,k}\ \Big|\ h_t,\,A_t=a\Big],\qquad c_{t,k}=\mathrm{Cov}_{Z}\big(L_{t,k},\ R_{t+k+1}+\gamma\,v_{t,k+1}\big),
+\]
+where $L_{t,k}=P(O_{t+k+1}\mid h_t,Z_{t,k})/P(O_{t+k+1}\mid Z_{t,k})$ compares the history's prediction of the next observation with the prediction from the memory at $t$ and what came since, $v_{t,k+1}=\E[v_\pi(h_{t+k+1})\mid Z_{t,k},O_{t+k+1}]$ is the value of the next history as seen from them, and $\mathrm{Cov}_Z$ and $\E_Z$ average over $O_{t+k+1}$ drawn from the second prediction, with $h_t$ and $Z_{t,k}$ fixed. The defect of the same step compares the same two predictions:
+\[
+D_{t,k}=I(h_t;O_{t+k+1}\mid Z_{t,k})=\E\big[\E_Z[L_{t,k}\log L_{t,k}]\big],
+\]
+and $D_{t,k}=D^0_{t,k}+\dE_{t,k}=\dP_{t,k}+D^+_{t,k}$, where these window terms are the four terms at step $t+k$ with the memory at $t$ and what came since in place of the agent's memory (Appendix~\ref{app:many}); $D_{t,0}=D_t$.
+\end{result}
+
+In words: the error of a critic on the memory is itself a value, the discounted sum along the agent's future path of a cost $c_{t,k}$ per step. The cost and the defect of a step compare the same two predictions of the next observation. The defect averages $L\log L$: it measures how far apart the two predictions are, in every direction. The cost is the covariance of $L$ with the reward plus the next value: it measures only the direction that changes the return. A defect that moves the prediction of the next observation without moving its expected reward and next value costs nothing, and the costs of different steps can cancel. The identity is the simulation lemma \citep{kearns2002near} with two predictors of the next observation: the history, and the memory with the stream since $t$.
+
+\begin{result}[The four routes in value form; Proposition~\ref{prop:gap-routes}]\label{res:gap-routes}
+Each cost splits as the defect does, into covariances of the likelihood ratios behind the four terms:
+\begin{itemize}
+\item second split, $c_{t,k}=c^{\dP}_{t,k}+c^{D^+}_{t,k}$: the ratio for the next action $A_{t+k+1}$ against the reward and next value expected given that action, plus the ratio for the next observation given the next action against the reward and next value;
+\item first split, for the state value, where the cost is averaged over $A_{t+k}$: $c^{D^0}_{t,k}+c^{\dE}_{t,k}$, the ratio for the next observation before the action against the reward and next value, plus the ratio for the action given its outcome against $\gamma$ times the next value only.
+\end{itemize}
+Each of $D^0_{t,k}$, $\dE_{t,k}$, $\dP_{t,k}$, $D^+_{t,k}$ is the average of $L\log L$ for the same ratio.
+\end{result}
+
+In words: each route of the defect reaches the return only through the part of the reward and next value that its variable predicts. The $\dE$ route never carries the immediate reward: the outcome already shows the reward, so which action produced it matters only for what follows. The $\dP$ route matters only when the agent's next decision tells something about the reward and value of the step it responds to.
+
+Bounding each covariance by the range of the value times the total variation between the two predictions, and the total variation by Pinsker's inequality, turns these identities into bounds.
+
+\begin{result}[Bounds; Propositions~\ref{prop:value} and~\ref{prop:value-return}]\label{res:bounds}
+A critic that reads the memory can represent the action value up to an average error of at most $\frac{\Delta R}{1-\gamma}\sqrt{\tfrac12\,I(h_t;G_t\mid M_t,A_t)}$, and the state value likewise. If the defect is at most $\bar D$ at every step, the error is at most $\Delta R\sqrt{\bar D/2}\,(1-\gamma)^{-3/2}$.
+\end{result}
+
+The bounds lose the direction: they hold for every weight in place of the reward and next value. The last one has the structure of the approximate information state of \citet{subramanian2022approximate}.
+
+\section{The best memory and policy for reward and information}\label{sec:optimal}
+
+\citet{still2012information} choose the policy of a fully observed agent by one objective that combines the return, the predictive power of the state and action about the next state, and the coding cost of the policy. We write the same objective for an agent that acts on its memory, and add the coding cost of the memory, as in \citet{still2009information}:
+\[
+F=\alpha\,\E\big[Q(h_t,A_t)\big]+I(M_t,A_t;O_{t+1})-\lambda\,I(A_t;M_t)-\mu\,I(M_t;h_t).
+\]
+The first term is the return of the action taken, with $Q$ the action value of the history under the current policy. The second is how much the memory and the action tell about the next observation. The third is the number of bits the policy uses to choose an action, and the fourth the number of bits the memory keeps about the history; $\lambda$ and $\mu$ set their prices, and a memory with $N$ values has $I(M_t;h_t)\le\log N$. To make the problem smooth we let the memory be a randomised encoding $q(m\mid h)$ of the history and hold $Q$ fixed during the optimisation, as \citet{still2012information} do.
+
+\begin{result}[The information term contains the defect; Proposition~\ref{prop:opt-identity}]\label{res:opt-identity}
+$I(M_t,A_t;O_{t+1})=I(h_t,A_t;O_{t+1})-D_t=I(h_t,A_t;O_{t+1})-D^0_t-\dE_t.$
+\end{result}
+
+In words: the predictive power the agent gets from its memory is what it would get from the whole history, minus the state defect. The shortfall appears as the first split because the predictive power itself splits into what the memory tells about the next observation and what the action adds, $I(M_t;O_{t+1})+I(A_t;O_{t+1}\mid M_t)$, and the two losses are $D^0_t$ and $\dE_t$. The second split $D_t=\dP_t+D^+_t$ holds as well, but its terms involve the next action, which a one-step objective does not contain; Section~\ref{sec:many} brings it in. Neither split follows the order of time: both are chain rules of $I(h_t;A_t,O_{t+1},A_{t+1}\mid M_t)=D_t$ that read one action out of turn, and in the order of time both action terms are zero (Proposition~\ref{prop:time-order}).
+
+\begin{result}[The best policy; Proposition~\ref{prop:opt-policy}]\label{res:opt-policy}
+For a fixed memory, the best policy is
+\[
+\pi(a\mid m)\ \propto\ p(a)\exp\Big(\tfrac1\lambda\big[\alpha\,Q(m,a)+B_m(a)\big]\Big),\qquad B_m(a)=\E\big[B_{h_t}(a)\mid M_t=m\big]-D(m,a),
+\]
+where $Q(m,a)$ is the action value a critic on the memory learns, $B_h(a)$ is the KL divergence between the next observation after action $a$ in history $h$ and its average, and $D(m,a)=I(h_t;O_{t+1}\mid M_t=m,A_t=a)$ is the defect of action $a$ at $m$.
+\end{result}
+
+In words: the agent prefers actions with high value and actions whose outcome it can learn from. Because it judges what it can learn with its memory, it undervalues each action by exactly the defect of that action: an action whose outcome depends on what the memory has forgotten looks less informative than it is.
+
+\begin{result}[The best memory; Proposition~\ref{prop:opt-memory}]\label{res:opt-memory}
+For a fixed policy, the best memory sends history $h$ to memory value $m$ with probability
+\begin{align*}
+q(m\mid h)\ \propto\ q(m)\exp\Big(\tfrac1\mu\Big[&\sum_a\pi(a\mid m)\big(\alpha\,Q(h,a)+B_h(a)-d_{h,m}(a)\big)\\
+&-\lambda\,\mathrm{KL}\big(\pi(\cdot\mid m)\,\|\,p(A)\big)\Big]\Big),
+\end{align*}
+where $d_{h,m}(a)=\mathrm{KL}\big(P(O_{t+1}\mid h,a)\,\|\,P(O_{t+1}\mid m,a)\big)$ is how badly the memory value $m$ predicts the next observation of history $h$ after action $a$.
+\end{result}
+
+In words: a history is grouped with others under the memory value whose policy (i) takes actions of high value for this history, (ii) takes actions that are informative for this history, and (iii) predicts this history's next observation well under those actions, and whose policy is simple; $\mu$ sets how finely histories can be told apart.
+
+\paragraph{What the memory should keep more, and what less.} Reading the best memory term by term:
+\begin{itemize}
+\item \emph{Keep} the distinctions between histories that call for different actions, that is, whose values $Q(h,a)$ differ on the actions the policy uses. Their weight is $\alpha$. These are the distinctions that matter for the return; merging them biases the critic, by Result~\ref{res:gap}.
+\item \emph{Keep} the distinctions between histories that lead to different next observations under the actions the policy uses. The average penalty for merging is $\sum_a\pi(a\mid m)D(m,a)=D(m)=D^0(m)+\dE(m)$. The part $\dE$ disappears as the policy becomes deterministic, so distinctions that only a varied action would reveal stop being rewarded by this objective once the agent stops varying its actions.
+\item \emph{Drop} the distinctions that matter only under actions the policy does not take, since their terms have weight $\pi(a\mid m)=0$, and the distinctions that change neither the value nor the prediction.
+\item \emph{Capacity} decides the rest: as $\mu$ grows, the memory merges first the histories whose combined difference in value and prediction is smallest.
+\end{itemize}
+
+These equations hold for the relaxed problem: a randomised encoding of the history instead of a recursive update, one step at a time with $Q$ held fixed, and they are conditions for a local optimum that are solved by alternating the two updates. They have not been checked against the literature beyond \citet{still2009information} and \citet{still2012information}.
+
+\section{The best memory and policy over many steps}\label{sec:many}
+
+Section~\ref{sec:optimal} looked one step ahead with the action value held fixed. Here the whole future counts. The memory is the recursive update of Assumption~\ref{as:mem}, a deterministic map, and its size is limited by its number of values $N$. The objective is the discounted sum of the one-step objective, with the reward in place of the fixed action value:
+\[
+J=\sum_{t\ge1}\gamma^{t-1}\Big(\alpha\,\E[R_{t+1}]+I(M_t,A_t;O_{t+1})-\lambda\,\E\big[\mathrm{KL}\big(\pi(\cdot\mid M_t)\,\|\,p\big)\big]\Big).
+\]
+The reward terms add up to $\alpha\,\E[G_1]$. The policy is priced against one action law $p$ for all steps. This price is at least $\lambda\sum_t\gamma^{t-1}I(A_t;M_t)$, with equality when the agent's action frequencies are the same at every step and $p$ is them (Proposition~\ref{prop:many-separate}). Write $b(a\mid h)=\pi(a\mid f(h))$ for the agent's behaviour, the law of its action given the history.
+
+\begin{result}[The memory enters through the behaviour and the defects; Proposition~\ref{prop:many-separate}]\label{res:separate}
+$J=J_b-\sum_{t\ge1}\gamma^{t-1}D_t$, where
+\[
+J_b=\alpha\,\E[G_1]+\sum_{t\ge1}\gamma^{t-1}\Big(I(h_t,A_t;O_{t+1})-\lambda\,\E\big[\mathrm{KL}\big(b(\cdot\mid h_t)\,\|\,p\big)\big]\Big)
+\]
+depends only on the behaviour.
+\end{result}
+
+In words: two memories that let the agent behave in the same way differ in the objective only by their discounted defects. The memory therefore has two jobs. It must tell apart the histories on which the behaviour acts differently, and beyond that it should predict the next observations as well as its $N$ values allow. The reward enters what the memory keeps only through the first job, by deciding the behaviour.
+
+To see what a recursive memory pays for forgetting, let $U_s=(M_{s-1},A_{s-1},O_s)$ be the input of the update that produces $M_s=f(U_s)$, with $U_1=O_1$, and let $Z_{s,k}=(M_s,A_s,O_{s+1},\dots,O_{s+k},A_{s+k})$ be the memory at $s$ together with what the agent saw and did from $s$ to $s+k$.
+
+\begin{result}[Each update pays for what it discards; Proposition~\ref{prop:updates}]\label{res:updates}
+\[
+\sum_{n\ge1}\gamma^{n-1}D_n=\sum_{s\ge1}\gamma^{s-1}C_s,\qquad C_s=\sum_{k\ge0}\gamma^k\,I(U_s;O_{s+k+1}\mid Z_{s,k}).
+\]
+Without the discount, $C_s=I(U_s;A_s,O_{s+1},A_{s+1},O_{s+2},\dots\mid M_s)$, the information the update discards about the agent's future observations and actions. The same holds for the return: $I(h_n;G_n\mid M_n,A_n)=\sum_{s\le n}I(U_s;G_n\mid Z_{s,n-s})$.
+\end{result}
+
+In words: an update pays for the information it discards once for every later observation that this information would have predicted, but only for as long as the observations in between have not revealed it again, and the later the observation, the smaller the weight. What the world shows again at the next step costs little to forget; what it shows again late, or never, costs a lot.
+
+The value obeys the same accounting, exactly. Write $v_\pi(U_{t+1})=\E[v_\pi(h_{t+1})\mid U_{t+1}]$ for the value of the next history as seen from the input of the next update, and $v_\pi(M_{t+1})=\E[v_\pi(h_{t+1})\mid M_{t+1}]$ for the value as seen from its output.
+
+\begin{result}[Each update discards value; Propositions~\ref{prop:value-updates} and~\ref{prop:td-bias}]\label{res:value-updates}
+\begin{enumerate}
+\item[(a)] The error of the critic at $n$ is a sum of uncorrelated pieces, one for each update:
+\[
+q_\pi(h_n,A_n)-q_\pi(M_n,A_n)=\sum_{s=1}^{n}\Delta_s,\qquad \Delta_s=\E[G_n\mid U_s,Z_{s,n-s}]-\E[G_n\mid Z_{s,n-s}],
+\]
+with $\E[\Delta_s\Delta_{s'}]=0$ for $s\ne s'$, so $\E\big[(q_\pi(h_n,A_n)-q_\pi(M_n,A_n))^2\big]=\sum_{s\le n}\E[\Delta_s^2]$.
+\item[(b)] The action value of the memory satisfies the Bellman equation on the memory up to one term:
+\[
+q_\pi(M_t,A_t)=\E\big[R_{t+1}+\gamma\,v_\pi(M_{t+1})\,\big|\,M_t,A_t\big]+\gamma\,\E\big[v_\pi(U_{t+1})-v_\pi(M_{t+1})\,\big|\,M_t,A_t\big].
+\]
+\end{enumerate}
+\end{result}
+
+In words: (a) is the value version of Result~\ref{res:updates}: $\Delta_s$ is the part of the return's mean that the update at $s$ discarded and the stream since has not restored, and the mean squared error of the critic is the sum of their variances. (b) says what temporal-difference learning on the memory gets wrong. Its target bootstraps from the value of the next memory; the true average bootstraps from the value of the next update's input. The difference is the value that the next update discards, $v_\pi(U_{t+1})-v_\pi(M_{t+1})$. It averages to zero over each next memory value, but not over each current memory and action, because the current memory and action are part of what the update discards. An update that keeps the value of its input makes the term zero. This term is what separates temporal-difference estimates from Monte Carlo estimates on the memory, the $\lambda$-discrepancy that \citet{allen2024mitigating} use to train memories.
+
+\begin{result}[The four terms, update by update; Proposition~\ref{prop:updates-split}]\label{res:updates-split}
+Each charge $I(U_s;O_{n+1}\mid Z_{s,n-s})$ splits in the two ways the defect does. Summed over the updates $s\le n$, the four parts give $D^0_n$, $\dE_n$, $\dP_n$ and $D^+_n$. The policy's randomness and the bits of its next decision contain $\dE_n$ and $\dP_n$ exactly:
+\begin{align*}
+H(A_n\mid M_n)&=E_n(M)+\dE_n+H(A_n\mid h_n,O_{n+1}),\\
+I(M_{n+1};A_{n+1})&=I(M_n,A_n;A_{n+1})+P_{n+1}+\dP_n,
+\end{align*}
+with $E_n(M)$ and $P_{n+1}$ the empowerment computed from the memory and the plasticity computed from the history (Appendix~\ref{app:mismatch}).
+\end{result}
+
+In words: over many steps the next action is part of the objective, and the second split describes how forgotten information travels. Of what an update discarded, the $\dP$ part is the part that reaches the agent's next decision, because the next observation reveals it and the next memory takes it in; the $D^+$ part is the part that only the environment carries. The policy's randomness splits into what the outcome reveals about the action, as the memory sees it, what only the history sees ($\dE$), and what nothing reveals. The bits the next decision uses split into what it shares with the previous memory and action, the plasticity of the history, and what the memory over-counts ($\dP$). So a deterministic policy leaves no $\dE$ part and a policy that uses few bits leaves a small $\dP$ part. For a fixed behaviour the policy price does not change with the memory: $I(M_n,A_n;A_{n+1})+\dP_n=I(h_n,A_n;A_{n+1})$, so a memory that holds less of what the next decision depends on moves bits from the first term to $\dP_n$.
+
+\begin{result}[The best policy over many steps; Proposition~\ref{prop:many-policy}]\label{res:many-policy}
+For a fixed memory, a stationary point of $J$ in $\pi$ satisfies
+\[
+\pi(a\mid m)\ \propto\ p(a)\exp\Big(\tfrac1\lambda\big[\alpha\,\bar q(m,a)+\bar B(m,a)-\mathcal D(m,a)-\lambda\bar K(m,a)\big]\Big),
+\]
+where each term averages, over the histories behind $m$ and weighted by how often and how early the agent is at $m$, a discounted sum along the path that starts with action $a$: $\bar q$ of the rewards, $\bar B$ of the history's curiosity bonuses $B_h(a)$, $\mathcal D$ of the defects, and $\bar K$ of the later policy costs. Keeping only the first step of $\bar B$ and $\mathcal D$ and dropping $\bar K$ gives the form of Result~\ref{res:opt-policy}, with $Q=\bar q$.
+\end{result}
+
+In words: the agent values an action for its return and for how much its outcomes tell, and against how badly its memory will predict along the path the action starts. Read with Result~\ref{res:updates}, these defects are what earlier updates discarded and the observations since have not revealed, plus what later updates will discard. An action whose observations reveal again what the memory has dropped can therefore lower them: over many steps the agent can look again instead of remembering, and the objective weighs one against the other. The closest known result is that of \citet{fox2015optimal} for agents that act on their observation or memory, where the cost-to-go is likewise averaged over the hidden states behind each observation; it has no information payoff and averages over time instead of discounting. For fully observed agents, the recursion for value and information over many steps is due to \citet{tishby2011information} and \citet{rubin2012trading}.
+
+\paragraph{What the memory should keep over many steps.}
+\begin{itemize}
+\item \emph{Keep} the distinctions the behaviour acts on (Result~\ref{res:separate}). This is where the reward enters, through $\alpha$, by deciding the behaviour.
+\item \emph{Keep}, at each update, what predicts later observations before the world reveals it again. Its price is its charge in Result~\ref{res:updates}: large when the world reveals it late or never, small when the world reveals it soon.
+\item \emph{Drop} what the world will reveal again before it is needed, and what predicts nothing later under the agent's behaviour.
+\item \emph{Capacity}: with $N$ values, for a given behaviour the best memory is the one with the smallest total charge $\sum_s\gamma^{s-1}C_s$ (Results~\ref{res:separate} and~\ref{res:updates}). The policy can lower the charges by actions that reveal again what was dropped (Result~\ref{res:many-policy}), so memory and exploration are chosen together.
+\end{itemize}
+
+\paragraph{What this does not settle.} The policy condition is for a stationary point with the memory fixed. For the memory we give the exact cost; a stationarity condition for one update, with the others fixed, is in Section~\ref{sec:exact-opt}, but no formula for the jointly best recursive memory, because the recursion couples the steps; \citet{fox2012bounded} solve a related problem, in which the agent does not influence the world, by a forward-backward algorithm. All quantities are taken under the true law of the agent's experience with its current behaviour. An agent that learns them estimates them from that experience, so information whose value appears only under a behaviour the agent has not adopted, for example after the world changes, gets no weight in its estimates. For continual reinforcement learning this is the part the objective leaves open.
+
+\section{The best policy and memory through the exact value gap}\label{sec:exact-opt}
+
+The conditions of Sections~\ref{sec:optimal} and~\ref{sec:many} came from differentiating the objectives. Here we rewrite them with the exact value gap of Result~\ref{res:gap}. Nothing is approximated. The rewriting shows what the agent needs to compute and what the memory needs to keep.
+
+\begin{result}[The best policy needs only the memory; Proposition~\ref{prop:x-policy}]\label{res:x-policy}
+For a fixed memory, the condition of Result~\ref{res:many-policy} is
+\[
+\pi(a\mid m)\ \propto\ p(a)\exp\Big(\tfrac1\lambda\big[\alpha\,\bar q(m,a)+\bar\iota(m,a)-\lambda\bar K(m,a)\big]\Big),
+\]
+where $\bar q(m,a)$ averages over the visits to $m$ the memory's own action value $q_\pi(M_j=m,a)=\E[G_j\mid M_j=m,A_j=a]$, and $\bar\iota(m,a)$ averages in the same way the discounted sum along the path of the memory's own information gain $\log\big(P(O_{n+1}\mid M_n,A_n)/P(O_{n+1})\big)$.
+\end{result}
+
+In words: the history's value and the defect drop out of the best policy. The value gap $q_\pi(h,a)-q_\pi(m,a)$ averages to zero over the histories behind $m$, and the history's curiosity bonus minus the defect is the memory's own information gain (Result~\ref{res:opt-identity}). So the best policy for a given memory is computed from quantities the agent can estimate from its own memory and experience. One condition matters: $\bar q$ is the Monte Carlo value of the memory. A critic trained by temporal differences estimates something else, and the difference comes from the value that the memory updates discard (Result~\ref{res:value-updates}(b)).
+
+\begin{result}[What merging costs the policy; Proposition~\ref{prop:x-merge}]\label{res:x-merge}
+Hold the action values fixed, and let the policy at a history $h$ maximise $\alpha\sum_a\pi(a)\,q_\pi(h,a)-\lambda\,\mathrm{KL}(\pi\|p)$. The best policy for $h$ alone is $\pi_h\propto p\,e^{\alpha q_\pi(h,\cdot)/\lambda}$. A memory that merges $h$ into $m$ uses the best policy for $m$, $\pi_m\propto p\,e^{\alpha q_\pi(m,\cdot)/\lambda}$, at all histories behind $m$. The loss at $h$ is exactly
+\[
+\lambda\,\mathrm{KL}(\pi_m\|\pi_h)=\lambda\log\sum_a\pi_m(a)\,e^{\alpha g(h,a)/\lambda}-\alpha\sum_a\pi_m(a)\,g(h,a),
+\]
+with $g(h,a)=q_\pi(h,a)-q_\pi(m,a)=\E\big[\sum_k\gamma^kc_{t,k}\mid h_t=h,A_t=a\big]$ the value gap of Result~\ref{res:gap}. It is zero exactly when $g(h,a)$ is the same for all actions with $p(a)>0$.
+\end{result}
+
+In words: a value gap that shifts all actions by the same amount changes the value of the history but not the decision. Merging costs the policy nothing when the history and its memory value rank the actions the same way, that is, when their advantages agree. So the part of the defect the policy needs is the action-dependent part of the discounted costs $\sum_k\gamma^kc_{t,k}$; in this local setting, this answers the second open question. Averaged over the histories behind $m$, the gaps average to zero and the loss is $\lambda\,\E\big[\log\sum_a\pi_m(a)e^{\alpha g(h_t,a)/\lambda}\,\big|\,M_t=m\big]$. \citet{genewein2015bounded} derive abstractions from the same trade-off between expected utility and the cost of telling world states apart.
+
+\begin{result}[The best memory, exactly; Proposition~\ref{prop:x-memory}]\label{res:x-memory}
+Let the memory at $t$ be a randomised encoding $q_t(m\mid h)$ priced by $\mu\,I(M_t;h_t)$, with the policy and the later updates fixed. A stationary point of the objective of Section~\ref{sec:many} in $q_t$ satisfies
+\begin{align*}
+\mu\log\frac{q_t(m\mid h)}{q_t(m)}&=\mathcal V(m)-c(h)\\
+&\quad+\sum_a\pi(a\mid m)\,\E\Big[\sum_{k\ge0}\gamma^k\,\mathrm{Cov}_Z\big(L_{t,k},W_{t,k}\big)\ \Big|\ h_t=h,M_t=m,A_t=a\Big],
+\end{align*}
+where $\mathcal V(m)$ is the value of the memory value $m$ under the objective, the same for every history; $L_{t,k}$ is the likelihood ratio of Result~\ref{res:gap} on the path that starts from $m$; and the weight is
+\[
+W_{t,k}(o)=\alpha\,r(o)+\log\frac{P(O_{t+k+1}=o\mid M_{t+k},A_{t+k})}{P(O_{t+k+1}=o)}+\gamma\,\mathcal V_{t,k+1}(o):
+\]
+the reward, the memory's information gain, and the value under the objective of what follows, as seen from the memory at $t$ and the stream. Keeping only the reward in the payoff after step $t$ gives Result~\ref{res:opt-memory} with $Q=q_\pi$.
+\end{result}
+
+In words: the best memory sees a history only through one number for each memory value and action: the discounted sum, along the path, of how far the history's next observations tilt the memory's prediction in the direction of the weight $W$. The weight adds the reward and the value of what follows, with weight $\alpha$, and the information gain, with weight one. The defect measures the same tilts by $L\log L$, in every direction; the memory needs them only along $W$.
+
+\paragraph{What the memory should keep, exactly.}
+\begin{itemize}
+\item \emph{Keep} the distinctions whose next observations, along the path the memory's policy takes, tilt the memory's prediction differently along $W$. Two histories with the same discounted tilts, for every memory value and action, receive the same encoding (Result~\ref{res:x-memory}).
+\item \emph{Drop} a distinction that changes the next observations only in directions that move neither the reward, nor the information gain, nor the value of what follows, however large its defect.
+\item \emph{Later tilts count} until the observations in between resolve them, discounted by $\gamma^k$, as in Result~\ref{res:updates}.
+\item \emph{For the decision}, only the action-dependent part of the value gap matters (Result~\ref{res:x-merge}); a gap common to all actions costs the critic but not the policy.
+\end{itemize}
+These conditions are for a randomised encoding at one step with the policy and the later updates fixed, and they are stationarity conditions, not global optima. They hold under the true law of the agent's experience with its current behaviour, so the limitation stated at the end of Section~\ref{sec:many} applies: information that matters only under a behaviour the agent has not adopted gets no weight.
+
+\section{What this gives for continual reinforcement learning}
+
+\paragraph{The condition that follows is known, and it does not solve the problem.} By Result~\ref{res:return}, a memory with $I(h_t;G_t\mid M_t,A_t)=0$ makes the history and the return independent given the memory and the action, so $q_\pi(h_t,a)=q_\pi(M_t,a)$ and a critic can represent the action value of the current policy exactly. This is the approximate information state condition, or the informational error with the return as the target, and it is not new. It is a sufficient condition for evaluating the current policy, not a method, for four reasons:
+\begin{itemize}
+\item a small agent in a large world cannot reach it: with a bounded memory the information is positive, and the condition does not say what to give up;
+\item $G_t$ is the return of the current policy, so the target moves as the policy improves, and what is irrelevant to the current return may be needed by a later policy;
+\item an accurate value of the current policy does not by itself produce a better policy; improvement and exploration are separate problems;
+\item the return is hard to predict from data, and in practice it is replaced by bootstrapped targets with their own bias.
+\end{itemize}
+
+\paragraph{What the decomposition adds.} It says where this return-relevant information travels: through the agent's own next decisions or through the environment, and, within each observation, through the reward alone, the rest alone, both, or only both together. In continual reinforcement learning, a change of the world that the observation does not show and the rewards reveal is carried by the reward's own part $U^R$. A memory trained to predict the whole observation weighs this part by its share of the observation, which can be small even when it is all the return-relevant information.
+
+\paragraph{With limited capacity the question is what to drop.} Sections~\ref{sec:optimal} and~\ref{sec:many} answer this for one objective that combines the return with information. Over many steps the memory keeps the distinctions its behaviour acts on, and beyond those what predicts later observations, rewards included, before the world reveals it again, priced by how long it stays hidden. What remains open is how to price information that matters only under a behaviour the agent has not adopted yet, which is what a change of the world calls for.
+
+\section{Open questions}
+
+\begin{enumerate}
+\item How should the reward parts of $\dE_t$ and $\dP_t$, which involve an action as a third variable, be separated without choosing an order?
+\item The value results concern the value. Policy improvement uses the advantage, which removes the part that does not depend on the action. Result~\ref{res:x-merge} answers this for one improvement step with the values held fixed: the action-dependent part of the discounted costs. What is the answer along a sequence of improvements?
+\item Is there a setting in which weighting the reward's own part provably improves the return of a memory with fixed capacity?
+\item Result~\ref{res:updates} prices forgetting under the agent's current behaviour. How should an agent price information that matters only under a behaviour it may adopt after the world changes, and can the charges $C_s$ be estimated from experience?
+\end{enumerate}
+
+\paragraph{Note.} The reward-separated splits, the exact decomposition of the return information and the partial information decomposition of the defect have not been checked against the literature beyond the sources cited. For Section~\ref{sec:many}, a short search found the related work cited there and did not find the charge of the defect to the memory updates (Result~\ref{res:updates}); the closest is the step-by-step accounting of the information a memory keeps that does not predict the future, by \citet{still2012thermodynamics}. An earlier multi-step draft is in \texttt{archive/multistep\_draft\_2026-11-16.tex}, and the previous single-part version of this note in \texttt{archive/main\_detailed\_2026-11-16.tex}.
+
+\appendix
+
+\section{Tools}
+
+\paragraph{Entropies.} Logarithms are natural, and all quantities are taken under the law of the agent's own experience. We use the following standard facts \citep[Ch.~2]{cover2006elements}:
+\begin{enumerate}
+\item[(H1)] $I(X;Y\mid Z)=H(X\mid Z)-H(X\mid Y,Z)=I(Y;X\mid Z)$;
+\item[(H2)] chain rule: $H(X,Y\mid Z)=H(X\mid Z)+H(Y\mid X,Z)$;
+\item[(H3)] $I(X;Y\mid Z)\ge0$.
+\end{enumerate}
+Since $M_t$ is a function of $h_t$, conditioning on $(h_t,M_t)$ is the same as conditioning on $h_t$. With (H1), every quantity of the form $I(h_t;X\mid M_t,Y)$ in this note is
+\begin{equation}\label{eq:star}
+I(h_t;X\mid M_t,Y)=H(X\mid M_t,Y)-H(X\mid h_t,Y):
+\end{equation}
+the uncertainty about $X$ given the memory, minus the uncertainty about $X$ given the history, both given $Y$.
+
+\begin{lemma}[Two equal entropies]\label{lem:ci}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol},
+\begin{align*}
+\text{(a)}\quad&H(A_t\mid h_t)=H(A_t\mid M_t),\\
+\text{(b)}\quad&H(A_{t+1}\mid h_t,A_t,O_{t+1})=H(A_{t+1}\mid M_t,A_t,O_{t+1}).
+\end{align*}
+\end{lemma}
+
+\begin{proof}
+(a) By Assumption~\ref{as:pol}, the law of $A_t$ given $h_t$ is $\pi(\cdot\mid M_t)$, which depends on $h_t$ only through $M_t$; so it is also the law of $A_t$ given $M_t$, and the two entropies are equal.
+(b) Given $(h_t,A_t,O_{t+1})=h_{t+1}$, the law of $A_{t+1}$ is $\pi(\cdot\mid M_{t+1})$ with $M_{t+1}=f(M_t,A_t,O_{t+1})$. It depends only on $(M_t,A_t,O_{t+1})$, so it is also the law of $A_{t+1}$ given $(M_t,A_t,O_{t+1})$.
+\end{proof}
+
+\section{The state defect and the four terms}\label{app:defect}
+
+The state defect is
+\[
+D_t=I(h_t;O_{t+1}\mid M_t,A_t)=\E\left[\log\frac{P(O_{t+1}\mid h_t,A_t)}{P(O_{t+1}\mid M_t,A_t)}\right],
+\]
+the expected gain in log-likelihood from predicting the next observation with the history instead of the memory. It is zero exactly when the history and the memory give the same prediction of $O_{t+1}$ for every action the agent takes.
+
+All four terms below have the form \eqref{eq:star}; they differ only in what is predicted and what is given:
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+term & predicted & given (besides $M_t$ or $h_t$)\\
+\midrule
+$D_t=I(h_t;O_{t+1}\mid M_t,A_t)$ & next observation $O_{t+1}$ & action $A_t$\\
+$D^0_t=I(h_t;O_{t+1}\mid M_t)$ & next observation $O_{t+1}$ & nothing\\
+$\dE_t=I(h_t;A_t\mid M_t,O_{t+1})$ & action $A_t$ & next observation $O_{t+1}$\\
+$\dP_t=I(h_t;A_{t+1}\mid M_t,A_t)$ & next action $A_{t+1}$ & action $A_t$\\
+$D^+_t=I(h_t;O_{t+1}\mid M_t,A_t,A_{t+1})$ & next observation $O_{t+1}$ & both actions $A_t,A_{t+1}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{proposition}[Two splits]\label{prop:splits}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol}, $D_t=D^0_t+\dE_t=\dP_t+D^+_t$.
+\end{proposition}
+
+\begin{proof}
+Write each term with \eqref{eq:star}, collect the memory terms and the history terms, and apply the chain rule (H2):
+\begin{align*}
+D^0_t+\dE_t
+&=\big[H(O_{t+1}\mid M_t)-H(O_{t+1}\mid h_t)\big]\\
+&\quad+\big[H(A_t\mid M_t,O_{t+1})-H(A_t\mid h_t,O_{t+1})\big]\\
+&=H(O_{t+1},A_t\mid M_t)-H(O_{t+1},A_t\mid h_t)\\
+&=\big[\cancel{H(A_t\mid M_t)}+H(O_{t+1}\mid M_t,A_t)\big]\\
+&\quad-\big[\cancel{H(A_t\mid h_t)}+H(O_{t+1}\mid h_t,A_t)\big]\\
+&=D_t .
+\end{align*}
+The two cancelled entropies are equal by Lemma~\ref{lem:ci}(a). In the same way,
+\begin{align*}
+\dP_t+D^+_t
+&=\big[H(A_{t+1}\mid M_t,A_t)-H(A_{t+1}\mid h_t,A_t)\big]\\
+&\quad+\big[H(O_{t+1}\mid M_t,A_t,A_{t+1})-H(O_{t+1}\mid h_t,A_t,A_{t+1})\big]\\
+&=H(A_{t+1},O_{t+1}\mid M_t,A_t)-H(A_{t+1},O_{t+1}\mid h_t,A_t)\\
+&=\big[H(O_{t+1}\mid M_t,A_t)+\cancel{H(A_{t+1}\mid M_t,A_t,O_{t+1})}\big]\\
+&\quad-\big[H(O_{t+1}\mid h_t,A_t)+\cancel{H(A_{t+1}\mid h_t,A_t,O_{t+1})}\big]\\
+&=D_t,
+\end{align*}
+where the two cancelled entropies are equal by Lemma~\ref{lem:ci}(b).
+\end{proof}
+
+Both splits are the chain rule of one quantity in two orders that do not follow time.
+
+\begin{proposition}[Three orders]\label{prop:time-order}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol}, $I(h_t;A_t,O_{t+1},A_{t+1}\mid M_t)$ expands by the chain rule as
+\begin{align*}
+&\text{in the order of time }(A_t,O_{t+1},A_{t+1}): && 0+D_t+0,\\
+&\text{in the order }(O_{t+1},A_t,A_{t+1}): && D^0_t+\dE_t+0,\\
+&\text{in the order }(A_t,A_{t+1},O_{t+1}): && 0+\dP_t+D^+_t.
+\end{align*}
+\end{proposition}
+
+\begin{proof}
+The zeros are $I(h_t;A_t\mid M_t)=0$, by Lemma~\ref{lem:ci}(a) and \eqref{eq:star}, and $I(h_t;A_{t+1}\mid M_t,A_t,O_{t+1})=0$, by Lemma~\ref{lem:ci}(b) and \eqref{eq:star}; the second appears in the first two orders, where $A_{t+1}$ comes last. The other terms are those of the table. The three expansions are equal, which is another proof of Proposition~\ref{prop:splits}.
+\end{proof}
+
+So the first split reads the action $A_t$ after its outcome, and the second reads the next action $A_{t+1}$ before the observation it responds to. In the order of time the actions add nothing, because the policy reads only the memory.
+
+\section{$\dE$ and $\dP$ are mismatches of empowerment and plasticity}\label{app:mismatch}
+
+One-step analogues of the empowerment and plasticity of \citet{abel2025plasticity} are the influence of the action on the next observation and the response of the next action to the next observation, computed from the history or from the memory:
+\begin{gather*}
+E_t=I(A_t;O_{t+1}\mid h_t),\qquad E_t(M)=I(A_t;O_{t+1}\mid M_t),\\
+P_{t+1}=I(O_{t+1};A_{t+1}\mid h_t,A_t),\qquad P_{t+1}(M)=I(O_{t+1};A_{t+1}\mid M_t,A_t).
+\end{gather*}
+
+\begin{proposition}\label{prop:mismatch}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol}, $\dE_t=E_t-E_t(M)$ and $\dP_t=P_{t+1}(M)-P_{t+1}$.
+\end{proposition}
+
+\begin{proof}
+By (H1),
+\begin{align*}
+E_t-E_t(M)
+&=\big[\cancel{H(A_t\mid h_t)}-H(A_t\mid h_t,O_{t+1})\big]\\
+&\quad-\big[\cancel{H(A_t\mid M_t)}-H(A_t\mid M_t,O_{t+1})\big]\\
+&=H(A_t\mid M_t,O_{t+1})-H(A_t\mid h_t,O_{t+1})=\dE_t,
+\end{align*}
+where the cancelled entropies are equal by Lemma~\ref{lem:ci}(a) and the last step is \eqref{eq:star}. Similarly,
+\begin{align*}
+P_{t+1}(M)-P_{t+1}
+&=\big[H(A_{t+1}\mid M_t,A_t)-\cancel{H(A_{t+1}\mid M_t,A_t,O_{t+1})}\big]\\
+&\quad-\big[H(A_{t+1}\mid h_t,A_t)-\cancel{H(A_{t+1}\mid h_t,A_t,O_{t+1})}\big]\\
+&=H(A_{t+1}\mid M_t,A_t)-H(A_{t+1}\mid h_t,A_t)=\dP_t,
+\end{align*}
+where the cancelled entropies are equal by Lemma~\ref{lem:ci}(b).
+\end{proof}
+
+Both mismatches are nonnegative by (H3): the memory can only under-estimate empowerment and over-estimate plasticity. By (H1) and (H3), $\dE_t\le H(A_t\mid M_t)$, so $\dE_t=0$ when the policy at $M_t$ is deterministic; and $\dP_t\le P_{t+1}(M)$, so $\dP_t=0$ when the next action does not depend on the next observation given $(M_t,A_t)$, for example under the uniform policy.
+
+\section{Separating the reward: two orders}\label{app:orders}
+
+To separate the reward we split the next observation into two parts, $O_{t+1}=(X,Y)$, and apply the chain rule with $X$ first. There are two natural choices:
+\begin{itemize}
+\item \emph{reward first}: $(X,Y)=(R_{t+1},\Ob_{t+1})$;
+\item \emph{rest first}: $(X,Y)=(\Ob_{t+1},R_{t+1})$.
+\end{itemize}
+The totals $D_t,D^0_t,\dE_t,\dP_t,D^+_t$, and with them the one-step empowerment and plasticity of Appendix~\ref{app:mismatch}, do not depend on the choice; only their parts do. The parts are a refinement of these quantities and are not defined by \citet{abel2025plasticity}.
+
+\subsection{A split of the observation into two parts}
+
+\begin{proposition}[Splitting by $O_{t+1}=(X,Y)$]\label{prop:split-xy}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol}, for $O_{t+1}=(X,Y)$:
+\begin{align*}
+\dE_t&=\big[I(A_t;X\mid h_t)-I(A_t;X\mid M_t)\big]+\big[I(A_t;Y\mid h_t,X)-I(A_t;Y\mid M_t,X)\big],\\
+\dP_t&=\big[I(X;A_{t+1}\mid M_t,A_t)-I(X;A_{t+1}\mid h_t,A_t)\big]\\
+&\quad+\big[I(Y;A_{t+1}\mid M_t,A_t,X)-I(Y;A_{t+1}\mid h_t,A_t,X)\big],
+\end{align*}
+where the first bracket of $\dE_t$ equals $I(h_t;A_t\mid M_t,X)\ge0$ and the second bracket of $\dP_t$ equals $I(h_t;A_{t+1}\mid M_t,A_t,X)\ge0$;
+and the defect splits into an $X$ line and a $Y$ line, each in the two ways of Proposition~\ref{prop:splits}:
+\begin{align*}
+I(h_t;X\mid M_t,A_t)&=I(h_t;X\mid M_t)+I(h_t;A_t\mid M_t,X)\\
+&=\big[I(X;A_{t+1}\mid M_t,A_t)-I(X;A_{t+1}\mid h_t,A_t)\big]+I(h_t;X\mid M_t,A_t,A_{t+1}),\\[4pt]
+I(h_t;Y\mid M_t,A_t,X)&=I(h_t;Y\mid M_t,X)+\big[I(A_t;Y\mid h_t,X)-I(A_t;Y\mid M_t,X)\big]\\
+&=I(h_t;A_{t+1}\mid M_t,A_t,X)+I(h_t;Y\mid M_t,A_t,A_{t+1},X).
+\end{align*}
+Every term written as a single mutual information is nonnegative. The two remaining brackets, the empowerment mismatch for $Y$ and the plasticity mismatch for $X$, can be negative.
+\end{proposition}
+
+\begin{proof}
+\emph{Empowerment.} By the chain rule, $E_t=I(A_t;X,Y\mid h_t)=I(A_t;X\mid h_t)+I(A_t;Y\mid h_t,X)$, and in the same way for $E_t(M)$. Subtracting and using Proposition~\ref{prop:mismatch} gives the formula for $\dE_t$. For the first bracket, by (H1),
+\begin{align*}
+I(A_t;X\mid h_t)-I(A_t;X\mid M_t)
+&=\big[\cancel{H(A_t\mid h_t)}-H(A_t\mid h_t,X)\big]\\
+&\quad-\big[\cancel{H(A_t\mid M_t)}-H(A_t\mid M_t,X)\big]\\
+&=H(A_t\mid M_t,X)-H(A_t\mid h_t,X)=I(h_t;A_t\mid M_t,X),
+\end{align*}
+with the cancellation by Lemma~\ref{lem:ci}(a) and the last step by \eqref{eq:star}.
+
+\emph{Plasticity.} By the chain rule, $P_{t+1}=I(X,Y;A_{t+1}\mid h_t,A_t)=I(X;A_{t+1}\mid h_t,A_t)+I(Y;A_{t+1}\mid h_t,A_t,X)$, and in the same way for $P_{t+1}(M)$. Subtracting gives the formula for $\dP_t$. For the second bracket, since $(X,Y)=O_{t+1}$,
+\begin{align*}
+&I(Y;A_{t+1}\mid M_t,A_t,X)-I(Y;A_{t+1}\mid h_t,A_t,X)\\
+&\quad=\big[H(A_{t+1}\mid M_t,A_t,X)-\cancel{H(A_{t+1}\mid M_t,A_t,O_{t+1})}\big]\\
+&\qquad-\big[H(A_{t+1}\mid h_t,A_t,X)-\cancel{H(A_{t+1}\mid h_t,A_t,O_{t+1})}\big]\\
+&\quad=I(h_t;A_{t+1}\mid M_t,A_t,X),
+\end{align*}
+with the cancellation by Lemma~\ref{lem:ci}(b).
+
+\emph{The $X$ line.} The first equality is the proof of Proposition~\ref{prop:splits} with $X$ in place of $O_{t+1}$:
+\begin{align*}
+I(h_t;X\mid M_t)+I(h_t;A_t\mid M_t,X)
+&=\big[H(X\mid M_t)+H(A_t\mid M_t,X)\big]\\
+&\quad-\big[H(X\mid h_t)+H(A_t\mid h_t,X)\big]\\
+&=H(X,A_t\mid M_t)-H(X,A_t\mid h_t)\\
+&=\big[\cancel{H(A_t\mid M_t)}+H(X\mid M_t,A_t)\big]\\
+&\quad-\big[\cancel{H(A_t\mid h_t)}+H(X\mid h_t,A_t)\big]\\
+&=I(h_t;X\mid M_t,A_t).
+\end{align*}
+The second equality is a regrouping, with nothing cancelled:
+\begin{align*}
+I(X;A_{t+1}\mid M_t,A_t)-I(X;A_{t+1}\mid h_t,A_t)
+&=\big[H(X\mid M_t,A_t)-H(X\mid M_t,A_t,A_{t+1})\big]\\
+&\quad-\big[H(X\mid h_t,A_t)-H(X\mid h_t,A_t,A_{t+1})\big]\\
+&=I(h_t;X\mid M_t,A_t)-I(h_t;X\mid M_t,A_t,A_{t+1}).
+\end{align*}
+
+\emph{The $Y$ line.} By the chain rule, $D_t=I(h_t;X\mid M_t,A_t)+I(h_t;Y\mid M_t,A_t,X)$, $D^0_t=I(h_t;X\mid M_t)+I(h_t;Y\mid M_t,X)$ and $D^+_t=I(h_t;X\mid M_t,A_t,A_{t+1})+I(h_t;Y\mid M_t,A_t,A_{t+1},X)$. Subtract the $X$ line from $D_t=D^0_t+\dE_t$ and from $D_t=\dP_t+D^+_t$ (Proposition~\ref{prop:splits}), and use the formulas for $\dE_t$ and $\dP_t$.
+\end{proof}
+
+So, whichever part comes first, its empowerment mismatch is nonnegative and its plasticity mismatch is signed; for the part that comes second it is the other way round.
+
+\subsection{The two orders}
+
+\begin{center}
+\footnotesize
+\begin{tabular}{p{0.16\linewidth}p{0.36\linewidth}p{0.4\linewidth}}
+\toprule
+ & reward first & rest first\\
+\midrule
+reward line of $D_t$ & $I(h_t;R_{t+1}\mid M_t,A_t)$ & $I(h_t;R_{t+1}\mid M_t,A_t,\Ob_{t+1})$\\[3pt]
+reward part of $\dE_t$ & $I(h_t;A_t\mid M_t,R_{t+1})\ \ge0$ & $I(A_t;R_{t+1}\mid h_t,\Ob_{t+1})$\newline $\quad-I(A_t;R_{t+1}\mid M_t,\Ob_{t+1})$\\[3pt]
+reward part of $\dP_t$ & $I(R_{t+1};A_{t+1}\mid M_t,A_t)$\newline $\quad-I(R_{t+1};A_{t+1}\mid h_t,A_t)$ & $I(h_t;A_{t+1}\mid M_t,A_t,\Ob_{t+1})\ \ge0$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{itemize}
+\item \emph{Reward first} asks what the history tells about the reward on its own. Its reward line is all the information the history carries about the next reward beyond the memory and the action, which is the quantity that bounds the error of the expected reward (Proposition~\ref{prop:reward-error}). Its reward empowerment mismatch is nonnegative; its reward plasticity mismatch can be negative.
+\item \emph{Rest first} asks what the reward adds beyond the rest of the observation. Its reward line is the information about the reward that remains once the rest of the observation is known. Its reward plasticity mismatch $I(h_t;A_{t+1}\mid M_t,A_t,\Ob_{t+1})$ is nonnegative: how much the next action depends on the history through the reward alone. Its reward empowerment mismatch can be negative.
+\end{itemize}
+
+\subsection{How the two orders differ}\label{sec:orders}
+
+For random variables $U,V,W$ and a conditioning variable $Z$, the conditional co-information (interaction information) is
+\[
+I(U;V;W\mid Z)=I(U;V\mid Z)-I(U;V\mid W,Z).
+\]
+It is symmetric in $U,V,W$: applying the chain rule to $I(U;V,W\mid Z)$ in the two orders gives $I(U;V\mid Z)-I(U;V\mid W,Z)=I(U;W\mid Z)-I(U;W\mid V,Z)$. It is positive when $V$ and $W$ carry overlapping information about $U$, and negative when they carry information about $U$ only jointly, as in an exclusive or.
+
+\begin{proposition}[The difference between the orders]\label{prop:orders}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol}, the reward part in the reward-first order minus the reward part in the rest-first order equals
+\begin{align*}
+\text{for } D_t:&\quad I(h_t;R_{t+1};\Ob_{t+1}\mid M_t,A_t),\\
+\text{for } D^0_t:&\quad I(h_t;R_{t+1};\Ob_{t+1}\mid M_t),\\
+\text{for } D^+_t:&\quad I(h_t;R_{t+1};\Ob_{t+1}\mid M_t,A_t,A_{t+1}),\\
+\text{for } \dE_t:&\quad I(A_t;R_{t+1};\Ob_{t+1}\mid h_t)-I(A_t;R_{t+1};\Ob_{t+1}\mid M_t),\\
+\text{for } \dP_t:&\quad I(R_{t+1};A_{t+1};\Ob_{t+1}\mid M_t,A_t)-I(R_{t+1};A_{t+1};\Ob_{t+1}\mid h_t,A_t).
+\end{align*}
+The rest parts differ by the same amounts with the opposite sign, since the totals do not depend on the order. The two orders give the same parts exactly when these co-informations vanish.
+\end{proposition}
+
+\begin{proof}
+For $D_t$ the difference is $I(h_t;R_{t+1}\mid M_t,A_t)-I(h_t;R_{t+1}\mid M_t,A_t,\Ob_{t+1})$, which is the co-information by definition; $D^0_t$ and $D^+_t$ are the same with other conditioning variables. For $\dE_t$, the reward part is $I(A_t;R_{t+1}\mid h_t)-I(A_t;R_{t+1}\mid M_t)$ in the first order and $I(A_t;R_{t+1}\mid h_t,\Ob_{t+1})-I(A_t;R_{t+1}\mid M_t,\Ob_{t+1})$ in the second, and
+\[
+\big[I(A_t;R_{t+1}\mid h_t)-I(A_t;R_{t+1}\mid h_t,\Ob_{t+1})\big]-\big[I(A_t;R_{t+1}\mid M_t)-I(A_t;R_{t+1}\mid M_t,\Ob_{t+1})\big]
+\]
+is the stated difference of co-informations. The case of $\dP_t$ is the same with $I(R_{t+1};A_{t+1}\mid\cdot)$.
+\end{proof}
+
+\subsection{Two examples in both orders}
+
+\begin{example}[exclusive or]\label{ex:xor}
+Let $C$ be a bit that is a function of $h_t$, uniform and independent of $(M_t,A_t)$. Let $R_{t+1}$ be a uniform bit independent of $(h_t,A_t)$, let $\Ob_{t+1}=R_{t+1}\oplus C$, and let the memory and the policy be such that $A_{t+1}=\Ob_{t+1}$. Neither $R_{t+1}$ nor $\Ob_{t+1}$ alone is informative about $C$, but together they determine it.
+\end{example}
+
+\begin{example}[the observation shows the action]\label{ex:show}
+Let there be two actions $\{0,1\}$, let $C$ be a bit that is a function of $h_t$, uniform and independent of $M_t$, let $\pi(\cdot\mid M_t)$ be uniform, let $R_{t+1}=\mathbf 1\{A_t=C\}$, and let $\Ob_{t+1}=A_t$.
+\end{example}
+
+Each entry below is computed from \eqref{eq:star} as a difference of two entropies, each of which is $\log2$ (one bit) or $0$; for instance, in Example~\ref{ex:xor}, $I(h_t;R_{t+1}\mid M_t,A_t,\Ob_{t+1})=H(R_{t+1}\mid M_t,A_t,\Ob_{t+1})-H(R_{t+1}\mid h_t,A_t,\Ob_{t+1})=1-0$, because $R_{t+1}=\Ob_{t+1}\oplus C$ is uniform when $C$ is unknown and determined when it is known. Values are in bits; each pair is (reward part, rest part).
+
+\begin{center}
+\small
+\begin{tabular}{llcc}
+\toprule
+example & term & reward first & rest first\\
+\midrule
+\ref{ex:xor} (exclusive or) & $D_t=1$ & $(0,\,1)$ & $(1,\,0)$\\
+ & $\dP_t=0$ & $(-1,\,1)$ & $(0,\,0)$\\
+\ref{ex:show} (shows the action) & $D_t=1$ & $(1,\,0)$ & $(1,\,0)$\\
+ & $\dE_t=0$ & $(1,\,-1)$ & $(0,\,0)$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+In Example~\ref{ex:xor} the co-information $I(h_t;R_{t+1};\Ob_{t+1}\mid M_t,A_t)=0-1=-1$ bit: the reward and the rest reveal $C$ only jointly. The reward-first order then shows a reward plasticity mismatch of $-1$ bit and a rest mismatch of $+1$ bit that cancel, while the rest-first order shows $0$ and $0$. In Example~\ref{ex:show} the reward lines agree, but the empowerment parts differ by $I(A_t;R_{t+1};\Ob_{t+1}\mid h_t)-I(A_t;R_{t+1};\Ob_{t+1}\mid M_t)=(1-0)-(0-0)=1$ bit. In both examples a negative part in one order comes with a positive part of the same size, and the other order shows neither: the signed parts are produced by the interaction between the reward and the rest of the observation.
+
+\subsection{An order-free split: partial information decomposition}\label{sec:pid}
+
+The two orders attribute the shared and the joint information differently. Partial information decomposition \citep{williams2010nonnegative} names these parts instead of assigning them.
+
+\paragraph{Definition.} For a target $T$ and two sources $S_1,S_2$, a bivariate partial information decomposition consists of four nonnegative numbers, the redundant information $\mathrm{Red}$, the unique informations $U_1,U_2$ and the synergistic information $\mathrm{Syn}$, with
+\[
+I(T;S_1)=\mathrm{Red}+U_1,\qquad I(T;S_2)=\mathrm{Red}+U_2,\qquad I(T;S_1,S_2)=\mathrm{Red}+U_1+U_2+\mathrm{Syn}.
+\]
+These three equations do not determine the four numbers; one more choice, a measure of redundancy or of unique information, is needed. For a conditioning variable $C$, the decomposition of $I(T;S_1,S_2\mid C)$ is the average over $c$ of the decompositions of the conditional laws given $C=c$ \citep[Definition~3]{matthias2025novel}.
+
+We take the history $h_t$ as the target, the reward $R_{t+1}$ and the rest $\Ob_{t+1}$ as the sources, and $C=(M_t,A_t)$, and write $\mathrm{Red}_t,U^R_t,U^{\Ob}_t,\mathrm{Syn}_t$ for the four parts.
+
+\begin{proposition}[The two orders in terms of the four parts]\label{prop:pid}
+For any partial information decomposition,
+\begin{align*}
+D_t&=\mathrm{Red}_t+U^R_t+U^{\Ob}_t+\mathrm{Syn}_t,\\
+I(h_t;R_{t+1}\mid M_t,A_t)&=\mathrm{Red}_t+U^R_t, & I(h_t;\Ob_{t+1}\mid M_t,A_t,R_{t+1})&=U^{\Ob}_t+\mathrm{Syn}_t,\\
+I(h_t;\Ob_{t+1}\mid M_t,A_t)&=\mathrm{Red}_t+U^{\Ob}_t, & I(h_t;R_{t+1}\mid M_t,A_t,\Ob_{t+1})&=U^R_t+\mathrm{Syn}_t,
+\end{align*}
+where the second line is the reward-first order and the third line the rest-first order,
+and the co-information of Proposition~\ref{prop:orders} is $I(h_t;R_{t+1};\Ob_{t+1}\mid M_t,A_t)=\mathrm{Red}_t-\mathrm{Syn}_t$.
+\end{proposition}
+
+\begin{proof}
+For each value $c$ of $(M_t,A_t)$, the three defining equations hold for the conditional law, and subtracting the second from the third gives $I(h_t;R_{t+1}\mid C=c,\Ob_{t+1})=U^R+\mathrm{Syn}$ by the chain rule; similarly for the other order. Averaging over $c$ gives the stated identities. The co-information is the reward line of the reward-first order minus that of the rest-first order, $(\mathrm{Red}_t+U^R_t)-(U^R_t+\mathrm{Syn}_t)$.
+\end{proof}
+
+So the reward-first order gives the reward the redundant part, the rest-first order gives it the synergistic part, and the part that belongs to the reward in either order is $U^R_t$: the information about the history that only the reward carries.
+
+\begin{proposition}[Bounds that hold for every decomposition]\label{prop:pid-bounds}
+For any partial information decomposition with nonnegative parts,
+\begin{align*}
+U^R_t&\ge\max\big(0,\ I(h_t;R_{t+1}\mid M_t,A_t)-I(h_t;\Ob_{t+1}\mid M_t,A_t)\big),\\
+U^R_t&\le\min\big(I(h_t;R_{t+1}\mid M_t,A_t),\ I(h_t;R_{t+1}\mid M_t,A_t,\Ob_{t+1})\big).
+\end{align*}
+\end{proposition}
+
+\begin{proof}
+For each $c$: $U^R-U^{\Ob}=I(h_t;R_{t+1}\mid C=c)-I(h_t;\Ob_{t+1}\mid C=c)$ and $U^{\Ob}\ge0$ give the lower bound; $\mathrm{Red}\ge0$ and $\mathrm{Syn}\ge0$ in Proposition~\ref{prop:pid} give the two upper bounds. Averaging over $c$ keeps the upper bounds, since the average of a minimum is at most the minimum of the averages, and keeps the lower bound, since the average of $\max(0,x_c)$ is at least $\max(0,\text{average of }x_c)$.
+\end{proof}
+
+The same bounds appear in redundancy form in \citet[Lemma~1]{matthias2025novel}. In Examples~\ref{ex:xor} and~\ref{ex:show} they determine all four parts, whatever measure is chosen:
+\begin{itemize}
+\item Exclusive or: $I(h_t;R_{t+1}\mid M_t,A_t)=0$ and $I(h_t;\Ob_{t+1}\mid M_t,A_t)=0$, so $\mathrm{Red}_t=U^R_t=U^{\Ob}_t=0$ and $\mathrm{Syn}_t=D_t=1$ bit. The information about the history is carried by the reward and the rest only jointly.
+\item The observation shows the action: $I(h_t;R_{t+1}\mid M_t,A_t)=1$ bit and $I(h_t;\Ob_{t+1}\mid M_t,A_t)=0$, so $\mathrm{Red}_t=U^{\Ob}_t=0$, $U^R_t=1$ bit and $\mathrm{Syn}_t=0$. The information is carried by the reward alone.
+\end{itemize}
+
+\paragraph{A choice of measure with a decision-theoretic meaning.}
+\citet{bertschinger2014quantifying} define the unique information of $S_1$ as
+\[
+\widetilde{UI}(T;S_1\setminus S_2)=\min_{Q\in\Delta_P}I_Q(T;S_1\mid S_2),
+\]
+where $\Delta_P$ is the set of joint laws with the same $(T,S_1)$ and $(T,S_2)$ marginals as the true law. All four parts are then nonnegative (their Lemma~5), and among decompositions that depend only on these two marginals it gives the largest unique information (their Lemma~3). Its zero set has a decision-theoretic meaning (their Corollary~7, via Blackwell's theorem): $\widetilde{UI}(T;S_1\setminus S_2)>0$ if and only if there is a decision problem, a finite set of actions and a utility depending on $T$ and the action, in which an agent that observes $S_1$ obtains a strictly higher expected utility than one that observes $S_2$. Only whether the unique information is zero has this meaning, not its size. Applied to each value of $(M_t,A_t)$, our own short argument, not taken from the literature, gives: $U^R_t>0$ if and only if there is a utility depending on the history, the memory, the action and a decision, under which an agent that sees the memory, the action and the reward does strictly better than one that sees the memory, the action and the rest of the observation.
+
+\paragraph{Scope.} The same decomposition applies to $D^0_t$ (with $C=M_t$), to $D^+_t$ (with $C=(M_t,A_t,A_{t+1})$), and to the routes through the next observation in Appendix~\ref{app:many}. The terms $\dE_t$ and $\dP_t$ involve an action as a third variable; an order-free split of their reward parts would need a decomposition with three sources, which we leave open.
+
+\section{What the reward part controls}
+
+\begin{proposition}\label{prop:reward-error}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol},
+\[
+\E\Big|\E[R_{t+1}\mid h_t,A_t]-\E[R_{t+1}\mid M_t,A_t]\Big|\ \le\ \Delta R\sqrt{\tfrac12\,I(h_t;R_{t+1}\mid M_t,A_t)} .
+\]
+\end{proposition}
+
+\begin{proof}
+Fix $(h,a)$ that the agent reaches, let $m$ be the memory value of $h$, and let $P=P(R_{t+1}\mid h_t=h,A_t=a)$ and $Q=P(R_{t+1}\mid M_t=m,A_t=a)$.
+\begin{enumerate}
+\item With $c$ the midpoint of the reward interval and $\sum_r(P(r)-Q(r))=0$,
+$|\E_PR-\E_QR|=|\sum_r(P(r)-Q(r))(r-c)|\le\frac{\Delta R}2\sum_r|P(r)-Q(r)|=\Delta R\,\mathrm{TV}(P,Q)$.
+\item Pinsker's inequality: $\mathrm{TV}(P,Q)\le\sqrt{\mathrm{KL}(P\|Q)/2}$.
+\item Average over $(h_t,A_t)$ and use Jensen's inequality for the square root; the average of $\mathrm{KL}(P\|Q)$ is $I(h_t;R_{t+1}\mid M_t,A_t)$.
+\end{enumerate}
+\end{proof}
+
+The quantity under the root is the reward line of the reward-first order, so the bound does not depend on the order. By Proposition~\ref{prop:split-xy} with $X=R_{t+1}$, it equals $I(h_t;R_{t+1}\mid M_t)+I(h_t;A_t\mid M_t,R_{t+1})$.
+
+\section{From one step to many steps}\label{app:many}
+
+We ask how much the history up to $t$ tells about a later reward $R_{t+k+1}$, $k\ge1$, beyond the memory at $t$. There are two versions, one for each split of the defect: without the action, $I(h_t;R_{t+k+1}\mid M_t)$, which controls the state value a critic on the memory can learn; and with the action, $I(h_t;R_{t+k+1}\mid M_t,A_t)$, which controls the action value. We show that the first split describes the first and the second split describes the second.
+
+\subsection{The part of a term relevant to a later reward}
+
+For a term $T=I(h_t;V\mid C)$ and a later variable $W$, the definition of co-information (Section~\ref{sec:orders}) gives
+\[
+T=I(h_t;V;W\mid C)+I(h_t;V\mid C,W).
+\]
+We call $I(h_t;V;W\mid C)$ the part of $T$ relevant to $W$. It is at most $T$, because $I(h_t;V\mid C,W)\ge0$, and it can be negative.
+
+\begin{lemma}[Chain rule for the relevant parts]\label{lem:relevant}
+For variables $V_1,\dots,V_n$, a target $W$ and a conditioning variable $C$,
+\[
+I(h_t;W\mid C)=\sum_{i=1}^{n}I(h_t;V_i;W\mid C,V_1,\dots,V_{i-1})+I(h_t;W\mid C,V_1,\dots,V_n).
+\]
+\end{lemma}
+
+\begin{proof}
+Expand $I(h_t;V_1,\dots,V_n,W\mid C)$ by the chain rule in two orders. With $W$ last it is $\sum_iI(h_t;V_i\mid C,V_{<i})+I(h_t;W\mid C,V_{1:n})$; with $W$ first it is $I(h_t;W\mid C)+\sum_iI(h_t;V_i\mid C,W,V_{<i})$. Set them equal and solve for $I(h_t;W\mid C)$; each difference $I(h_t;V_i\mid C,V_{<i})-I(h_t;V_i\mid C,V_{<i},W)$ is the co-information $I(h_t;V_i;W\mid C,V_{<i})$.
+\end{proof}
+
+\subsection{Two steps}
+
+\begin{proposition}[Two steps, both splits]\label{prop:two-steps}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol},
+\begin{align*}
+I(h_t;R_{t+2}\mid M_t)&=\underbrace{I(h_t;O_{t+1};R_{t+2}\mid M_t)}_{\text{part of }D^0_t}+\underbrace{I(h_t;A_t;R_{t+2}\mid M_t,O_{t+1})}_{\text{part of }\dE_t}\\
+&\quad+I(h_t;R_{t+2}\mid M_t,A_t,O_{t+1}),\\[4pt]
+I(h_t;R_{t+2}\mid M_t,A_t)&=\underbrace{I(h_t;A_{t+1};R_{t+2}\mid M_t,A_t)}_{\text{part of }\dP_t}\\
+&\quad+\underbrace{I(h_t;O_{t+1};R_{t+2}\mid M_t,A_t,A_{t+1})}_{\text{part of }D^+_t}\\
+&\quad+I(h_t;R_{t+2}\mid M_t,A_t,O_{t+1},A_{t+1}),
+\end{align*}
+where ``part of'' means the part relevant to $R_{t+2}$.
+\end{proposition}
+
+\begin{proof}
+For the first line, apply Lemma~\ref{lem:relevant} with $C=M_t$, $(V_1,V_2)=(O_{t+1},A_t)$ and $W=R_{t+2}$; the two terms are the parts of $D^0_t=I(h_t;O_{t+1}\mid M_t)$ and $\dE_t=I(h_t;A_t\mid M_t,O_{t+1})$. For the second line, apply it with $C=(M_t,A_t)$ and $(V_1,V_2)=(A_{t+1},O_{t+1})$; the two terms are the parts of $\dP_t=I(h_t;A_{t+1}\mid M_t,A_t)$ and $D^+_t=I(h_t;O_{t+1}\mid M_t,A_t,A_{t+1})$.
+\end{proof}
+
+So the history reaches the reward one step later along the routes named by the four terms: through the next observation without the action and through the action read with its outcome (first split), or through the agent's own next action and through the next observation given both actions (second split). The last term in each line is what is still hidden after step $t+1$.
+
+\subsection{$k$ steps}
+
+Write $Y_{t,j}=(M_t,A_t,O_{t+1},\dots,A_{t+j-1},O_{t+j})$ for the memory at $t$ and everything the agent saw up to $O_{t+j}$ and did up to $A_{t+j-1}$, with $Y_{t,0}=M_t$; and $Z_{t,j}=(Y_{t,j},A_{t+j})$. Since $h_{t+j}$ and $(h_t,Y_{t,j})$ determine each other, the following window quantities are the four terms at time $t+j$ computed with $h_t$ in place of $h_{t+j}$ and $Y_{t,j}$ in place of $M_{t+j}$:
+\begin{align*}
+D^{0}_{t,j}&=I(h_t;O_{t+j+1}\mid Y_{t,j}), & \dE_{t,j}&=I(h_t;A_{t+j}\mid Y_{t,j},O_{t+j+1}),\\
+\dP_{t,j}&=I(h_t;A_{t+j+1}\mid Z_{t,j}), & D^{+}_{t,j}&=I(h_t;O_{t+j+1}\mid Z_{t,j},A_{t+j+1}).
+\end{align*}
+For $j=0$ they are $D^0_t,\dE_t,\dP_t,D^+_t$.
+
+\begin{proposition}[$k$ steps, both splits]\label{prop:k-steps}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol}, for $k\ge1$,
+\begin{align*}
+I(h_t;R_{t+k+1}\mid M_t)&=\sum_{j=0}^{k-1}\Big[I(h_t;O_{t+j+1};R_{t+k+1}\mid Y_{t,j})\\
+&\qquad\qquad+I(h_t;A_{t+j};R_{t+k+1}\mid Y_{t,j},O_{t+j+1})\Big]\\
+&\quad+I(h_t;R_{t+k+1}\mid Y_{t,k}),\\
+I(h_t;R_{t+k+1}\mid M_t,A_t)&=\sum_{j=0}^{k-1}\Big[I(h_t;A_{t+j+1};R_{t+k+1}\mid Z_{t,j})\\
+&\qquad\qquad+I(h_t;O_{t+j+1};R_{t+k+1}\mid Z_{t,j},A_{t+j+1})\Big]\\
+&\quad+I(h_t;R_{t+k+1}\mid Z_{t,k}).
+\end{align*}
+The two terms in the $j$-th bracket of the first line are the parts of $D^0_{t,j}$ and $\dE_{t,j}$ relevant to $R_{t+k+1}$; in the second line, the parts of $\dP_{t,j}$ and $D^+_{t,j}$.
+\end{proposition}
+
+\begin{proof}
+Apply Lemma~\ref{lem:relevant} with $W=R_{t+k+1}$. For the first line take $C=M_t$ and the sequence $O_{t+1},A_t,O_{t+2},A_{t+1},\dots,O_{t+k},A_{t+k-1}$: before $O_{t+j+1}$ the conditioning variables are $Y_{t,j}$, and after $A_{t+j}$ they are $Y_{t,j+1}$. For the second line take $C=(M_t,A_t)$ and the sequence $A_{t+1},O_{t+1},A_{t+2},O_{t+2},\dots,A_{t+k},O_{t+k}$: before $A_{t+j+1}$ the conditioning variables are $Z_{t,j}$, and after $O_{t+j+1}$ they are $Z_{t,j+1}$.
+\end{proof}
+
+\begin{lemma}[Window terms are at most the agent's terms]\label{lem:window}
+Under Assumption~\ref{as:mem}, for any variables $X$ and $V$,
+\[
+I(h_{t+j};X\mid M_{t+j},V)=I(Y_{t,j};X\mid M_{t+j},V)+I(h_t;X\mid Y_{t,j},V).
+\]
+Hence $D^0_{t,j}\le D^0_{t+j}$, $\dE_{t,j}\le\dE_{t+j}$, $\dP_{t,j}\le\dP_{t+j}$, $D^+_{t,j}\le D^+_{t+j}$, $I(h_t;R_{t+k+1}\mid Y_{t,k})\le I(h_{t+k};R_{t+k+1}\mid M_{t+k})$ and $I(h_t;R_{t+k+1}\mid Z_{t,k})\le I(h_{t+k};R_{t+k+1}\mid M_{t+k},A_{t+k})$.
+\end{lemma}
+
+\begin{proof}
+$h_{t+j}$ and $(h_t,Y_{t,j})$ determine each other, and $M_{t+j}$ is a function of $Y_{t,j}$ by applying $f$ $j$ times. The chain rule, first $Y_{t,j}$ and then $h_t$, gives the identity after removing $M_{t+j}$ from the condition of the second term. The first term is what the memory updates from $t$ to $t+j$ discarded that is still relevant; it is nonnegative. The inequalities follow by taking $(X,V)$ equal to $(O_{t+j+1},\,\cdot\,)$, $(A_{t+j},O_{t+j+1})$, $(A_{t+j+1},A_{t+j})$ and $(O_{t+j+1},(A_{t+j},A_{t+j+1}))$, and for the last two to $(R_{t+k+1},\,\cdot\,)$ and $(R_{t+k+1},A_{t+k})$.
+\end{proof}
+
+\begin{corollary}\label{cor:k-steps}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol}, since each relevant part is at most its window term,
+\begin{align*}
+I(h_t;R_{t+k+1}\mid M_t)&\le\sum_{j=0}^{k-1}\big(D^0_{t+j}+\dE_{t+j}\big)+I(h_{t+k};R_{t+k+1}\mid M_{t+k}),\\
+I(h_t;R_{t+k+1}\mid M_t,A_t)&\le\sum_{j=0}^{k-1}\big(\dP_{t+j}+D^+_{t+j}\big)+I(h_{t+k};R_{t+k+1}\mid M_{t+k},A_{t+k}).
+\end{align*}
+Both sums equal $\sum_{j<k}D_{t+j}$ by Proposition~\ref{prop:splits}; the last terms are the reward parts of $D^0_{t+k}$ and $D_{t+k}$ in the reward-first order.
+\end{corollary}
+
+\subsection{The infinite horizon}
+
+Let $\gamma<1$. The state value and action value of the history under the policy are $v_\pi(h)=\E[\sum_{k\ge0}\gamma^kR_{t+k+1}\mid h_t=h]$ and $q_\pi(h,a)=\E[\sum_{k\ge0}\gamma^kR_{t+k+1}\mid h_t=h,A_t=a]$. A critic that reads the memory can at best learn their averages over the histories behind each memory value, $v_\pi(m)=\E[v_\pi(h_t)\mid M_t=m]$ and $q_\pi(m,a)=\E[q_\pi(h_t,a)\mid M_t=m,A_t=a]$.
+
+\subsection{The value gap, exactly}
+
+For $k\ge0$ write $O=O_{t+k+1}$ and, with $h_t$ and $Z_{t,k}$ fixed,
+\[
+P_h(o)=P(O=o\mid h_t,Z_{t,k}),\qquad P_Z(o)=P(O=o\mid Z_{t,k}),\qquad L_{t,k}(o)=\frac{P_h(o)}{P_Z(o)}.
+\]
+$P_Z$ is the average of $P_h$ over the histories $h_t$ consistent with $Z_{t,k}$, so $P_h(o)>0$ implies $P_Z(o)>0$ and $\sum_oP_Z(o)L_{t,k}(o)=1$. Write $r(o)$ for the reward contained in $o$, $Y_{t,k+1}=(Z_{t,k},O)$, $v_\pi(Y_{t,k+1})=\E[v_\pi(h_{t+k+1})\mid Y_{t,k+1}]$, $q_\pi(Z_{t,k})=\E[q_\pi(h_{t+k},A_{t+k})\mid Z_{t,k}]$, and
+\[
+w_{t,k}(o)=r(o)+\gamma\,v_\pi(Z_{t,k},o),\qquad c_{t,k}=\sum_o\big(P_h(o)-P_Z(o)\big)w_{t,k}(o).
+\]
+
+\begin{proposition}[The value gap]\label{prop:gap}
+Under Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol}:
+\begin{enumerate}
+\item[(a)] $c_{t,k}=\sum_oP_Z(o)\big(L_{t,k}(o)-1\big)w_{t,k}(o)=\mathrm{Cov}_{P_Z}(L_{t,k},w_{t,k})$, and $D_{t,k}:=I(h_t;O\mid Z_{t,k})=\E\big[\sum_oP_Z(o)L_{t,k}(o)\log L_{t,k}(o)\big]$;
+\item[(b)] one step: $q_\pi(h_{t+k},A_{t+k})-q_\pi(Z_{t,k})=c_{t,k}+\gamma\,\E\big[v_\pi(h_{t+k+1})-v_\pi(Y_{t,k+1})\,\big|\,h_{t+k},A_{t+k}\big]$;
+\item[(c)] $v_\pi(h_{t+k+1})-v_\pi(Y_{t,k+1})=\E\big[q_\pi(h_{t+k+1},A_{t+k+1})-q_\pi(Z_{t,k+1})\,\big|\,h_{t+k+1}\big]$;
+\item[(d)] $q_\pi(h_t,A_t)-q_\pi(M_t,A_t)=\E\big[\sum_{k\ge0}\gamma^kc_{t,k}\,\big|\,h_t,A_t\big]$, and $v_\pi(h_t)-v_\pi(M_t)=\E\big[\sum_{k\ge0}\gamma^kc_{t,k}\,\big|\,h_t\big]$;
+\item[(e)] $D_{t,k}=D^0_{t,k}+\dE_{t,k}=\dP_{t,k}+D^+_{t,k}$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+(a) Substitute $P_h=P_ZL_{t,k}$; the covariance form uses $\sum_oP_Z(o)L_{t,k}(o)=1$. The second claim is $I(h_t;O\mid Z_{t,k})=\E[\mathrm{KL}(P_h\|P_Z)]$ written with $L_{t,k}$.
+
+(b) Since $h_{t+k}$ and $(h_t,Y_{t,k})$ determine each other (Lemma~\ref{lem:window}), $P(O=o\mid h_{t+k},A_{t+k})=P_h(o)$. The value of the history satisfies the Bellman equation
+\[
+q_\pi(h_{t+k},A_{t+k})=\sum_oP_h(o)\big[r(o)+\gamma\,v_\pi(h_{t+k+1})\big],\qquad h_{t+k+1}=(h_{t+k},A_{t+k},o).
+\]
+Taking the conditional expectation given $Z_{t,k}$, which is a function of $(h_{t+k},A_{t+k})$, and then passing through $Y_{t,k+1}=(Z_{t,k},O)$ by the tower property,
+\[
+q_\pi(Z_{t,k})=\sum_oP_Z(o)\big[r(o)+\gamma\,v_\pi(Z_{t,k},o)\big]=\sum_oP_Z(o)w_{t,k}(o).
+\]
+Subtract, and add and subtract $\sum_oP_h(o)w_{t,k}(o)$:
+\begin{align*}
+q_\pi(h_{t+k},A_{t+k})-q_\pi(Z_{t,k})&=\sum_o\big(P_h(o)-P_Z(o)\big)w_{t,k}(o)\\
+&\quad+\gamma\sum_oP_h(o)\big[v_\pi(h_{t+k+1})-v_\pi(Z_{t,k},o)\big].
+\end{align*}
+The first sum is $c_{t,k}$ and the second is the conditional expectation in (b).
+
+(c) $v_\pi(h_{t+k+1})=\sum_{a'}\pi(a'\mid M_{t+k+1})\,q_\pi(h_{t+k+1},a')$. $M_{t+k+1}$ is a function of $Y_{t,k+1}$, so $v_\pi(Y_{t,k+1})=\sum_{a'}\pi(a'\mid M_{t+k+1})\,\E[q_\pi(h_{t+k+1},a')\mid Y_{t,k+1}]$. Given $Y_{t,k+1}$, the law of $A_{t+k+1}$ is $\pi(\cdot\mid M_{t+k+1})$ whatever the history, so conditioning also on $A_{t+k+1}=a'$ does not change the law of $h_{t+k+1}$, and $\E[q_\pi(h_{t+k+1},a')\mid Y_{t,k+1}]$ is $q_\pi(Z_{t,k+1})$ on $\{A_{t+k+1}=a'\}$. Subtracting the two sums gives (c).
+
+(d) Let $e_k=q_\pi(h_{t+k},A_{t+k})-q_\pi(Z_{t,k})$. By (b) and (c) and the tower property, $e_k=c_{t,k}+\gamma\,\E[e_{k+1}\mid h_{t+k},A_{t+k}]$. Apply this $K$ times and take the conditional expectation given $(h_t,A_t)$, a function of every $(h_{t+k},A_{t+k})$:
+\[
+e_0=\E\Big[\sum_{k<K}\gamma^kc_{t,k}\,\Big|\,h_t,A_t\Big]+\gamma^K\,\E[e_K\mid h_t,A_t].
+\]
+All values lie in an interval of length $\Delta R/(1-\gamma)$, so $|e_K|\le\Delta R/(1-\gamma)$ and the last term tends to $0$. Since $Z_{t,0}=(M_t,A_t)$, $e_0=q_\pi(h_t,A_t)-q_\pi(M_t,A_t)$. For the state value, the argument of (c) with $M_t=Y_{t,0}$ in place of $Y_{t,k+1}$ gives $v_\pi(h_t)-v_\pi(M_t)=\E[q_\pi(h_t,A_t)-q_\pi(M_t,A_t)\mid h_t]$; insert the first identity.
+
+(e) As in Proposition~\ref{prop:time-order}, with $(h_t,Y_{t,k})$ in place of $(h_t,M_t)$: $I(h_t;A_{t+k}\mid Y_{t,k})=0$ and $I(h_t;A_{t+k+1}\mid Z_{t,k},O)=0$, because each action depends on the past only through the agent's memory, which is a function of the conditioning variables. The chain rule of $I(h_t;A_{t+k},O\mid Y_{t,k})$ and of $I(h_t;O,A_{t+k+1}\mid Z_{t,k})$ in two orders gives the two splits.
+\end{proof}
+
+The identity in (d) is the simulation lemma \citep{kearns2002near} for two models of the next observation, the history and the memory at $t$ with the stream since $t$, evaluated with the value of the second.
+
+\begin{proposition}[The four routes in value form]\label{prop:gap-routes}
+Under Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol}, with $A'=A_{t+k+1}$, $A=A_{t+k}$, $Y=Y_{t,k}$, $Z=Z_{t,k}$ and $h_t$ fixed:
+\begin{enumerate}
+\item[(a)] $c_{t,k}=c^{\dP}_{t,k}+c^{D^+}_{t,k}$ with
+\begin{align*}
+c^{\dP}_{t,k}&=\sum_{a'}\big(P(a'\mid h_t,Z)-P(a'\mid Z)\big)\,W(a'),\qquad W(a')=\sum_oP(o\mid Z,a')\,w_{t,k}(o),\\
+c^{D^+}_{t,k}&=\sum_{a'}P(a'\mid h_t,Z)\sum_o\big(P(o\mid h_t,Z,a')-P(o\mid Z,a')\big)\,w_{t,k}(o);
+\end{align*}
+\item[(b)] the cost averaged over $A$ given $(h_t,Y)$ is $c^{D^0}_{t,k}+c^{\dE}_{t,k}$ with
+\begin{align*}
+c^{D^0}_{t,k}&=\sum_o\big(P(o\mid h_t,Y)-P(o\mid Y)\big)\sum_aP(a\mid Y,o)\,w_{t,k}(a,o),\\
+c^{\dE}_{t,k}&=\gamma\sum_oP(o\mid h_t,Y)\sum_a\big(P(a\mid h_t,Y,o)-P(a\mid Y,o)\big)\,v_\pi(Y,a,o),
+\end{align*}
+where $w_{t,k}(a,o)=r(o)+\gamma v_\pi(Y,a,o)$ is $w_{t,k}$ with the action written out.
+\end{enumerate}
+Each term is a covariance of a likelihood ratio under the memory's prediction, as in Proposition~\ref{prop:gap}(a): of $P(A'\mid h_t,Z)/P(A'\mid Z)$ with $W$; of $P(O\mid h_t,Z,a')/P(O\mid Z,a')$ with $w_{t,k}$; of $P(O\mid h_t,Y)/P(O\mid Y)$ with the average of $w_{t,k}$ over the action given the outcome; and of $P(A\mid h_t,Y,O)/P(A\mid Y,O)$ with $\gamma v_\pi$. The averages of $L\log L$ for the same four ratios are $\dP_{t,k}$, $D^+_{t,k}$, $D^0_{t,k}$ and $\dE_{t,k}$.
+\end{proposition}
+
+\begin{proof}
+(a) Given $(Z,O=o)$ the law of $A'$ is $\rho(a'\mid o)=\pi(a'\mid M_{t+k+1})$ with $M_{t+k+1}$ a function of $(Z,o)$, with or without $h_t$. So $P(o,a'\mid h_t,Z)=P_h(o)\rho(a'\mid o)$ and $P(o,a'\mid Z)=P_Z(o)\rho(a'\mid o)$, and since $\sum_{a'}\rho(a'\mid o)=1$,
+\[
+c_{t,k}=\sum_{o,a'}\big(P(o,a'\mid h_t,Z)-P(o,a'\mid Z)\big)w_{t,k}(o).
+\]
+Factor each joint law as $P(a'\mid\cdot)P(o\mid\cdot,a')$ and add and subtract $P(a'\mid h_t,Z)P(o\mid Z,a')$:
+\begin{align*}
+&P(a'\mid h_t,Z)P(o\mid h_t,Z,a')-P(a'\mid Z)P(o\mid Z,a')\\
+&\qquad=\big(P(a'\mid h_t,Z)-P(a'\mid Z)\big)P(o\mid Z,a')+P(a'\mid h_t,Z)\big(P(o\mid h_t,Z,a')-P(o\mid Z,a')\big).
+\end{align*}
+Multiplying by $w_{t,k}(o)$ and summing gives the two terms.
+
+(b) Given $(h_t,Y)$ the law of $A$ is $\pi(\cdot\mid M_{t+k})$, the same as given $Y$. Averaging $c_{t,k}$ over it gives $\sum_{a,o}\big(P(a,o\mid h_t,Y)-P(a,o\mid Y)\big)w_{t,k}(a,o)$. Factor each joint law as $P(o\mid\cdot)P(a\mid\cdot,o)$ and add and subtract $P(o\mid h_t,Y)P(a\mid Y,o)$, as in (a). The first part is $c^{D^0}_{t,k}$. In the second, $w_{t,k}(a,o)=r(o)+\gamma v_\pi(Y,a,o)$ and $\sum_a\big(P(a\mid h_t,Y,o)-P(a\mid Y,o)\big)r(o)=0$, because $r(o)$ does not depend on $a$; what remains is $c^{\dE}_{t,k}$.
+
+The covariance forms follow as in Proposition~\ref{prop:gap}(a). The four averages of $L\log L$ are the window terms of Appendix~\ref{app:many}, each written as the expected KL divergence between the history's and the memory's prediction of its variable.
+\end{proof}
+
+Propositions~\ref{prop:value} and~\ref{prop:value-return} below bound these identities: each covariance is at most the range of its weight times the total variation between the two predictions, and Pinsker's inequality bounds the total variation by the KL divergence.
+
+\begin{proposition}[Value errors]\label{prop:value}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol},
+\begin{align*}
+\E\big|v_\pi(h_t)-v_\pi(M_t)\big|&\le\Delta R\sum_{k\ge0}\gamma^k\sqrt{\tfrac12\,I(h_t;R_{t+k+1}\mid M_t)},\\
+\E\big|q_\pi(h_t,A_t)-q_\pi(M_t,A_t)\big|&\le\Delta R\sum_{k\ge0}\gamma^k\sqrt{\tfrac12\,I(h_t;R_{t+k+1}\mid M_t,A_t)},
+\end{align*}
+where for $k\ge1$ each information term is given exactly by Proposition~\ref{prop:k-steps}, through the first split for the state value and through the second split for the action value, and for $k=0$ the terms are $I(h_t;R_{t+1}\mid M_t)$ and $I(h_t;R_{t+1}\mid M_t,A_t)$, the reward parts of $D^0_t$ and $D_t$ in the reward-first order. If $D_{t+j}\le\bar D$ for all $j\ge0$, both right-hand sides are at most $\Delta R\sqrt{\bar D/2}\,(1-\gamma)^{-3/2}$.
+\end{proposition}
+
+\begin{proof}
+By the tower property, $v_\pi(h)-v_\pi(m)=\sum_{k\ge0}\gamma^k\big(\E[R_{t+k+1}\mid h_t=h]-\E[R_{t+k+1}\mid M_t=m]\big)$ for $m$ the memory value of $h$. Take absolute values, use the triangle inequality, and bound each term as in the proof of Proposition~\ref{prop:reward-error} with $R_{t+k+1}$ in place of $R_{t+1}$; the same argument applies to $q_\pi$ with $A_t$ added to the conditioning. For the uniform bound, Corollary~\ref{cor:k-steps} and $I(h_{t+k};R_{t+k+1}\mid M_{t+k},A_{t+k})\le D_{t+k}$, $I(h_{t+k};R_{t+k+1}\mid M_{t+k})\le D^0_{t+k}\le D_{t+k}$ give an information term at most $(k+1)\bar D$, and $\sum_{k\ge0}\gamma^k\sqrt{k+1}\le\sqrt{\sum_k\gamma^k}\sqrt{\sum_k\gamma^k(k+1)}=(1-\gamma)^{-3/2}$ by the Cauchy--Schwarz inequality.
+\end{proof}
+
+So, over an infinite horizon, the state value depends on the history beyond the memory through the parts of $D^0$ and $\dE$ along the agent's path that are relevant to later rewards, and the action value through the parts of $\dP$ and $D^+$. The uniform bound has the structure of the approximate information state of \citet{subramanian2022approximate}; the exact decomposition into relevant parts has not been checked against the literature.
+
+\subsection{The return as a whole}
+
+Propositions~\ref{prop:k-steps} and~\ref{prop:value} treat each later reward separately. The same lemma applies to the discounted return itself, $G_t=\sum_{k\ge0}\gamma^kR_{t+k+1}$ with $\gamma<1$, and then the remainder vanishes.
+
+\begin{proposition}[The return]\label{prop:return}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol},
+\begin{align*}
+I(h_t;G_t\mid M_t)&=\sum_{j=0}^{\infty}\Big[I(h_t;O_{t+j+1};G_t\mid Y_{t,j})+I(h_t;A_{t+j};G_t\mid Y_{t,j},O_{t+j+1})\Big],\\
+I(h_t;G_t\mid M_t,A_t)&=\sum_{j=0}^{\infty}\Big[I(h_t;A_{t+j+1};G_t\mid Z_{t,j})+I(h_t;O_{t+j+1};G_t\mid Z_{t,j},A_{t+j+1})\Big],
+\end{align*}
+where the series converge as sums of their partial sums. Each term is the part of a window term ($D^0_{t,j}$, $\dE_{t,j}$, $\dP_{t,j}$ or $D^+_{t,j}$) relevant to the return.
+\end{proposition}
+
+\begin{proof}
+Lemma~\ref{lem:relevant} with $W=G_t$ and the sequences of Proposition~\ref{prop:k-steps}, stopped after step $k-1$, gives the partial sums plus the remainder $I(h_t;G_t\mid Y_{t,k})$, respectively $I(h_t;G_t\mid Z_{t,k})$. We show that the remainder tends to $0$. Since $h_t$ takes finitely many values, $H(h_t)<\infty$ and
+\[
+I(h_t;G_t\mid Y_{t,k})=H(h_t\mid Y_{t,k})-H(h_t\mid Y_{t,k},G_t).
+\]
+As $k\to\infty$, the information in $Y_{t,k}$ increases to that of the whole future $Y_{t,\infty}$, and $G_t$ is a function of $Y_{t,\infty}$, because every reward is a component of an observation. By the martingale convergence theorem, the conditional entropy of a finite-valued variable given an increasing sequence of $\sigma$-algebras converges to its conditional entropy given their limit. Both terms therefore converge to $H(h_t\mid Y_{t,\infty})$, and the remainder tends to $0$. The same holds for $Z_{t,k}$.
+\end{proof}
+
+So the information the history carries about the future return beyond the memory is exactly the sum, along the agent's own future path, of the parts of the four terms that are relevant to the return: the parts of $D^0$ and $\dE$ without the action at $t$, and the parts of $\dP$ and $D^+$ with it. The discount does not appear explicitly; it enters through the law of $G_t$. Each part is at most its window term, which is at most the agent's own term by Lemma~\ref{lem:window}.
+
+\begin{proposition}[Value error through the return]\label{prop:value-return}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol},
+\begin{align*}
+\E\big|v_\pi(h_t)-v_\pi(M_t)\big|&\le\frac{\Delta R}{1-\gamma}\sqrt{\tfrac12\,I(h_t;G_t\mid M_t)},\\
+\E\big|q_\pi(h_t,A_t)-q_\pi(M_t,A_t)\big|&\le\frac{\Delta R}{1-\gamma}\sqrt{\tfrac12\,I(h_t;G_t\mid M_t,A_t)}.
+\end{align*}
+\end{proposition}
+
+\begin{proof}
+$v_\pi(h)=\E[G_t\mid h_t=h]$ and $v_\pi(m)=\E[G_t\mid M_t=m]$, and $G_t$ lies in an interval of length $\Delta R/(1-\gamma)$. The proof of Proposition~\ref{prop:reward-error} applies with $G_t$ in place of $R_{t+1}$: the difference of two expectations is at most the length of the interval times the total variation distance, Pinsker's inequality bounds the total variation by $\sqrt{\mathrm{KL}/2}$, and Jensen's inequality and the average of the KL divergences, $I(h_t;G_t\mid M_t)$, give the first bound. The second is the same with $A_t$ added to the conditioning.
+\end{proof}
+
+Together, Propositions~\ref{prop:return} and~\ref{prop:value-return} relate the four terms to the return exactly up to one inequality: the value error is controlled by the history's information about the return, and that information is the sum of the return-relevant parts of the four terms along the agent's path. The bound of Proposition~\ref{prop:value-return} and the per-reward bound of Proposition~\ref{prop:value} do not dominate each other.
+
+\subsection{Reward first or rest first, over many steps}
+
+In Proposition~\ref{prop:k-steps} the next observation enters each step as a whole. To separate the reward, we split $O_{t+j+1}$ into its two parts and place the action of that step between them, as in Appendix~\ref{app:orders}, where the sequence $(X,A_t,Y)$ gives the first split and $(X,A_{t+1},Y)$ the second split with the reward separated. For step $j$ write $(X_j,Y_j)=(R_{t+j+1},\Ob_{t+j+1})$ in the reward-first order and $(X_j,Y_j)=(\Ob_{t+j+1},R_{t+j+1})$ in the rest-first order.
+
+\begin{proposition}[$k$ steps with the reward separated]\label{prop:k-steps-order}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol}, for either order and $W=R_{t+k+1}$,
+\begin{align*}
+I(h_t;W\mid M_t)&=\sum_{j=0}^{k-1}\Big[I(h_t;X_j;W\mid Y_{t,j})+I(h_t;A_{t+j};W\mid Y_{t,j},X_j)\\
+&\qquad\qquad+I(h_t;Y_j;W\mid Y_{t,j},X_j,A_{t+j})\Big]+I(h_t;W\mid Y_{t,k}),\\
+I(h_t;W\mid M_t,A_t)&=\sum_{j=0}^{k-1}\Big[I(h_t;X_j;W\mid Z_{t,j})+I(h_t;A_{t+j+1};W\mid Z_{t,j},X_j)\\
+&\qquad\qquad+I(h_t;Y_j;W\mid Z_{t,j},X_j,A_{t+j+1})\Big]+I(h_t;W\mid Z_{t,k}).
+\end{align*}
+\end{proposition}
+
+\begin{proof}
+Lemma~\ref{lem:relevant} with the sequences $X_0,A_t,Y_0,X_1,A_{t+1},Y_1,\dots$ given $M_t$, and $X_0,A_{t+1},Y_0,X_1,A_{t+2},Y_1,\dots$ given $(M_t,A_t)$. After the three variables of step $j$ the conditioning variables are $Y_{t,j+1}$ and $Z_{t,j+1}$ respectively.
+\end{proof}
+
+Each step now has three routes from the history to the later reward: through the first part of the next observation, through the action, and through the second part. In the reward-first order the first route is the route through the intermediate reward; in the rest-first order the reward route comes last, after the rest of the observation and the action are given.
+
+\begin{proposition}[What the order changes]\label{prop:order-many}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol}:
+\begin{enumerate}
+\item[(a)] The left-hand sides of Proposition~\ref{prop:k-steps-order}, and therefore the value bounds of Proposition~\ref{prop:value}, do not depend on the order. Only the attribution to routes does.
+\item[(b)] If at every step the reward is a function of the action and the rest of the observation, $R_{t+j+1}=g(A_{t+j},\Ob_{t+j+1})$, then in the rest-first order every reward route is zero.
+\item[(c)] If the rest of the observation is constant, its routes are zero in both orders, and the two orders differ only in whether the action route of each step is counted after the reward route (reward first) or before it (rest first).
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+(a) The left-hand sides do not involve the order, and Proposition~\ref{prop:value} uses only them. (b) In the rest-first order the reward route of step $j$ is $I(h_t;R_{t+j+1};W\mid C)=I(h_t;R_{t+j+1}\mid C)-I(h_t;R_{t+j+1}\mid C,W)$, where $C$ contains $A_{t+j}$ and $\Ob_{t+j+1}$ (in $Y_{t,j}$ or $Z_{t,j}$, and in the variables added before $R_{t+j+1}$). Given $C$, $R_{t+j+1}$ is determined, so both mutual informations are zero. (c) If $\Ob_{t+j+1}$ is constant, conditioning on it changes nothing and its routes are zero, so the sequences of step $j$ reduce to $(R_{t+j+1},A)$ in the reward-first order and to $(A,R_{t+j+1})$ in the rest-first order, where $A$ is $A_{t+j}$ or $A_{t+j+1}$.
+\end{proof}
+
+\paragraph{Reading for continual RL.}
+The rest-first reward routes measure the information about later rewards that reaches the agent only through rewards, because the rest of the observation does not show it. By Proposition~\ref{prop:order-many}(b) they vanish in worlds where the reward can be computed from what the agent sees and does. They are positive in worlds where a change is hidden from the observation and revealed only by the rewards, such as a switch of the rewarding option that the agent does not see. The reward-first reward routes measure all the information about later rewards that the intermediate rewards carry, including what the observation also shows. The two attributions differ step by step by co-informations, as in Proposition~\ref{prop:orders}; their totals, and the value bounds, are the same.
+
+
+\section{The best memory and policy: derivations}\label{app:optimal}
+
+Fix the law $p(h)$ of the history at time $t$, the environment $P(o'\mid h,a)$ and the action values $Q(h,a)$. The memory is a randomised encoding $q(m\mid h)$ and the policy is $\pi(a\mid m)$, so the joint law is $p(h)\,q(m\mid h)\,\pi(a\mid m)\,P(o'\mid h,a)$. Write $q(m)=\sum_hp(h)q(m\mid h)$, $p(a)=\sum_mq(m)\pi(a\mid m)$, $P(o'\mid m,a)=\sum_hp(h\mid m)P(o'\mid h,a)$, $Q(m,a)=\sum_hp(h\mid m)Q(h,a)$, $P(o')$ for the marginal of $O_{t+1}$, $B_h(a)=\mathrm{KL}(P(O_{t+1}\mid h,a)\|P(O_{t+1}))$, $B_m(a)=\mathrm{KL}(P(O_{t+1}\mid m,a)\|P(O_{t+1}))$ and $d_{h,m}(a)=\mathrm{KL}(P(O_{t+1}\mid h,a)\|P(O_{t+1}\mid m,a))$. The objective is
+\[
+F[q,\pi]=\alpha\sum_{h,m,a}p(h)q(m\mid h)\pi(a\mid m)Q(h,a)+I(M_t,A_t;O_{t+1})-\lambda I(A_t;M_t)-\mu I(M_t;h_t).
+\]
+
+\begin{proposition}\label{prop:opt-identity}
+$I(M_t,A_t;O_{t+1})=I(h_t,A_t;O_{t+1})-D_t$ and $D_t=D^0_t+\dE_t$. Moreover, for every $(m,a)$, $\E[B_{h_t}(a)\mid M_t=m]=B_m(a)+D(m,a)$.
+\end{proposition}
+
+\begin{proof}
+$O_{t+1}$ depends on $(h_t,M_t,A_t)$ only through $(h_t,A_t)$, so by the chain rule $I(h_t,A_t;O_{t+1})=I(h_t,M_t,A_t;O_{t+1})=I(M_t,A_t;O_{t+1})+I(h_t;O_{t+1}\mid M_t,A_t)$, and the last term is $D_t$. The split $D_t=D^0_t+\dE_t$ is the first proof of Proposition~\ref{prop:splits}, which uses only $I(h_t;A_t\mid M_t)=0$; this holds because the action depends on the history only through $M_t$. For the last claim, $p(h\mid m,a)=p(h\mid m)$ and $P(o'\mid m,a)$ is the average of $P(o'\mid h,a)$ over $p(h\mid m)$, so for any law $R$, $\sum_hp(h\mid m)\mathrm{KL}(P(\cdot\mid h,a)\|R)=\mathrm{KL}(P(\cdot\mid m,a)\|R)+\sum_hp(h\mid m)\mathrm{KL}(P(\cdot\mid h,a)\|P(\cdot\mid m,a))$; take $R=P(O_{t+1})$, and the last sum is $D(m,a)$.
+\end{proof}
+
+\begin{proposition}[Best policy]\label{prop:opt-policy}
+For fixed $q$, a stationary point of $F$ in $\pi$ satisfies $\pi(a\mid m)\propto p(a)\exp\big(\tfrac1\lambda[\alpha Q(m,a)+B_m(a)]\big)$.
+\end{proposition}
+
+\begin{proof}
+We differentiate each term with respect to $\pi(a\mid m)$, up to terms that do not depend on $a$ and are absorbed by the normalisation of $\pi(\cdot\mid m)$. The return term gives $\alpha q(m)Q(m,a)$. Writing $I(M_t,A_t;O_{t+1})=\sum_{m,a}q(m)\pi(a\mid m)\mathrm{KL}(P(\cdot\mid m,a)\|P(O_{t+1}))$ and differentiating, including through $P(o')=\sum_{m,a}q(m)\pi(a\mid m)P(o'\mid m,a)$, gives $q(m)B_m(a)$ plus a constant. The coding cost of the policy gives $\lambda q(m)\log(\pi(a\mid m)/p(a))$ plus a constant. Setting the derivative to zero and dividing by $q(m)\lambda$ gives the result. With Proposition~\ref{prop:opt-identity}, $B_m(a)=\E[B_{h_t}(a)\mid M_t=m]-D(m,a)$.
+\end{proof}
+
+\begin{proposition}[Best memory]\label{prop:opt-memory}
+For fixed $\pi$, a stationary point of $F$ in $q$ satisfies
+\[
+\mu\log\frac{q(m\mid h)}{q(m)}=\sum_a\pi(a\mid m)\big[\alpha Q(h,a)+B_h(a)-d_{h,m}(a)\big]-\lambda\,\mathrm{KL}\big(\pi(\cdot\mid m)\|p(A)\big)+c(h),
+\]
+with $c(h)$ fixed by normalisation. Averaged over the histories behind $m$, $\sum_hp(h\mid m)\sum_a\pi(a\mid m)d_{h,m}(a)=D(m)=D^0(m)+\dE(m)$.
+\end{proposition}
+
+\begin{proof}
+We differentiate each term with respect to $q(m\mid h)$, up to terms that depend only on $h$.
+\begin{itemize}
+\item Return: $\alpha p(h)\sum_a\pi(a\mid m)Q(h,a)$.
+\item Predictive power: write $I(M_t,A_t;O_{t+1})=\sum_{m,a,o'}\pi(a\mid m)J\log J-\sum_mq(m)\log q(m)-\sum_{o'}P(o')\log P(o')$ with $J(m,a,o')=\sum_hp(h)q(m\mid h)P(o'\mid h,a)=q(m)P(o'\mid m,a)$. The derivative is $p(h)\sum_a\pi(a\mid m)\sum_{o'}P(o'\mid h,a)\log\frac{P(o'\mid m,a)}{P(o')}$, which equals $p(h)\sum_a\pi(a\mid m)[B_h(a)-d_{h,m}(a)]$.
+\item Coding cost of the policy: $I(A_t;M_t)=\sum_mq(m)\sum_a\pi(a\mid m)\log\pi(a\mid m)-\sum_ap(a)\log p(a)$, with derivative $p(h)\,\mathrm{KL}(\pi(\cdot\mid m)\|p(A))$ plus a constant.
+\item Coding cost of the memory: the derivative of $I(M_t;h_t)$ is $p(h)\log(q(m\mid h)/q(m))$.
+\end{itemize}
+Setting the derivative of $F$ plus a multiplier for $\sum_mq(m\mid h)=1$ to zero and dividing by $p(h)$ gives the stationarity condition. The average of $d_{h,m}(a)$ over $p(h\mid m)$ is $D(m,a)$ (Proposition~\ref{prop:opt-identity}), and $\sum_a\pi(a\mid m)D(m,a)=I(h_t;O_{t+1}\mid M_t=m,A_t)=D(m)$, which splits as $D^0(m)+\dE(m)$.
+\end{proof}
+
+\paragraph{Remarks.} (i) The memory here is a randomised encoding of the whole history; a recursive update $M_{t+1}=f(M_t,A_t,O_{t+1})$ is a constraint that the stationary point need not satisfy, so the equations describe which histories should share a memory value, not how to compute it step by step. (ii) Lemma~\ref{lem:ci}(b) uses the recursive update, so the second split and the bound $\dP_t\le P_{t+1}(M)\le I(M_{t+1};A_{t+1})$, which links $\dP$ to the coding cost of the next policy, hold for recursive memories but not in general for the relaxed encoding. (iii) The optimisation is local in time, with $Q$ and the law of the history held fixed, as in \citet{still2012information}.
+
+\section{The best memory and policy over many steps: derivations}\label{app:many-optimal}
+
+We use Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol}, with $M_1$ a function of $O_1$, and the notation of Appendix~\ref{app:many}: $Y_{s,k}=(M_s,A_s,O_{s+1},\dots,A_{s+k-1},O_{s+k})$, with $Y_{s,0}=M_s$, and $Z_{s,k}=(Y_{s,k},A_{s+k})$. The input of the update that produces $M_s$ is $U_s=(M_{s-1},A_{s-1},O_s)$ for $s\ge2$ and $U_1=O_1$, so that $M_s=f(U_s)$.
+
+\subsection{The objective separates}
+
+\begin{proposition}\label{prop:many-separate}
+For every action law $p$,
+\[
+\E\big[\mathrm{KL}\big(\pi(\cdot\mid M_t)\,\|\,p\big)\big]=I(A_t;M_t)+\mathrm{KL}\big(P(A_t)\,\|\,p\big)\ \ge\ I(A_t;M_t),
+\]
+and $J=J_b-\sum_{t\ge1}\gamma^{t-1}D_t$ with $J_b$ as in Result~\ref{res:separate}. $J_b$ depends on the memory only through the behaviour $b(a\mid h)=\pi(a\mid f(h))$, and for a fixed behaviour each $D_t$ depends only on the memory.
+\end{proposition}
+
+\begin{proof}
+For the first claim, write $P(A_t=a)=\sum_mP(M_t=m)\pi(a\mid m)$ and split the logarithm:
+\begin{align*}
+\sum_mP(M_t=m)\sum_a\pi(a\mid m)\log\frac{\pi(a\mid m)}{p(a)}
+&=\sum_{m,a}P(M_t=m)\pi(a\mid m)\log\frac{\pi(a\mid m)}{P(A_t=a)}\\
+&\quad+\sum_aP(A_t=a)\log\frac{P(A_t=a)}{p(a)}.
+\end{align*}
+The first sum is $I(A_t;M_t)$ and the second is $\mathrm{KL}(P(A_t)\|p)\ge0$.
+
+For the separation, three steps.
+\begin{enumerate}
+\item The rewards: $\sum_{t\ge1}\gamma^{t-1}\E[R_{t+1}]=\E\big[\sum_{k\ge0}\gamma^kR_{k+2}\big]=\E[G_1]$.
+\item The predictive power: by Proposition~\ref{prop:opt-identity}, which uses only that $O_{t+1}$ depends on $(h_t,M_t,A_t)$ through $(h_t,A_t)$, $I(M_t,A_t;O_{t+1})=I(h_t,A_t;O_{t+1})-D_t$.
+\item The policy price: $\pi(\cdot\mid M_t)=b(\cdot\mid h_t)$ by definition of $b$, so $\E[\mathrm{KL}(\pi(\cdot\mid M_t)\|p)]=\E[\mathrm{KL}(b(\cdot\mid h_t)\|p)]$.
+\end{enumerate}
+Substituting the three into $J$ gives $J=J_b-\sum_t\gamma^{t-1}D_t$. The law of the whole trajectory is fixed by the environment and the behaviour, since $P(A_t=a\mid h_t)=b(a\mid h_t)$; every term of $J_b$ is a function of this law. Given the law, $D_t=I(h_t;O_{t+1}\mid f(h_t),A_t)$ depends only on $f$.
+\end{proof}
+
+\subsection{Charging the defect to the updates}
+
+\begin{lemma}[Who discarded it]\label{lem:updates}
+For $n\ge1$ and any variables $X$ and $V$,
+\[
+I(h_n;X\mid M_n,V)=\sum_{s=1}^{n}I(U_s;X\mid Y_{s,n-s},V).
+\]
+\end{lemma}
+
+\begin{proof}
+Write $Y_{0,n}=h_n$. For $1\le s\le n$, two facts hold.
+\begin{enumerate}
+\item[(i)] $Y_{s,n-s}$ is a function of $Y_{s-1,n-s+1}$. For $s\ge2$, $Y_{s-1,n-s+1}=(M_{s-1},A_{s-1},O_s,A_s,O_{s+1},\dots,O_n)=(U_s,A_s,O_{s+1},\dots,O_n)$, and $Y_{s,n-s}=(f(U_s),A_s,O_{s+1},\dots,O_n)$. For $s=1$, $Y_{1,n-1}=(f(O_1),A_1,O_2,\dots,O_n)$ is a function of $h_n$.
+\item[(ii)] Given $Y_{s,n-s}$, the variables $Y_{s-1,n-s+1}$ and $U_s$ determine each other: $U_s$ is a part of $Y_{s-1,n-s+1}$, and $Y_{s-1,n-s+1}$ is $U_s$ followed by the variables $(A_s,O_{s+1},\dots,O_n)$ of $Y_{s,n-s}$.
+\end{enumerate}
+By (i) and the chain rule, $I(Y_{s-1,n-s+1};X\mid V)=I(Y_{s-1,n-s+1},Y_{s,n-s};X\mid V)=I(Y_{s,n-s};X\mid V)+I(Y_{s-1,n-s+1};X\mid Y_{s,n-s},V)$, and by (ii) the last term is $I(U_s;X\mid Y_{s,n-s},V)$. So
+\[
+I(Y_{s-1,n-s+1};X\mid V)-I(Y_{s,n-s};X\mid V)=I(U_s;X\mid Y_{s,n-s},V).
+\]
+Summing over $s=1,\dots,n$, the left-hand side telescopes to $I(h_n;X\mid V)-I(M_n;X\mid V)$, which is $I(h_n;X\mid M_n,V)$ by the chain rule, because $M_n$ is a function of $h_n$.
+\end{proof}
+
+Lemma~\ref{lem:window} is the case of two pieces: the updates before $t$, and those from $t$ to $t+j$. Each term $I(U_s;X\mid Y_{s,n-s},V)$ is what the update at $s$ discarded, beyond what it kept and what the agent saw and did from $s$ to $n$, about $X$.
+
+\begin{proposition}\label{prop:updates}
+For $n\ge1$ and $s\ge1$:
+\begin{enumerate}
+\item[(a)] $D_n=\sum_{s=1}^nI(U_s;O_{n+1}\mid Z_{s,n-s})$;
+\item[(b)] $\sum_{n\ge1}\gamma^{n-1}D_n=\sum_{s\ge1}\gamma^{s-1}C_s$ with $C_s=\sum_{k\ge0}\gamma^kI(U_s;O_{s+k+1}\mid Z_{s,k})$;
+\item[(c)] for $K\ge0$, $\sum_{k=0}^{K}I(U_s;O_{s+k+1}\mid Z_{s,k})=I(U_s;A_s,O_{s+1},A_{s+1},\dots,A_{s+K},O_{s+K+1}\mid M_s)$;
+\item[(d)] $I(h_n;G_n\mid M_n,A_n)=\sum_{s=1}^nI(U_s;G_n\mid Z_{s,n-s})$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+(a) Lemma~\ref{lem:updates} with $X=O_{n+1}$ and $V=A_n$; $(Y_{s,n-s},A_n)=Z_{s,n-s}$.
+
+(b) Multiply (a) by $\gamma^{n-1}$ and sum over $n\ge1$. All terms are nonnegative, so the order of the two sums can be exchanged:
+\[
+\sum_{n\ge1}\gamma^{n-1}\sum_{s=1}^{n}I(U_s;O_{n+1}\mid Z_{s,n-s})=\sum_{s\ge1}\sum_{n\ge s}\gamma^{n-1}I(U_s;O_{n+1}\mid Z_{s,n-s}),
+\]
+and with $n=s+k$, $\gamma^{n-1}=\gamma^{s-1}\gamma^k$.
+
+(c) Expand the right-hand side by the chain rule in the order of time, $A_s,O_{s+1},A_{s+1},\dots,A_{s+K},O_{s+K+1}$. Before $A_{s+k}$ the conditioning variables are $Y_{s,k}$, and before $O_{s+k+1}$ they are $Z_{s,k}$, so
+\[
+I(U_s;A_s,O_{s+1},\dots,O_{s+K+1}\mid M_s)=\sum_{k=0}^{K}\Big[I(U_s;A_{s+k}\mid Y_{s,k})+I(U_s;O_{s+k+1}\mid Z_{s,k})\Big].
+\]
+Each action term is zero. $(U_s,Y_{s,k})$ and $Y_{s,k}$ are functions of $h_{s+k}$, and both determine $M_{s+k}$ by applying $f$ $k$ times. By Assumption~\ref{as:pol} the law of $A_{s+k}$ given $h_{s+k}$ is $\pi(\cdot\mid M_{s+k})$, so its law given $(U_s,Y_{s,k})$ and its law given $Y_{s,k}$ are both $\pi(\cdot\mid M_{s+k})$, and $A_{s+k}$ is independent of $U_s$ given $Y_{s,k}$.
+
+(d) Lemma~\ref{lem:updates} with $X=G_n$ and $V=A_n$.
+\end{proof}
+
+\begin{proposition}[The value discarded by each update]\label{prop:value-updates}
+For $n\ge1$ let $\Delta_s=\E[G_n\mid U_s,Z_{s,n-s}]-\E[G_n\mid Z_{s,n-s}]$ for $s=1,\dots,n$. Then
+\[
+q_\pi(h_n,A_n)-q_\pi(M_n,A_n)=\sum_{s=1}^{n}\Delta_s,\qquad \E[\Delta_s\Delta_{s'}]=0\ \ (s\ne s'),
+\]
+and therefore $\E\big[(q_\pi(h_n,A_n)-q_\pi(M_n,A_n))^2\big]=\sum_{s=1}^{n}\E[\Delta_s^2]$.
+\end{proposition}
+
+\begin{proof}
+Let $\mathcal F_0=\sigma(h_n,A_n)$ and $\mathcal F_s=\sigma(Z_{s,n-s})=\sigma(Y_{s,n-s},A_n)$ for $1\le s\le n$, so $\mathcal F_n=\sigma(M_n,A_n)$. By fact (i) in the proof of Lemma~\ref{lem:updates}, $\mathcal F_0\supseteq\mathcal F_1\supseteq\dots\supseteq\mathcal F_n$, and by fact (ii), $\mathcal F_{s-1}=\sigma(U_s,Z_{s,n-s})$. Let $X_s=\E[G_n\mid\mathcal F_s]$. Then $X_0=q_\pi(h_n,A_n)$, $X_n=q_\pi(M_n,A_n)$ and $X_{s-1}-X_s=\Delta_s$, so the sum telescopes. For $s<s'$, $\Delta_{s'}$ is $\mathcal F_{s'-1}$-measurable and $\mathcal F_{s'-1}\subseteq\mathcal F_s$, while $\E[\Delta_s\mid\mathcal F_s]=\E[X_{s-1}\mid\mathcal F_s]-X_s=0$ because $\mathcal F_s\subseteq\mathcal F_{s-1}$. Hence $\E[\Delta_s\Delta_{s'}]=\E\big[\Delta_{s'}\,\E[\Delta_s\mid\mathcal F_s]\big]=0$, and the mean square of the sum is the sum of the mean squares.
+\end{proof}
+
+Proposition~\ref{prop:value-updates} is the value version of Proposition~\ref{prop:updates}(d): the information splits into a sum of conditional mutual informations, the error into a sum of uncorrelated pieces, over the same updates. $\E[\Delta_s^2]=\E\big[\mathrm{Var}(\E[G_n\mid U_s,Z_{s,n-s}]\mid Z_{s,n-s})\big]$ is the variance of the return's mean that the update at $s$ discarded, given what it kept and what came after.
+
+\begin{proposition}[The bootstrapped target on the memory]\label{prop:td-bias}
+For $t\ge1$, with $v_\pi(U_{t+1})=\E[v_\pi(h_{t+1})\mid U_{t+1}]$ and $v_\pi(M_{t+1})=\E[v_\pi(h_{t+1})\mid M_{t+1}]$,
+\[
+q_\pi(M_t,A_t)=\E\big[R_{t+1}+\gamma\,v_\pi(M_{t+1})\,\big|\,M_t,A_t\big]+\gamma\,\E\big[v_\pi(U_{t+1})-v_\pi(M_{t+1})\,\big|\,M_t,A_t\big],
+\]
+and $\E\big[v_\pi(U_{t+1})-v_\pi(M_{t+1})\,\big|\,M_{t+1}\big]=0$.
+\end{proposition}
+
+\begin{proof}
+The Bellman equation for histories is $q_\pi(h_t,A_t)=\E[R_{t+1}+\gamma v_\pi(h_{t+1})\mid h_t,A_t]$. $(M_t,A_t)$ is a function of $(h_t,A_t)$, so by the tower property $q_\pi(M_t,A_t)=\E[R_{t+1}+\gamma v_\pi(h_{t+1})\mid M_t,A_t]$. $(M_t,A_t)$ is also a function of $U_{t+1}=(M_t,A_t,O_{t+1})$, so $\E[v_\pi(h_{t+1})\mid M_t,A_t]=\E[v_\pi(U_{t+1})\mid M_t,A_t]$. Add and subtract $\gamma\,\E[v_\pi(M_{t+1})\mid M_t,A_t]$. For the last claim, $M_{t+1}=f(U_{t+1})$, so $\E[v_\pi(U_{t+1})\mid M_{t+1}]=\E[v_\pi(h_{t+1})\mid M_{t+1}]=v_\pi(M_{t+1})$.
+\end{proof}
+
+Temporal-difference learning on the memory uses the target $R_{t+1}+\gamma v(M_{t+1})$ and solves the Bellman equation without the last term; a Monte Carlo estimate converges to $q_\pi(M_t,A_t)$. Their difference, the $\lambda$-discrepancy of \citet{allen2024mitigating}, is therefore driven by the value that each update discards, $v_\pi(U_{t+1})-v_\pi(M_{t+1})$, as far as it is predictable from the memory and action before the update.
+
+\begin{proposition}\label{prop:updates-split}
+For $1\le s\le n$, the charge $I(U_s;O_{n+1}\mid Z_{s,n-s})$ equals
+\begin{align*}
+&I(U_s;O_{n+1}\mid Y_{s,n-s})+I(U_s;A_n\mid Y_{s,n-s},O_{n+1})\\
+={}&I(U_s;A_{n+1}\mid Z_{s,n-s})+I(U_s;O_{n+1}\mid Z_{s,n-s},A_{n+1}).
+\end{align*}
+Summed over $s=1,\dots,n$, the four terms give $D^0_n$, $\dE_n$, $\dP_n$ and $D^+_n$ in this order. Moreover
+\begin{align*}
+H(A_n\mid M_n)&=E_n(M)+\dE_n+H(A_n\mid h_n,O_{n+1}),\\
+I(M_{n+1};A_{n+1})&=I(M_n,A_n;A_{n+1})+P_{n+1}+\dP_n,
+\end{align*}
+and $I(M_n,A_n;A_{n+1})+\dP_n=I(h_n,A_n;A_{n+1})$.
+\end{proposition}
+
+\begin{proof}
+The two splits are the chain rule in two orders, as in Proposition~\ref{prop:time-order}. For the first,
+\begin{align*}
+I(U_s;O_{n+1},A_n\mid Y_{s,n-s})&=\underbrace{I(U_s;A_n\mid Y_{s,n-s})}_{=0}+I(U_s;O_{n+1}\mid Z_{s,n-s})\\
+&=I(U_s;O_{n+1}\mid Y_{s,n-s})+I(U_s;A_n\mid Y_{s,n-s},O_{n+1}),
+\end{align*}
+where the zero is the action term in the proof of Proposition~\ref{prop:updates}(c). For the second,
+\begin{align*}
+I(U_s;O_{n+1},A_{n+1}\mid Z_{s,n-s})&=I(U_s;O_{n+1}\mid Z_{s,n-s})+\underbrace{I(U_s;A_{n+1}\mid Y_{s,n-s+1})}_{=0}\\
+&=I(U_s;A_{n+1}\mid Z_{s,n-s})+I(U_s;O_{n+1}\mid Z_{s,n-s},A_{n+1}),
+\end{align*}
+where $(Z_{s,n-s},O_{n+1})=Y_{s,n-s+1}$ and the zero holds for the same reason. The sums over $s$ follow from Lemma~\ref{lem:updates} with $(X,V)$ equal to $(O_{n+1},\text{nothing})$, $(A_n,O_{n+1})$, $(A_{n+1},A_n)$ and $(O_{n+1},(A_n,A_{n+1}))$, whose left-hand sides are $D^0_n$, $\dE_n$, $\dP_n$ and $D^+_n$ by the table of Appendix~\ref{app:defect}. For the policy's randomness, $H(A_n\mid M_n)=H(A_n\mid h_n)$ by Lemma~\ref{lem:ci}(a), and by (H1)
+\[
+H(A_n\mid h_n)=I(A_n;O_{n+1}\mid h_n)+H(A_n\mid h_n,O_{n+1})=E_n+H(A_n\mid h_n,O_{n+1}),
+\]
+with $E_n=E_n(M)+\dE_n$ by Proposition~\ref{prop:mismatch}. For the bits of the next decision, $A_{n+1}$ depends on $(M_n,A_n,O_{n+1})$ only through $M_{n+1}=f(M_n,A_n,O_{n+1})$, so $I(M_{n+1};A_{n+1})=I(M_n,A_n,O_{n+1};A_{n+1})$, and by the chain rule
+\begin{align*}
+I(M_n,A_n,O_{n+1};A_{n+1})&=I(M_n,A_n;A_{n+1})+I(O_{n+1};A_{n+1}\mid M_n,A_n)\\
+&=I(M_n,A_n;A_{n+1})+P_{n+1}(M),
+\end{align*}
+with $P_{n+1}(M)=P_{n+1}+\dP_n$ by Proposition~\ref{prop:mismatch}. Finally, by the chain rule and since $(M_n,A_n)$ is a function of $(h_n,A_n)$, $I(h_n,A_n;A_{n+1})=I(M_n,A_n;A_{n+1})+I(h_n;A_{n+1}\mid M_n,A_n)$, and the last term is $\dP_n$. The bounds $\dE_n\le H(A_n\mid M_n)$ and $\dP_n\le I(M_{n+1};A_{n+1})$ follow because every other term is nonnegative.
+\end{proof}
+
+\subsection{The best policy}
+
+Fix the memory $f$ and the law $p$. For $n\ge1$ write $P_n(o\mid m,a)=P(O_{n+1}=o\mid M_n=m,A_n=a)$ and $P_n(o)=P(O_{n+1}=o)$, and
+\[
+B_n(h,a)=\mathrm{KL}\big(P(O_{n+1}\mid h,a)\,\|\,P_n\big),\qquad d_n(h,m,a)=\mathrm{KL}\big(P(O_{n+1}\mid h,a)\,\|\,P_n(\cdot\mid m,a)\big).
+\]
+Let $d(m)=\sum_{j\ge1}\gamma^{j-1}P(M_j=m)$ and $w_j(m)=\gamma^{j-1}P(M_j=m)/d(m)$, the weight of time $j$ among the visits to $m$. For a quantity $X$ of the path, write $\langle X\rangle_{m,a}=\sum_jw_j(m)\,\E[X\mid M_j=m,A_j=a]$, where the path after $A_j=a$ follows the policy. Then
+\begin{align*}
+\bar q(m,a)&=\Big\langle\sum_{k\ge0}\gamma^kR_{j+k+1}\Big\rangle_{m,a},\\
+\bar B(m,a)&=\Big\langle\sum_{k\ge0}\gamma^kB_{j+k}(h_{j+k},A_{j+k})\Big\rangle_{m,a},\\
+\mathcal D(m,a)&=\Big\langle\sum_{k\ge0}\gamma^kd_{j+k}(h_{j+k},M_{j+k},A_{j+k})\Big\rangle_{m,a},\\
+\bar K(m,a)&=\Big\langle\sum_{k\ge1}\gamma^k\log\frac{\pi(A_{j+k}\mid M_{j+k})}{p(A_{j+k})}\Big\rangle_{m,a}.
+\end{align*}
+Since $\E[d_n(h_n,M_n,A_n)\mid M_n,A_n]=D(M_n,A_n)$, the defect of the memory value and action at time $n$, $\mathcal D$ is the discounted sum of the defects along the path.
+
+\begin{proposition}\label{prop:many-policy}
+If $\pi(a\mid m)>0$ for all $a$ and $\pi$ is a stationary point of $J$ for the fixed memory, then
+\[
+\lambda\log\frac{\pi(a\mid m)}{p(a)}=\alpha\,\bar q(m,a)+\bar B(m,a)-\mathcal D(m,a)-\lambda\bar K(m,a)-c(m)
+\]
+for every $m$ with $d(m)>0$, with $c(m)$ fixed by normalisation.
+\end{proposition}
+
+\begin{proof}
+\emph{Step 1: the laws induced by the policy can be held fixed.} Write $I(M_n,A_n;O_{n+1})=\E[\log P_n(O_{n+1}\mid M_n,A_n)]-\E[\log P_n(O_{n+1})]$. A change of $\pi$ changes the law of the path and also $P_n$. The second effect contributes nothing to the derivative:
+\begin{align*}
+&\sum_{m,a,o}P(M_n=m,A_n=a)P_n(o\mid m,a)\,\partial\log P_n(o\mid m,a)\\
+&\qquad=\sum_{m,a}P(M_n=m,A_n=a)\,\partial\sum_oP_n(o\mid m,a)=0,
+\end{align*}
+and in the same way $\sum_oP_n(o)\,\partial\log P_n(o)=\partial\sum_oP_n(o)=0$. This is the compensation used in the proof of Proposition~\ref{prop:opt-policy}. So the derivative of $J$ in $\pi$ equals that of $\sum_{n\ge1}\gamma^{n-1}\E[r_n]$, with the per-step payoff
+\[
+r_n=\alpha R_{n+1}+\log\frac{P_n(O_{n+1}\mid M_n,A_n)}{P_n(O_{n+1})}-\lambda\log\frac{\pi(A_n\mid M_n)}{p(A_n)}
+\]
+and $P_n$ held at its current value.
+
+\emph{Step 2: the derivative.} The history is a Markov chain whose step from $h$ draws $A\sim\pi(\cdot\mid f(h))$ and then $O'\sim e(\cdot\mid h,A)$. The probability of a path up to $O_{n+1}$ contains the factors $\pi(A_j\mid M_j)$ for $j\le n$, and $\partial\pi(A_j\mid M_j)/\partial\pi(a\mid m)=\mathbf 1\{M_j=m,A_j=a\}$. The payoff $r_n$ also contains $\pi$ directly, with $\partial r_n/\partial\pi(a\mid m)=-\lambda\,\mathbf 1\{M_n=m,A_n=a\}/\pi(a\mid m)$. So
+\[
+\frac{\partial\E[r_n]}{\partial\pi(a\mid m)}=\sum_{j=1}^{n}\E\Big[\frac{\mathbf 1\{M_j=m,A_j=a\}}{\pi(a\mid m)}\,r_n\Big]-\lambda\,\E\Big[\frac{\mathbf 1\{M_n=m,A_n=a\}}{\pi(a\mid m)}\Big].
+\]
+Multiply by $\gamma^{n-1}$, sum over $n$ and collect the terms by $j$, with $n=j+k$:
+\begin{align*}
+\frac{\partial J}{\partial\pi(a\mid m)}&=\sum_{j\ge1}\gamma^{j-1}\,\E\Big[\frac{\mathbf 1\{M_j=m,A_j=a\}}{\pi(a\mid m)}\Big(\sum_{k\ge0}\gamma^kr_{j+k}-\lambda\Big)\Big]\\
+&=\sum_{j\ge1}\gamma^{j-1}P(M_j=m)\Big(\E\Big[\sum_{k\ge0}\gamma^kr_{j+k}\,\Big|\,M_j=m,A_j=a\Big]-\lambda\Big),
+\end{align*}
+using $P(M_j=m,A_j=a)=P(M_j=m)\pi(a\mid m)$.
+
+\emph{Step 3: stationarity.} At a stationary point with $\pi(a\mid m)>0$, the derivative is the same for all $a$ (a multiplier for $\sum_a\pi(a\mid m)=1$). Divide by $d(m)$. The term $k=0$ of the policy price is $-\lambda\log(\pi(a\mid m)/p(a))$ for every path that starts with $A_j=a$ at $M_j=m$, so
+\begin{align*}
+\lambda\log\frac{\pi(a\mid m)}{p(a)}&=\Big\langle\sum_{k\ge0}\gamma^k\Big(\alpha R_{j+k+1}+\log\frac{P_{j+k}(O_{j+k+1}\mid M_{j+k},A_{j+k})}{P_{j+k}(O_{j+k+1})}\Big)\Big\rangle_{m,a}\\
+&\quad-\lambda\bar K(m,a)-c(m).
+\end{align*}
+
+\emph{Step 4: the information payoff along the path.} Given $h_n=h$ and $A_n=a'$, with $m'=f(h)$,
+\begin{align*}
+\E\Big[\log\frac{P_n(O_{n+1}\mid m',a')}{P_n(O_{n+1})}\,\Big|\,h,a'\Big]&=\sum_oP(o\mid h,a')\Big[\log\frac{P(o\mid h,a')}{P_n(o)}-\log\frac{P(o\mid h,a')}{P_n(o\mid m',a')}\Big]\\
+&=B_n(h,a')-d_n(h,m',a').
+\end{align*}
+For $n\ge j$, $(M_j,A_j)$ is a function of $(h_n,A_n)$, so by the tower property the conditional expectation given $M_j=m,A_j=a$ of the payoff at step $n$ is that of $B_n(h_n,A_n)-d_n(h_n,M_n,A_n)$. Summing over $k$ gives $\bar B-\mathcal D$, and the reward terms give $\alpha\bar q$.
+\end{proof}
+
+With only $k=0$ in $\bar B$ and $\mathcal D$ and without $\bar K$, the right-hand side is $\alpha\bar q(m,a)+\sum_jw_j(m)\big(\E[B_j(h_j,a)\mid M_j=m]-D_j(m,a)\big)-c(m)$, the condition of Proposition~\ref{prop:opt-policy} with $Q=\bar q$ and the bonus averaged over the visits to $m$. Optimising $p$ as well gives, by Proposition~\ref{prop:many-separate}, the discounted action frequencies $p(a)\propto\sum_t\gamma^{t-1}P(A_t=a)$. The derivation follows the policy gradient on the history chain with the policy tied across the histories behind each memory value; for agents without the information payoff, \citet{singh1994learning} show that the best such policy can be stochastic, and \citet{fox2015optimal} give the information-limited version averaged over time.
+
+
+\section{The best policy and memory through the exact value gap: derivations}\label{app:exact-opt}
+
+We use the notation of Appendices~\ref{app:many} and~\ref{app:many-optimal}.
+
+\begin{proposition}\label{prop:x-policy}
+In Proposition~\ref{prop:many-policy}, $\bar q(m,a)=\sum_jw_j(m)\,q_\pi(M_j=m,a)$ with $q_\pi(M_j=m,a)=\E[G_j\mid M_j=m,A_j=a]$, and $\bar B(m,a)-\mathcal D(m,a)=\bar\iota(m,a)$, where
+\[
+\bar\iota(m,a)=\Big\langle\sum_{k\ge0}\gamma^k\log\frac{P_{j+k}(O_{j+k+1}\mid M_{j+k},A_{j+k})}{P_{j+k}(O_{j+k+1})}\Big\rangle_{m,a}.
+\]
+\end{proposition}
+
+\begin{proof}
+By definition, $\bar q(m,a)=\sum_jw_j(m)\,\E[\sum_k\gamma^kR_{j+k+1}\mid M_j=m,A_j=a]=\sum_jw_j(m)\,\E[G_j\mid M_j=m,A_j=a]$. Equivalently, $\E[q_\pi(h_j,a)\mid M_j=m]=q_\pi(M_j=m,a)$, so the value gap $q_\pi(h_j,a)-q_\pi(M_j=m,a)$ averages to zero over the histories behind $m$. For the second claim, Step~4 of the proof of Proposition~\ref{prop:many-policy} shows that the conditional expectation of the information payoff $\log(P_n(O_{n+1}\mid M_n,A_n)/P_n(O_{n+1}))$ given $(h_n,A_n)$ is $B_n(h_n,A_n)-d_n(h_n,M_n,A_n)$. Sum over the path with the weights $\gamma^k$ and average with $\langle\cdot\rangle_{m,a}$; by the tower property the left side gives $\bar\iota$ and the right side $\bar B-\mathcal D$.
+\end{proof}
+
+\begin{proposition}\label{prop:x-merge}
+Let $s_h(a)=\alpha\,q_\pi(h,a)$, $s_m(a)=\alpha\,q_\pi(m,a)=\E[s_{h_t}(a)\mid M_t=m]$, $\pi_h\propto p\,e^{s_h/\lambda}$ and $\pi_m\propto p\,e^{s_m/\lambda}$. For every law $\pi$ on actions,
+\[
+\sum_a\pi(a)s_h(a)-\lambda\,\mathrm{KL}(\pi\|p)=\lambda\log Z_h-\lambda\,\mathrm{KL}(\pi\|\pi_h),\qquad Z_h=\sum_ap(a)e^{s_h(a)/\lambda}.
+\]
+Hence $\pi_h$ is the best policy for $h$ alone, $\pi_m$ is the best policy common to the histories behind $m$, and the loss at $h$ from using $\pi_m$ is
+\[
+\lambda\,\mathrm{KL}(\pi_m\|\pi_h)=\lambda\log\sum_a\pi_m(a)\,e^{\alpha g(h,a)/\lambda}-\alpha\sum_a\pi_m(a)\,g(h,a),
+\]
+with $g(h,a)=q_\pi(h,a)-q_\pi(m,a)$.
+It is zero exactly when $g(h,\cdot)$ is constant on $\{a:p(a)>0\}$, and $\E[\lambda\,\mathrm{KL}(\pi_m\|\pi_{h_t})\mid M_t=m]=\lambda\,\E\big[\log\sum_a\pi_m(a)e^{\alpha g(h_t,a)/\lambda}\,\big|\,M_t=m\big]$.
+\end{proposition}
+
+\begin{proof}
+Expand the divergence with $\log\pi_h(a)=\log p(a)+s_h(a)/\lambda-\log Z_h$:
+\[
+\mathrm{KL}(\pi\|\pi_h)=\sum_a\pi(a)\log\frac{\pi(a)}{p(a)}-\frac1\lambda\sum_a\pi(a)s_h(a)+\log Z_h.
+\]
+Multiply by $\lambda$ and rearrange to get the identity. The left side is largest when $\mathrm{KL}(\pi\|\pi_h)=0$, so $\pi_h$ is best for $h$. Averaged over the histories behind $m$, the left side is $\sum_a\pi(a)s_m(a)-\lambda\mathrm{KL}(\pi\|p)$, because $P(h_t\mid M_t=m)$ does not depend on the action; the same identity with $s_m$ shows that $\pi_m$ is best for this average. The loss at $h$ is the difference of the left side at $\pi_h$ and at $\pi_m$, which is $\lambda\,\mathrm{KL}(\pi_m\|\pi_h)$. With $\log(\pi_m(a)/\pi_h(a))=-\alpha g(h,a)/\lambda+\log(Z_h/Z_m)$ and
+\[
+\frac{Z_h}{Z_m}=\sum_a\frac{p(a)e^{s_m(a)/\lambda}}{Z_m}\,e^{(s_h(a)-s_m(a))/\lambda}=\sum_a\pi_m(a)\,e^{\alpha g(h,a)/\lambda},
+\]
+taking the expectation under $\pi_m$ gives the formula. The divergence is zero exactly when $\pi_m=\pi_h$, that is, when $s_h-s_m$ is constant where $p>0$. Finally, $\E[g(h_t,a)\mid M_t=m]=0$ for every $a$, so the second term vanishes on average.
+\end{proof}
+
+For the memory, fix the policy $\pi$, the law $p$, the later updates $f$ and the laws $P_n$ of the information payoff, as in Step~1 of the proof of Proposition~\ref{prop:many-policy}. Let the memory at $t$ be drawn as $M_t\sim q_t(\cdot\mid h_t)$, with $M_{t+k}$ obtained from $M_t$ by the recursive updates. Define the payoff $\tilde r_n=\alpha R_{n+1}+\ell_n(M_n,A_n,O_{n+1})-\lambda\log(\pi(A_n\mid M_n)/p(A_n))$ with $\ell_n(m,a,o)=\log(P_n(o\mid m,a)/P_n(o))$, and the values under the objective
+\begin{align*}
+\mathcal V_n(h,m)&=\E\Big[\sum_{i\ge0}\gamma^i\tilde r_{n+i}\ \Big|\ h_n=h,M_n=m\Big],\qquad \mathcal V(m)=\E[\mathcal V_t(h_t,M_t)\mid M_t=m],\\
+\mathcal V_{t,k+1}(o)&=\E\big[\mathcal V_{t+k+1}(h_{t+k+1},M_{t+k+1})\,\big|\,Z_{t,k},O_{t+k+1}=o\big].
+\end{align*}
+The future after $n$ depends on $(h_n,M_n)$ only, because the environment reads the history and the policy and the later updates read the memory.
+
+\begin{proposition}\label{prop:x-memory}
+With $W_{t,k}(o)=\alpha r(o)+\ell_{t+k}(M_{t+k},A_{t+k},o)+\gamma\mathcal V_{t,k+1}(o)$ and $L_{t,k}$ the ratio of $P(O_{t+k+1}\mid h_t,M_t,Z_{t,k})=P(O_{t+k+1}\mid h_{t+k},A_{t+k})$ to $P(O_{t+k+1}\mid Z_{t,k})$:
+\begin{enumerate}
+\item[(a)] $\mathcal V_t(h,m)-\mathcal V(m)=\sum_a\pi(a\mid m)\,\E\big[\sum_{k\ge0}\gamma^k\,\mathrm{Cov}_Z(L_{t,k},W_{t,k})\,\big|\,h_t=h,M_t=m,A_t=a\big]$;
+\item[(b)] a stationary point of the objective of Section~\ref{sec:many} plus $-\mu\gamma^{t-1}I(M_t;h_t)$ in $q_t$ satisfies $\mu\log(q_t(m\mid h)/q_t(m))=\mathcal V_t(h,m)-c(h)$;
+\item[(c)] with the payoff after step $t$ reduced to $\alpha R_{n+1}$, (b) is the condition of Proposition~\ref{prop:opt-memory} with $Q=q_\pi$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+(a) Repeat the proof of Proposition~\ref{prop:gap}(b)--(d) with the pair $(h_t,M_t)$ in place of $h_t$, with the payoff $\alpha r(o)+\ell_{t+k}(M_{t+k},A_{t+k},o)$ in place of $r(o)$, and with $\mathcal V$ in place of $v_\pi$. Three points need checking. First, $\ell_{t+k}(M_{t+k},A_{t+k},o)$ is a function of $(Z_{t,k},o)$, because $M_{t+k}$ is obtained from $M_t$, which is part of $Z_{t,k}$, by the updates; so it enters the history side and the window side alike, and the first-step difference is $\sum_o(P_h-P_Z)(o)W_{t,k}(o)=\mathrm{Cov}_Z(L_{t,k},W_{t,k})$. Second, the policy price $-\lambda\log(\pi(a\mid M_{t+k})/p(a))$ is a function of $Z_{t,k}$, so it is the same on both sides and cancels. Third, all payoffs are bounded, because the sets are finite and the frozen laws give finite logarithms on the observations that occur, so the remainder $\gamma^K\E[e_K]$ tends to $0$. This gives $\mathcal Q_t(h,m,a)-\mathcal Q_t(m,a)$ for the action values under the objective, and $\mathcal V_t(h,m)-\mathcal V(m)=\sum_a\pi(a\mid m)\big(\mathcal Q_t(h,m,a)-\mathcal Q_t(m,a)\big)$, because the law of $A_t$ given $(h_t,M_t=m)$ is $\pi(\cdot\mid m)$ and the law of $h_t$ given $M_t=m$ does not depend on $A_t$.
+
+(b) By Step~1 of the proof of Proposition~\ref{prop:many-policy}, the derivative of the objective in $q_t$ equals that of $\sum_n\gamma^{n-1}\E[\tilde r_n]$ with the laws $P_n$ frozen. The payoffs before $t$ do not depend on $q_t$. For $n\ge t$, $\E[\tilde r_n]=\sum_hP(h_t=h)\sum_mq_t(m\mid h)\,\E[\tilde r_n\mid h_t=h,M_t=m]$, and the conditional expectation does not depend on $q_t$. So the derivative in $q_t(m\mid h)$ is $\gamma^{t-1}P(h_t=h)\,\mathcal V_t(h,m)$. The derivative of $\mu\gamma^{t-1}I(M_t;h_t)$ is $\mu\gamma^{t-1}P(h_t=h)\log(q_t(m\mid h)/q_t(m))$ up to a term that depends only on $h$, as in the proof of Proposition~\ref{prop:opt-memory}. Setting the derivative plus a multiplier for $\sum_mq_t(m\mid h)=1$ to zero and dividing by $\gamma^{t-1}P(h_t=h)$ gives (b). Inserting (a) gives Result~\ref{res:x-memory}.
+
+(c) With the payoff after $t$ equal to $\alpha R_{n+1}$, $\mathcal V_{t+1}(h_{t+1},M_{t+1})=\alpha v_\pi(h_{t+1})$ and
+\[
+\mathcal V_t(h,m)=\sum_a\pi(a\mid m)\Big[\alpha\,q_\pi(h,a)+\sum_oP(o\mid h,a)\,\ell_t(m,a,o)\Big]-\lambda\,\mathrm{KL}\big(\pi(\cdot\mid m)\,\|\,p\big).
+\]
+By Step~4 of the proof of Proposition~\ref{prop:many-policy}, $\sum_oP(o\mid h,a)\ell_t(m,a,o)=B_h(a)-d_{h,m}(a)$, which is the bracket of Proposition~\ref{prop:opt-memory}.
+\end{proof}
+
+In the one-step case the rewriting reads, for each action,
+\begin{align*}
+\alpha\,q_\pi(h,a)+B_h(a)-d_{h,m}(a)&=\big[\alpha\,q_\pi(m,a)+B_m(a)\big]\\
+&\quad+\mathrm{Cov}_{P(\cdot\mid m,a)}\big(L_{h,m,a},\ \alpha(r+\gamma v_\pi(m,a,\cdot))+\ell_t(m,a,\cdot)\big)\\
+&\quad+\alpha\gamma\,\E\big[v_\pi(h_{t+1})-v_\pi(m,a,O_{t+1})\,\big|\,h,a\big],
+\end{align*}
+with $L_{h,m,a}=P(\cdot\mid h,a)/P(\cdot\mid m,a)$: the first bracket is the score of $m$ itself, the covariance is the tilt of the history's next observation along the value and the information gain, and the last term is the value gap one step later, which by Proposition~\ref{prop:gap} is the discounted sum of the later costs. The information part uses $\sum_oP(o\mid h,a)\ell_t(m,a,o)=B_m(a)+\mathrm{Cov}_{P(\cdot\mid m,a)}(L_{h,m,a},\ell_t(m,a,\cdot))$, which holds because $\sum_oP(o\mid m,a)\ell_t(m,a,o)=B_m(a)$.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}
