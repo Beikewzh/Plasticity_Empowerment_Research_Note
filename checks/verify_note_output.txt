@@ -56,4 +56,10 @@ Prop 7.5 subtracted term, second split                         32    3.84e-14   
 Lem 7.3 updates from t to t+k                                 147    2.66e-15       0.1494  PASS
 Cor 2.2 I(X;A_t+k|...)=0 for X=(M_t-1,A_t-1,O_t)               33    2.13e-14       0.0000  PASS
 Cor 2.2 I(X;A_t+k|...)=0 for X=O_t                             33    2.49e-14       0.0000  PASS
+Prop 6.8(b) c_t = c^R_t + c^Obar_t                         221184    3.40e-15       0.4300  PASS
+Prop 6.7 c_t+1 = one-step gap at t+1                       221184    3.33e-15       0.4432  PASS
+Prop 6.7 two-step return gap                               221184    6.83e-15       0.5401  PASS
+Prop 6.7 size of the update term (shown)                       12    0.00e+00       0.2101  PASS
+Prop 7.6 one step of the return gap                        1433600    1.41e-14       0.5401  PASS
+Prop 7.7 K-step return gap                                 729088    1.55e-14       0.5401  PASS
 ALL PASS

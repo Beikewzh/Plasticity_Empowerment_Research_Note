@@ -21,6 +21,7 @@
 \theoremstyle{remark}
 \newtheorem{remark}[proposition]{Remark}
 
+\newcommand{\E}{\mathbb{E}}
 \newcommand{\dE}{\Delta E}
 \newcommand{\dP}{\Delta P}
 \newcommand{\Ob}{\bar O}
@@ -34,7 +35,7 @@
 \maketitle
 
 \begin{abstract}
-For an agent that acts on a memory, we derive the empowerment and plasticity mismatches between the history and the memory, the two splits of the state defect, three ways to separate the reward inside them, and the expansion of the information the history carries about the next two and the next $K$ steps. Every derivation is written term by term, and every cancellation names the assumption or lemma that allows it.
+For an agent that acts on a memory, we derive the empowerment and plasticity mismatches between the history and the memory, the two splits of the state defect, three ways to separate the reward inside them, the expansion of the information the history carries about the next two and the next $K$ steps, and the matching expansion of the gap between the history's and the memory's value of the return over the same steps. Every derivation is written term by term, and every cancellation names the assumption or lemma that allows it.
 \end{abstract}
 
 \section{Setting}\label{sec:setting}
@@ -448,20 +449,20 @@ D^{R\,\mathrm{only}}_t&\le\min\big(I(h_t;R_{t+1}\mid M_t,A_t),\ I(h_t;R_{t+1}\mi
 \end{proposition}
 
 \begin{proof}
-Fix a value $c$ of $(M_t,A_t)$ and work with the conditional law given $(M_t,A_t)=c$; write the four parts at $c$ without the index $t$.
+Fix a value $(m,a)$ of $(M_t,A_t)$ and work with the conditional law given $(M_t,A_t)=(m,a)$; write the four parts at $(m,a)$ without the index $t$.
 
-(a) The reward-first reward part is $I(h_t;R_{t+1}\mid c)$, which is $D^{\mathrm{shared}}+D^{R\,\mathrm{only}}$ by the first equation. The rest-first reward part is $I(h_t;R_{t+1}\mid c,\Ob_{t+1})$, and by (T2),
+(a) The reward-first reward part is $I(h_t;R_{t+1}\mid m,a)$, which is $D^{\mathrm{shared}}+D^{R\,\mathrm{only}}$ by the first equation. The rest-first reward part is $I(h_t;R_{t+1}\mid m,a,\Ob_{t+1})$, and by (T2),
 \begin{align*}
-I(h_t;R_{t+1}\mid c,\Ob_{t+1})&=I(h_t;R_{t+1},\Ob_{t+1}\mid c)-I(h_t;\Ob_{t+1}\mid c) \why{T2}\\
+I(h_t;R_{t+1}\mid m,a,\Ob_{t+1})&=I(h_t;R_{t+1},\Ob_{t+1}\mid m,a)-I(h_t;\Ob_{t+1}\mid m,a) \why{T2}\\
 &=\big(D^{\mathrm{shared}}+D^{R\,\mathrm{only}}+D^{\Ob\,\mathrm{only}}+D^{\mathrm{joint}}\big)-\big(D^{\mathrm{shared}}+D^{\Ob\,\mathrm{only}}\big) \why{third and second equations}\\
 &=D^{R\,\mathrm{only}}+D^{\mathrm{joint}}.
 \end{align*}
 
 (b) Subtract the two results of (a): $(D^{\mathrm{shared}}+D^{R\,\mathrm{only}})-(D^{R\,\mathrm{only}}+D^{\mathrm{joint}})=D^{\mathrm{shared}}-D^{\mathrm{joint}}$. By Proposition~\ref{prop:orderdiff}, the same difference is the co-information.
 
-(c) Subtracting the second equation from the first gives $D^{R\,\mathrm{only}}-D^{\Ob\,\mathrm{only}}=I(h_t;R_{t+1}\mid c)-I(h_t;\Ob_{t+1}\mid c)$; since $D^{\Ob\,\mathrm{only}}\ge0$, $D^{R\,\mathrm{only}}$ is at least the right side, and it is at least $0$. In (a), $D^{\mathrm{shared}}\ge0$ and $D^{\mathrm{joint}}\ge0$ give the two upper bounds.
+(c) Subtracting the second equation from the first gives $D^{R\,\mathrm{only}}-D^{\Ob\,\mathrm{only}}=I(h_t;R_{t+1}\mid m,a)-I(h_t;\Ob_{t+1}\mid m,a)$; since $D^{\Ob\,\mathrm{only}}\ge0$, $D^{R\,\mathrm{only}}$ is at least the right side, and it is at least $0$. In (a), $D^{\mathrm{shared}}\ge0$ and $D^{\mathrm{joint}}\ge0$ give the two upper bounds.
 
-Average over $c$. The identities are linear and hold for the averages. The upper bounds hold for the averages because the average of a minimum is at most the minimum of the averages, and the lower bound because the average of $\max(0,x_c)$ is at least $\max(0,\text{average of }x_c)$.
+Average over $(m,a)$. The identities are linear and hold for the averages. The upper bounds hold for the averages because the average of a minimum is at most the minimum of the averages, and the lower bound because the average of $\max(0,x_{m,a})$ is at least $\max(0,\text{average of }x_c)$.
 \end{proof}
 
 So the reward-first order gives the reward the shared part, the rest-first order gives it the joint part, and the part that belongs to the reward in both orders is $D^{R\,\mathrm{only}}_t$. The difference between the orders, $D^{\mathrm{shared}}_t-D^{\mathrm{joint}}_t$, is positive when the shared part is larger and negative when the joint part is larger. With the measure of \citet{bertschinger2014quantifying}, $D^{R\,\mathrm{only}}_t>0$ exactly when there is a decision problem in which seeing the reward is strictly better than seeing the rest of the observation. The same split applies to $D^0_t$ and $D^+_t$ with other conditioning variables. The terms $\dE_t$ and $\dP_t$ involve an action as a third variable, and an order-free split of their reward parts would need a decomposition with three sources; we leave this open.
@@ -593,6 +594,98 @@ Lemma~\ref{lem:update1} with $(X,V)=(R_{t+2},A_{t+1})$ writes the first term as 
 
 So over two steps, every term of Sections~\ref{sec:splits} and~\ref{sec:reward} appears once at $t$ and once at $t+1$, for the agent's own memory at each time, and what the update at $t+1$ removed is subtracted once, split in the same way. Each reward and rest part of $D_t$ and of $D_{t+1}$ splits further in the two ways of Proposition~\ref{prop:xy-splits}.
 
+\subsection*{The return over two steps}
+
+Write $r(o)$ for the reward contained in an observation $o$, and $G_{t:t+2}=R_{t+1}+\gamma R_{t+2}$, with $\gamma\in[0,1]$, for the return over the same interval as $D_{t:t+2}$. The values of a history and of a memory value are
+\[
+q_{t:t+2}(h,a)=\E[G_{t:t+2}\mid h_t=h,A_t=a],\qquad q_{t:t+2}(m,a)=\E[G_{t:t+2}\mid M_t=m,A_t=a],
+\]
+and over the single step from $t+1$ to $t+2$, $q_{t+1:t+2}(h,a)=\E[R_{t+2}\mid h_{t+1}=h,A_{t+1}=a]$ and $q_{t+1:t+2}(m,a)=\E[R_{t+2}\mid M_{t+1}=m,A_{t+1}=a]$. A critic that reads the memory can at best learn $q_{t:t+2}(m,a)$, which is the average of $q_{t:t+2}(h,a)$ over the histories behind $m$.
+
+\begin{proposition}[The return gap over two steps]\label{prop:two-return}
+Under Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol}, for every history $h_t$ and action $a$,
+\[
+q_{t:t+2}(h_t,a)-q_{t:t+2}(M_t,a)=c_t(h_t,a)+\gamma\,\E\big[c_{t+1}(h_{t+1},A_{t+1})-u_{t+1}\,\big|\,h_t,A_t=a\big],
+\]
+where
+\begin{align*}
+c_t(h_t,a)&=\sum_o\big[P(O_{t+1}=o\mid h_t,a)-P(O_{t+1}=o\mid M_t,a)\big]\\
+&\qquad\times\big[r(o)+\gamma\,\E[R_{t+2}\mid M_t,A_t=a,O_{t+1}=o]\big],\\
+c_{t+1}(h_{t+1},a')&=\sum_o\big[P(O_{t+2}=o\mid h_{t+1},a')-P(O_{t+2}=o\mid M_{t+1},a')\big]\,r(o),\\
+u_{t+1}&=\E[R_{t+2}\mid M_t,A_t,O_{t+1}]-\E[R_{t+2}\mid M_{t+1}].
+\end{align*}
+\end{proposition}
+
+\begin{proof}
+\emph{Step 1: the first reward.} The reward is part of the observation, so
+\[
+\E[R_{t+1}\mid h_t,a]-\E[R_{t+1}\mid M_t,a]=\sum_o\big[P(O_{t+1}=o\mid h_t,a)-P(O_{t+1}=o\mid M_t,a)\big]\,r(o).
+\]
+The same at $t+1$ gives $q_{t+1:t+2}(h_{t+1},a')-q_{t+1:t+2}(M_{t+1},a')=c_{t+1}(h_{t+1},a')$.
+
+\emph{Step 2: the second reward, from the history.} Condition on $(O_{t+1},A_{t+1})$ (tower property). By (T5) the conditioning variables $(h_t,a,o)$ are $h_{t+1}$, and by Assumption~\ref{as:pol} the law of $A_{t+1}$ given $h_{t+1}$ is $\pi(\cdot\mid M_{t+1})$:
+\[
+\E[R_{t+2}\mid h_t,a]=\sum_oP(O_{t+1}=o\mid h_t,a)\sum_{a'}\pi(a'\mid M_{t+1})\,q_{t+1:t+2}(h_{t+1},a').
+\]
+
+\emph{Step 3: the second reward, from the memory.} Condition on $O_{t+1}$ (tower property):
+\[
+\E[R_{t+2}\mid M_t,a]=\sum_oP(O_{t+1}=o\mid M_t,a)\,\E[R_{t+2}\mid M_t,a,o].
+\]
+
+\emph{Step 4: subtract.} Subtract Step 3 from Step 2, and add and subtract $\sum_oP(O_{t+1}=o\mid h_t,a)\,\E[R_{t+2}\mid M_t,a,o]$:
+\begin{align*}
+&\E[R_{t+2}\mid h_t,a]-\E[R_{t+2}\mid M_t,a]\\
+&\quad=\sum_o\big[P(O_{t+1}=o\mid h_t,a)-P(O_{t+1}=o\mid M_t,a)\big]\,\E[R_{t+2}\mid M_t,a,o]\\
+&\qquad+\sum_oP(O_{t+1}=o\mid h_t,a)\Big[\sum_{a'}\pi(a'\mid M_{t+1})\,q_{t+1:t+2}(h_{t+1},a')-\E[R_{t+2}\mid M_t,a,o]\Big].
+\end{align*}
+
+\emph{Step 5: the bracket.} By the definition of $u_{t+1}$, $\E[R_{t+2}\mid M_t,a,o]=\E[R_{t+2}\mid M_{t+1}]+u_{t+1}$. By the tower property over $A_{t+1}$, whose law given $M_{t+1}$ is $\pi(\cdot\mid M_{t+1})$, $\E[R_{t+2}\mid M_{t+1}]=\sum_{a'}\pi(a'\mid M_{t+1})\,q_{t+1:t+2}(M_{t+1},a')$. So the bracket is
+\begin{align*}
+&\sum_{a'}\pi(a'\mid M_{t+1})\big[q_{t+1:t+2}(h_{t+1},a')-q_{t+1:t+2}(M_{t+1},a')\big]-u_{t+1}\\
+&\quad=\E\big[c_{t+1}(h_{t+1},A_{t+1})\,\big|\,h_{t+1}\big]-u_{t+1},
+\end{align*}
+using Step 1 at $t+1$.
+
+\emph{Step 6: combine.} $q_{t:t+2}(h_t,a)-q_{t:t+2}(M_t,a)$ is Step 1 plus $\gamma$ times Step 4. The first sums of the two combine into $c_t(h_t,a)$, and the second sum of Step 4 with Step 5 is $\E[c_{t+1}(h_{t+1},A_{t+1})-u_{t+1}\mid h_t,A_t=a]$.
+\end{proof}
+
+In words: the return gap over two steps has the same three pieces as $D_{t:t+2}=D_t+D_{t+1}-I(M_t,A_t,O_{t+1};O_{t+2}\mid M_{t+1},A_{t+1})$. The term $c_t$ compares the same two predictions of $O_{t+1}$ as $D_t$, the history's and the memory's, weighted by the reward plus the discounted expected next reward as the memory sees it. The term $c_{t+1}$ compares the same two predictions of $O_{t+2}$ as $D_{t+1}$, for the agent's own memory at $t+1$, weighted by the reward. The term $u_{t+1}$ is how much the update $M_{t+1}=f(M_t,A_t,O_{t+1})$ changed the expected next reward by discarding part of its input.
+
+\begin{proposition}[When the three pieces vanish]\label{prop:two-return-zero}
+Under Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol}:
+\begin{enumerate}
+\item[(a)] If $D_t=0$, then $c_t(h_t,a)=0$ for every $(h_t,a)$ that occurs; if $D_{t+1}=0$, then $c_{t+1}(h_{t+1},a')=0$ for every $(h_{t+1},a')$ that occurs.
+\item[(b)] In the reward-first order, $c_t=c^R_t+c^{\Ob}_t$ with
+\begin{align*}
+c^R_t(h_t,a)&=\sum_\rho\big[P(R_{t+1}=\rho\mid h_t,a)-P(R_{t+1}=\rho\mid M_t,a)\big]\\
+&\qquad\times\big[\rho+\gamma\,\E[R_{t+2}\mid M_t,a,R_{t+1}=\rho]\big],\\
+c^{\Ob}_t(h_t,a)&=\gamma\sum_\rho P(R_{t+1}=\rho\mid h_t,a)\\
+&\qquad\times\sum_{\bar o}\big[P(\Ob_{t+1}=\bar o\mid h_t,a,\rho)-P(\Ob_{t+1}=\bar o\mid M_t,a,\rho)\big]\\
+&\qquad\times\E[R_{t+2}\mid M_t,a,\rho,\bar o].
+\end{align*}
+$c^R_t$ is zero for every $(h_t,a)$ that occurs when the reward part $I(h_t;R_{t+1}\mid M_t,A_t)$ of $D_t$ is zero, and $c^{\Ob}_t$ when the rest part $I(h_t;\Ob_{t+1}\mid M_t,A_t,R_{t+1})$ is zero. The rest of the observation enters the return only through the expected next reward, so $c^{\Ob}_t=0$ when $\gamma=0$, and $c_{t+1}$ has a reward part only.
+\item[(c)] If the subtracted term of Proposition~\ref{prop:two} is zero, $I(M_t,A_t,O_{t+1};O_{t+2}\mid M_{t+1},A_{t+1})=0$, then $u_{t+1}=0$ for every value of $(M_t,A_t,O_{t+1})$ that occurs.
+\end{enumerate}
+In particular, if $D_t=0$ and $D_{t+1}=0$, the memory's two-step value equals the history's.
+\end{proposition}
+
+\begin{proof}
+(a) By (T1), $D_t=\E\big[\sum_oP(o\mid h_t,A_t)\log\frac{P(o\mid h_t,A_t)}{P(o\mid M_t,A_t)}\big]$, an average of divergences between the two predictions; it is zero exactly when the two predictions are equal for every $(h_t,a)$ that occurs, and then every term of the sum defining $c_t$ is zero. The same holds at $t+1$.
+
+(b) Write $P(o\mid\cdot)=P(\rho\mid\cdot)\,P(\bar o\mid\cdot,\rho)$ for $o=(\rho,\bar o)$, and add and subtract $P(\rho\mid h_t,a)P(\bar o\mid M_t,a,\rho)$:
+\begin{align*}
+P(o\mid h_t,a)-P(o\mid M_t,a)&=\big[P(\rho\mid h_t,a)-P(\rho\mid M_t,a)\big]P(\bar o\mid M_t,a,\rho)\\
+&\quad+P(\rho\mid h_t,a)\big[P(\bar o\mid h_t,a,\rho)-P(\bar o\mid M_t,a,\rho)\big].
+\end{align*}
+Multiply by the weight $\rho+\gamma\E[R_{t+2}\mid M_t,a,\rho,\bar o]$ and sum. In the first part, the sum over $\bar o$ of $P(\bar o\mid M_t,a,\rho)$ times the weight is $\rho+\gamma\E[R_{t+2}\mid M_t,a,\rho]$ (tower property). In the second part, $\rho$ does not depend on $\bar o$ and $\sum_{\bar o}[P(\bar o\mid h_t,a,\rho)-P(\bar o\mid M_t,a,\rho)]=0$, so only the $\gamma$ term remains. The reward part of $D_t$ is the average divergence between $P(R_{t+1}\mid h_t,a)$ and $P(R_{t+1}\mid M_t,a)$, and the rest part between $P(\Ob_{t+1}\mid h_t,a,R_{t+1})$ and $P(\Ob_{t+1}\mid M_t,a,R_{t+1})$, so each vanishes exactly when the corresponding pair of predictions agrees, as in (a). For $c_{t+1}$ the weight is $r(o)=\rho$ alone, so its second part is zero.
+
+(c) By the proof of Proposition~\ref{prop:two-splits} (first bracket), $I(M_t,A_t,O_{t+1};O_{t+2},A_{t+1}\mid M_{t+1})=I(M_t,A_t,O_{t+1};O_{t+2}\mid M_{t+1},A_{t+1})=0$. So $(A_{t+1},O_{t+2})$, and with it $R_{t+2}$, is independent of $(M_t,A_t,O_{t+1})$ given $M_{t+1}$ (T3). Since $M_{t+1}$ is a function of $(M_t,A_t,O_{t+1})$, $\E[R_{t+2}\mid M_t,A_t,O_{t+1}]=\E[R_{t+2}\mid M_t,A_t,O_{t+1},M_{t+1}]=\E[R_{t+2}\mid M_{t+1}]$, which is $u_{t+1}=0$.
+
+For the last sentence: by Lemma~\ref{lem:update1}, the subtracted term of Proposition~\ref{prop:two} is at most $D_{t+1}$, so it is zero; then (a) and (c) make all three pieces zero.
+\end{proof}
+
+
 \section{$K$ steps}\label{sec:K}
 
 For $a\le b$ write $X_{a:b}=(X_a,X_{a+1},\dots,X_b)$, and let $X_{a:b}$ be empty when $a>b$.
@@ -673,7 +766,45 @@ where the first two lines collect the reward parts and the last two the rest par
 The first two equalities follow from Proposition~\ref{prop:K} and Propositions~\ref{prop:split1} and~\ref{prop:split2} at each time $t+k$. For the reward-first form, split each term $k$ of Proposition~\ref{prop:K-time} by (T2) with $R_{t+k+1}$ first, and convert each part for $k\ge1$ with Lemma~\ref{lem:updatek}, with $(X,V)=(R_{t+k+1},A_{t+k})$ and $(X,V)=(\Ob_{t+k+1},(A_{t+k},R_{t+k+1}))$; the term $k=0$ is split by Proposition~\ref{prop:xy-D}. The split of each subtracted term is the proof of Proposition~\ref{prop:two-splits} with the longer input, using Corollary~\ref{cor:action} at time $t+k$, which applies because the input is a function of $h_{t+k}$.
 \end{proof}
 
-\paragraph{Summary.} Over $K$ steps, the history's information beyond the memory and the action at $t$ is the sum of the agent's own one-step defects at $t,\dots,t+K-1$, minus what the memory updates removed and still predicts the next observation. Every term splits in the two ways of Section~\ref{sec:splits} and into a reward part and a rest part as in Section~\ref{sec:reward}, the agent's terms and the subtracted terms alike. The relation to the return is the next question and is not treated here.
+
+\subsection*{The return over $K$ steps}
+
+Let $G_{t:t+K}=\sum_{k=0}^{K-1}\gamma^kR_{t+k+1}$, and for $t\le n\le t+K$ let $G_{n:t+K}=\sum_{j=0}^{t+K-n-1}\gamma^jR_{n+j+1}$ be the part of it after time $n$, with $G_{t+K:t+K}=0$. For a history $h$ and a memory value $m$ at time $n$, write $q_{n:t+K}(h,a)=\E[G_{n:t+K}\mid h_n=h,A_n=a]$, $q_{n:t+K}(m,a)=\E[G_{n:t+K}\mid M_n=m,A_n=a]$ and $v_{n:t+K}(h)=\E[G_{n:t+K}\mid h_n=h]$.
+
+\begin{proposition}[One step of the return gap]\label{prop:K-return-step}
+Under Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol}, for $t\le n<t+K$, every history $h_n$ and action $a$,
+\begin{align*}
+&q_{n:t+K}(h_n,a)-q_{n:t+K}(M_n,a)\\
+&\quad=c_n(h_n,a)+\gamma\,\E\big[q_{n+1:t+K}(h_{n+1},A_{n+1})-q_{n+1:t+K}(M_{n+1},A_{n+1})-u_{n+1}\,\big|\,h_n,A_n=a\big],
+\end{align*}
+where
+\begin{align*}
+c_n(h_n,a)&=\sum_o\big[P(O_{n+1}=o\mid h_n,a)-P(O_{n+1}=o\mid M_n,a)\big]\\
+&\qquad\times\big[r(o)+\gamma\,\E[v_{n+1:t+K}(h_{n+1})\mid M_n,A_n=a,O_{n+1}=o]\big],\\
+u_{n+1}&=\E[v_{n+1:t+K}(h_{n+1})\mid M_n,A_n,O_{n+1}]-\E[v_{n+1:t+K}(h_{n+1})\mid M_{n+1}],
+\end{align*}
+and the term in $\gamma$ is zero when $n+1=t+K$.
+\end{proposition}
+
+\begin{proof}
+The proof of Proposition~\ref{prop:two-return}, with $G_{n:t+K}=R_{n+1}+\gamma G_{n+1:t+K}$ in place of $R_{t+1}+\gamma R_{t+2}$. Step 1 is unchanged at time $n$. In Steps 2 to 5, $R_{t+2}$ is replaced by $G_{n+1:t+K}$, and $\E[G_{n+1:t+K}\mid h_{n+1}]=v_{n+1:t+K}(h_{n+1})$, $\E[G_{n+1:t+K}\mid M_n,A_n,O_{n+1}]=\E[v_{n+1:t+K}(h_{n+1})\mid M_n,A_n,O_{n+1}]$ and $\E[G_{n+1:t+K}\mid M_{n+1}]=\E[v_{n+1:t+K}(h_{n+1})\mid M_{n+1}]$, each by the tower property, because $(M_n,A_n,O_{n+1})$ and $M_{n+1}$ are functions of $h_{n+1}$. Step 5 uses $\E[v_{n+1:t+K}(h_{n+1})\mid M_{n+1}]=\sum_{a'}\pi(a'\mid M_{n+1})\,q_{n+1:t+K}(M_{n+1},a')$ and $v_{n+1:t+K}(h_{n+1})=\sum_{a'}\pi(a'\mid M_{n+1})\,q_{n+1:t+K}(h_{n+1},a')$.
+\end{proof}
+
+\begin{proposition}[The return gap over $K$ steps]\label{prop:K-return}
+Under Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol}, for every history $h_t$ and action $a$,
+\[
+q_{t:t+K}(h_t,a)-q_{t:t+K}(M_t,a)=\E\Big[\sum_{k=0}^{K-1}\gamma^k\,c_{t+k}(h_{t+k},A_{t+k})-\sum_{k=1}^{K-1}\gamma^k\,u_{t+k}\ \Big|\ h_t,A_t=a\Big].
+\]
+\end{proposition}
+
+\begin{proof}
+Apply Proposition~\ref{prop:K-return-step} at $n=t$. Inside the conditional expectation, the term $q_{t+1:t+K}(h_{t+1},A_{t+1})-q_{t+1:t+K}(M_{t+1},A_{t+1})$ is again of the form of the left side, at $n=t+1$; apply Proposition~\ref{prop:K-return-step} to it, and use the tower property, since $(h_t,A_t)$ is a function of $(h_{t+1},A_{t+1})$. Repeat until $n=t+K-1$, where the term in $\gamma$ is zero.
+\end{proof}
+
+In words: over $K$ steps the return gap is the discounted sum, along the agent's path, of the one-step comparisons $c_{t+k}$, minus the value each update removed. This is the same structure as Proposition~\ref{prop:K}: $c_{t+k}$ compares the two predictions of $O_{t+k+1}$ that $D_{t+k}$ compares, and $u_{t+k}$ is the effect of the update $M_{t+k}=f(M_{t+k-1},A_{t+k-1},O_{t+k})$ on the value. As in Proposition~\ref{prop:two-return-zero}, each $c_{t+k}$ is zero when $D_{t+k}=0$ and splits into a reward part and a rest part that vanish with the reward part and the rest part of $D_{t+k}$, the rest part entering only through the value of what follows. By the argument of Proposition~\ref{prop:two-return-zero}(c), $u_{t+k}=0$ when the update at $t+k$ discards nothing that predicts the later observations, that is, when $I(M_{t+k-1},A_{t+k-1},O_{t+k};A_{t+k},O_{t+k+1},\dots,O_{t+K}\mid M_{t+k})=0$, because $G_{t+k:t+K}$ is a function of these later observations.
+
+
+\paragraph{Summary.} Over $K$ steps, the history's information beyond the memory and the action at $t$ is the sum of the agent's own one-step defects at $t,\dots,t+K-1$, minus what the memory updates removed and still predicts the next observation (Proposition~\ref{prop:K}). Every term splits in the two ways of Section~\ref{sec:splits} and into a reward part and a rest part as in Section~\ref{sec:reward}, the agent's terms and the subtracted terms alike. The gap between the history's and the memory's value of the return over the same interval has the same structure (Proposition~\ref{prop:K-return}): the discounted sum of one-step comparisons of the same two predictions as each $D_{t+k}$, minus the value removed by each update.
 
 \paragraph{What is known.} The one-step empowerment and plasticity are those of \citet{abel2025plasticity}; the chain rule and the other tools are standard; the partial information decomposition is that of \citet{williams2010nonnegative}, with the conditional form of \citet{matthias2025novel} and the measure of \citet{bertschinger2014quantifying}. The terms $D^0_t$, $D^+_t$, the two splits, the reward parts and the multi-step defects and their expansions are defined and derived here; a short search did not find them elsewhere.
 

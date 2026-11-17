@@ -372,6 +372,86 @@ def check_steps(J, w, rec):
                 rec.eq('Lem 7.3 updates from t to t+k', J.I([hn], X, [Mn] + V), J.I([h], X, W + V) + J.I(W, X, [Mn] + V))
 
 
+def check_return(J, w, rec):
+    T, g = w.T, w.gamma
+    N = J.N
+    R = {n: J.vals(('R', n)) for n in range(1, T + 2)}
+    for t in range(1, T + 1):
+        h, M, A = ('h', t), ('M', t), ('A', t)
+        kh, kM = J.keys([h, A]), J.keys([M, A])
+        # two steps (needs R_{t+2})
+        if t + 1 <= T:
+            h1, M1, A1, O1, O2 = ('h', t + 1), ('M', t + 1), ('A', t + 1), ('O', t + 1), ('O', t + 2)
+            G2 = [R[t + 1][i] + g * R[t + 2][i] for i in range(N)]
+            lhs = [x - y for x, y in zip(J.cexp(G2, [h, A])[0], J.cexp(G2, [M, A])[0])]
+            Ph, PM = J.cdist([O1], [h, A]), J.cdist([O1], [M, A])
+            _, ER2 = J.cexp(R[t + 2], [M, A, O1])
+            ct, cR, cB = [], [], []
+            PRh, PRM = J.cdist([('R', t + 1)], [h, A]), J.cdist([('R', t + 1)], [M, A])
+            PBh, PBM = J.cdist([('Ob', t + 1)], [h, A, ('R', t + 1)]), J.cdist([('Ob', t + 1)], [M, A, ('R', t + 1)])
+            _, ER2r = J.cexp(R[t + 2], [M, A, ('R', t + 1)])
+            _, ER2rb = J.cexp(R[t + 2], [M, A, ('R', t + 1), ('Ob', t + 1)])
+            for i in range(N):
+                ph, pm = Ph[kh[i]], PM[kM[i]]
+                ct.append(sum((ph.get((o,), 0.0) - pmo) * (o[0] + g * ER2[kM[i] + (o,)]) for (o,), pmo in pm.items()))
+                cR.append(sum((PRh[kh[i]].get((r,), 0.0) - pmr) * (r + g * ER2r[kM[i] + (r,)]) for (r,), pmr in PRM[kM[i]].items()))
+                tot = 0.0
+                for (r,), phr in PRh[kh[i]].items():
+                    pbm = PBM[kM[i] + (r,)]
+                    pbh = PBh[kh[i] + (r,)]
+                    tot += phr * g * sum((pbh.get((b,), 0.0) - pmb) * ER2rb[kM[i] + (r, b)] for (b,), pmb in pbm.items())
+                cB.append(tot)
+            for i in range(N):
+                rec.eq('Prop 6.8(b) c_t = c^R_t + c^Obar_t', ct[i], cR[i] + cB[i])
+            kh1, kM1 = J.keys([h1, A1]), J.keys([M1, A1])
+            Ph1, PM1 = J.cdist([O2], [h1, A1]), J.cdist([O2], [M1, A1])
+            c1 = [sum((Ph1[kh1[i]].get((o,), 0.0) - pmo) * o[0] for (o,), pmo in PM1[kM1[i]].items()) for i in range(N)]
+            q1 = [x - y for x, y in zip(J.cexp(R[t + 2], [h1, A1])[0], J.cexp(R[t + 2], [M1, A1])[0])]
+            for i in range(N):
+                rec.eq('Prop 6.7 c_t+1 = one-step gap at t+1', c1[i], q1[i])
+            u = [x - y for x, y in zip(J.cexp(R[t + 2], [M, A, O1])[0], J.cexp(R[t + 2], [M1])[0])]
+            inner = J.cexp([a - b for a, b in zip(c1, u)], [h, A])[0]
+            for i in range(N):
+                rec.eq('Prop 6.7 two-step return gap', lhs[i], ct[i] + g * inner[i])
+            rec.le('Prop 6.7 size of the update term (shown)', -max(abs(x) for x in u), 0.0)
+        # K steps
+        for K in range(1, T + 2 - t):
+            Gn = {}
+            for n in range(t, t + K + 1):
+                Gn[n] = [sum(g ** j * R[n + j + 1][i] for j in range(t + K - n)) for i in range(N)]
+            v = {n: J.cexp(Gn[n], [('h', n)])[0] for n in range(t, t + K + 1)}
+            c, u = {}, {}
+            for n in range(t, t + K):
+                hn, Mn, An, On1 = ('h', n), ('M', n), ('A', n), ('O', n + 1)
+                khn, kMn = J.keys([hn, An]), J.keys([Mn, An])
+                Phn, PMn = J.cdist([On1], [hn, An]), J.cdist([On1], [Mn, An])
+                _, Ev = J.cexp(v[n + 1], [Mn, An, On1])
+                c[n] = [sum((Phn[khn[i]].get((o,), 0.0) - pmo) * (o[0] + g * Ev[kMn[i] + (o,)]) for (o,), pmo in PMn[kMn[i]].items())
+                        for i in range(N)]
+                if n > t:
+                    Un = [('M', n - 1), ('A', n - 1), ('O', n)]
+                    u[n] = [x - y for x, y in zip(J.cexp(v[n], Un)[0], J.cexp(v[n], [Mn])[0])]
+            # one-step recursion (Prop 7.6) at each n
+            for n in range(t, t + K):
+                hn, Mn, An = ('h', n), ('M', n), ('A', n)
+                gap_n = [x - y for x, y in zip(J.cexp(Gn[n], [hn, An])[0], J.cexp(Gn[n], [Mn, An])[0])]
+                if n + 1 < t + K:
+                    h1, M1, A1 = ('h', n + 1), ('M', n + 1), ('A', n + 1)
+                    gap_1 = [x - y for x, y in zip(J.cexp(Gn[n + 1], [h1, A1])[0], J.cexp(Gn[n + 1], [M1, A1])[0])]
+                    inner = J.cexp([a - b for a, b in zip(gap_1, u[n + 1])], [hn, An])[0]
+                else:
+                    inner = [0.0] * N
+                for i in range(N):
+                    rec.eq('Prop 7.6 one step of the return gap', gap_n[i], c[n][i] + g * inner[i])
+            # full K-step formula (Prop 7.7)
+            tot = [sum(g ** (n - t) * c[n][i] for n in range(t, t + K)) - sum(g ** (n - t) * u[n][i] for n in range(t + 1, t + K))
+                   for i in range(N)]
+            rhs = J.cexp(tot, [h, A])[0]
+            lhs = [x - y for x, y in zip(J.cexp(Gn[t], [h, A])[0], J.cexp(Gn[t], [M, A])[0])]
+            for i in range(N):
+                rec.eq('Prop 7.7 K-step return gap', lhs[i], rhs[i])
+
+
 def main():
     rec = Rec()
     for seed, T in ((1, 4), (2, 4), (3, 3), (4, 3), (5, 3)):
@@ -379,6 +459,7 @@ def main():
         J = world_joint(w)
         check_one_step(J, w, rec)
         check_steps(J, w, rec)
+        check_return(J, w, rec)
         print(f"seed {seed} (T={T}, {J.N} trajectories) done", flush=True)
     ok = rec.report()
     print("ALL PASS" if ok else "SOME CHECKS FAILED")
