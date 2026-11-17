@@ -192,6 +192,8 @@ def Z(s, k):
 
 
 # ---------------------------------------------------------------- bookkeeping
+GAPS = defaultdict(lambda: float('-inf'))
+
 class Rec:
     def __init__(self):
         self.err = defaultdict(float)
@@ -319,7 +321,18 @@ def check_steps(J, w, rec):
             D2 = J.I([h], [O1, A1, O2], [M, A])
             a, b = own_terms(J, t), own_terms(J, t + 1)
             mid = J.I([h], [O2], [M, A, O1, A1])
-            rec.eq('Prop 6.2 D_t:t+2 = D_t + I(h_t;O_t+2|M_t,A_t,O_t+1,A_t+1)', D2, a['D'] + mid)
+            rec.eq('Prop 6.2(a) D_t:t+2 = D_t + I(h_t;O_t+2|M_t,A_t,O_t+1,A_t+1)', D2, a['D'] + mid)
+            # (b) A_t+1 first; (c) A_t+1 last
+            cond = J.I([h], [O1, O2], [M, A, A1])
+            free = J.I([h], [O1, O2], [M, A])
+            late = J.I([h], [A1], [M, A, O1, O2])
+            rec.eq('Prop 6.2(b) D_t:t+2 = dP_t + I(h_t;O_t+1,O_t+2|M_t,A_t,A_t+1)', D2, a['dP'] + cond)
+            rec.eq('Prop 6.2 text: I(h_t;O_t+1,O_t+2|M_t,A_t,A_t+1) = D+_t + last term of (a)', cond, a['Dp'] + mid)
+            rec.eq('Prop 6.2 text: last term of (a) = I(h_t;O_t+2|M_t,A_t,O_t+1) + last term of (c)', mid, J.I([h], [O2], [M, A, O1]) + late)
+            rec.eq('Prop 6.2(c) D_t:t+2 = I(h_t;O_t+1,O_t+2|M_t,A_t) + I(h_t;A_t+1|M_t,A_t,O_t+1,O_t+2)', D2, free + late)
+            GAPS['dP_t (lost by A_t+1 in the condition)'] = max(GAPS['dP_t (lost by A_t+1 in the condition)'], a['dP'])
+            GAPS['I(h_t;A_t+1|M_t,A_t,O_t+1,O_t+2) (lost by leaving A_t+1 out)'] = max(GAPS['I(h_t;A_t+1|M_t,A_t,O_t+1,O_t+2) (lost by leaving A_t+1 out)'], late)
+            GAPS['D_t - I(h_t;O_t+1,O_t+2|M_t,A_t,A_t+1) (largest shortfall below D_t)'] = max(GAPS['D_t - I(h_t;O_t+1,O_t+2|M_t,A_t,A_t+1) (largest shortfall below D_t)'], a['D'] - cond)
             for X, V in (([O2], [A1]), ([R2], [A1]), ([B2], [A1, R2]), ([O2], []), ([A1], [O2]), ([A2], [A1]), ([O2], [A1, A2])):
                 rec.eq('Lem 6.3 update from t to t+1', J.I([h1], X, [M1] + V), J.I([h], X, U + V) + J.I(U, X, [M1] + V))
             corr = J.I(U, [O2], [M1, A1])
@@ -565,6 +578,9 @@ def main():
         check_info_value(J, w, rec)
         print(f"seed {seed} (T={T}, {J.N} trajectories) done", flush=True)
     ok = rec.report()
+    print("largest value over all worlds and times (shows the three orders differ):")
+    for k, v in GAPS.items():
+        print(f"  {k}: {v:.4f}")
     print("ALL PASS" if ok else "SOME CHECKS FAILED")
     sys.exit(0 if ok else 1)
 
