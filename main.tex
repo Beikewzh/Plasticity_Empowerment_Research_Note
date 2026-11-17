@@ -36,7 +36,7 @@
 \maketitle
 
 \begin{abstract}
-For an agent that acts on a memory, we derive the empowerment and plasticity mismatches between the history and the memory, the two splits of the state defect, and three ways to separate the reward inside them. We then write the terms at three successive times, add them, and list the reward terms of the sum. Every derivation is written term by term, and every cancellation names the assumption or lemma that allows it.
+For an agent that acts on a memory, we derive the empowerment and plasticity mismatches between the history and the memory, the two splits of the state defect, and three ways to separate the reward inside them. We then write the terms at three successive times, add them, and list the reward terms of the sum. As preliminary results, not yet checked numerically, we relate these terms to the Bellman equation on the history and on the memory, to the order of actions, and to single-step policy improvement. Every derivation is written term by term, and every cancellation names the assumption or lemma that allows it.
 \end{abstract}
 
 \section{Setting}\label{sec:setting}
@@ -67,7 +67,7 @@ $M_1=f_1(O_1)$ and $M_{t+1}=f(M_t,A_t,O_{t+1})$ for fixed maps $f_1,f$. Hence $M
 $P(A_t=a\mid h_t)=\pi(a\mid M_t)$: the action depends on the history only through the memory.
 \end{assumption}
 
-Every identity in this note was checked numerically. The script \texttt{checks/verify\_note.py} computes the exact law of all trajectories in small random environments whose next observation depends on the whole history, and tests each numbered statement for a finite horizon; the largest error is $10^{-13}$.
+Every identity in Sections~\ref{sec:setting}--\ref{sec:sum} was checked numerically. The script \texttt{checks/verify\_note.py} computes the exact law of all trajectories in small random environments whose next observation depends on the whole history, and tests each numbered statement for a finite horizon; the largest error is $10^{-13}$.
 
 \section{Tools}\label{sec:tools}
 
@@ -629,6 +629,174 @@ As for Proposition~\ref{prop:sum}, with $X=\Ob_{n+1}$ and $Y=R_{n+1}$ in Proposi
 In either order, the reward terms of the sum are the reward parts of $D_t$, $D_{t+1}$ and $D_{t+2}$, one for each of the rewards $R_{t+1}$, $R_{t+2}$ and $R_{t+3}$, each taken at the agent's own memory at its own time.
 
 \paragraph{What is known.} The one-step empowerment and plasticity are those of \citet{abel2025plasticity}; the chain rule and the other tools are standard; the partial information decomposition is that of \citet{williams2010nonnegative}, with the conditional form of \citet{matthias2025novel} and the measure of \citet{bertschinger2014quantifying}. The terms $D^0_t$, $D^+_t$, the two splits and the reward parts are defined and derived here; a short search did not find them elsewhere.
+
+\section{Preliminary results: from the reward terms to the return}\label{sec:prelim}
+
+The statements of this section are proved below, but unlike those of Sections~\ref{sec:setting}--\ref{sec:sum} they have not yet been checked by exact enumeration; the examples are computed by hand. Throughout, a final time $T$ and a discount factor $\gamma\in[0,1]$ are fixed, $r(o)$ is the reward contained in an observation $o$, $G_t=R_{t+1}+\gamma G_{t+1}$ with $G_T=0$, $J(\pi)=\E[G_1]$, and $\pi(a\mid m)>0$ for every action $a$ and every memory value $m$ that occurs.
+
+\subsection{The two Bellman equations and their difference}
+
+The values of a history are $Q^\pi_t(h,a)=\E[G_t\mid h_t=h,A_t=a]$ and $V^\pi_t(h)=\E[G_t\mid h_t=h]$, with $V^\pi_T=0$.
+
+\begin{lemma}[The two predictions]\label{lem:pred}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol}, for any time $n$ and variables $X$ and $Z$:
+\begin{enumerate}
+\item[(a)] $P(X=x\mid M_n=m,Z=z)=\sum_hP(h_n=h\mid M_n=m,Z=z)\,P(X=x\mid h_n=h,Z=z)$;
+\item[(b)] $I(h_n;X\mid M_n,Z)=\E\big[\KL\big(P(X\mid h_n,Z)\,\|\,P(X\mid M_n,Z)\big)\big]$, so it is zero exactly when $P(X\mid h_n,Z)=P(X\mid M_n,Z)$ for every value of $(h_n,Z)$ that occurs;
+\item[(c)] $P(h_n\mid M_n,A_n)=P(h_n\mid M_n)$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+(a) Tower property over $h_n$, and (T4) to drop $M_n$ from $P(X\mid h_n,M_n,Z)$. (b) By (T1) and (T4), $I(h_n;X\mid M_n,Z)=H(X\mid M_n,Z)-H(X\mid h_n,Z)=\E[\log P(X\mid h_n,Z)-\log P(X\mid M_n,Z)]$; taking first the expectation over $X$ given $(h_n,Z)$ gives the divergence. A divergence is zero exactly when the two laws are equal \citep[Theorem~2.6.3]{cover2006elements}. (c) $I(h_n;A_n\mid M_n)=0$ by Lemma~\ref{lem:action} with $k=0$, and (T3).
+\end{proof}
+
+\begin{proposition}[Bellman equation for the history]\label{prop:bellman-h}
+Under Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol}, for $t<T$,
+\begin{align*}
+Q^\pi_t(h_t,a)&=\sum_oP(O_{t+1}=o\mid h_t,a)\big[r(o)+\gamma\,V^\pi_{t+1}(h_{t+1})\big],\\
+V^\pi_{t+1}(h_{t+1})&=\sum_{a'}\pi(a'\mid M_{t+1})\,Q^\pi_{t+1}(h_{t+1},a'),
+\end{align*}
+with $h_{t+1}=(h_t,a,o)$ and $M_{t+1}=f(M_t,a,o)$.
+\end{proposition}
+
+\begin{proof}
+$Q^\pi_t(h_t,a)=\E[R_{t+1}+\gamma G_{t+1}\mid h_t,A_t=a]$; condition on $O_{t+1}$ (tower property) and use (T5) to write $\E[G_{t+1}\mid h_t,A_t=a,O_{t+1}=o]=V^\pi_{t+1}(h_{t+1})$. The second line is the tower property over $A_{t+1}$, whose law given $h_{t+1}$ is $\pi(\cdot\mid M_{t+1})$ (Assumption~\ref{as:pol}).
+\end{proof}
+
+\begin{definition}[Bellman equation on the memory]\label{def:bellman-m}
+Let $\hat V_T=0$, and for $t=T-1,T-2,\dots$ and memory values $m$ that occur at time $t$,
+\begin{align*}
+\hat Q_t(m,a)&=\sum_oP(O_{t+1}=o\mid M_t=m,A_t=a)\big[r(o)+\gamma\,\hat V_{t+1}(f(m,a,o))\big],\\
+\hat V_t(m)&=\sum_a\pi(a\mid m)\,\hat Q_t(m,a).
+\end{align*}
+\end{definition}
+
+This is the same equation with the memory in place of the history. It is what a critic that reads the memory and bootstraps on its own value at the next memory estimates.
+
+\begin{proposition}[The prediction error]\label{prop:gap}
+Under Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol}, for $t<T$,
+\begin{align*}
+Q^\pi_t(h_t,a)-\hat Q_t(M_t,a)&=\delta_t(h_t,a)+\gamma\,\tau_t(h_t,a)\\
+&\quad+\gamma\,\E\big[Q^\pi_{t+1}(h_{t+1},A_{t+1})-\hat Q_{t+1}(M_{t+1},A_{t+1})\,\big|\,h_t,A_t=a\big],
+\end{align*}
+where
+\begin{align*}
+\delta_t(h_t,a)&=\E[R_{t+1}\mid h_t,A_t=a]-\E[R_{t+1}\mid M_t,A_t=a],\\
+\tau_t(h_t,a)&=\sum_o\big[P(O_{t+1}=o\mid h_t,a)-P(O_{t+1}=o\mid M_t,a)\big]\,\hat V_{t+1}(f(M_t,a,o)),
+\end{align*}
+and the last term is zero when $t+1=T$. Moreover:
+\begin{enumerate}
+\item[(a)] $\delta_t=0$ for every $(h_t,a)$ that occurs when the reward part $I(h_t;R_{t+1}\mid M_t,A_t)$ of $D_t$ is zero, and $\delta_t=\tau_t=0$ when $D_t=0$;
+\item[(b)] $\E[\delta_t(h_t,a)\mid M_t,A_t=a]=\E[\tau_t(h_t,a)\mid M_t,A_t=a]=0$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+Subtract the first line of Definition~\ref{def:bellman-m} at $m=M_t$ from that of Proposition~\ref{prop:bellman-h}, and add and subtract $\sum_oP(O_{t+1}=o\mid h_t,a)\big[r(o)+\gamma\,\hat V_{t+1}(M_{t+1})\big]$. The terms in $r(o)$ give $\delta_t$, because the reward is part of the observation; the terms in $\hat V_{t+1}$ give $\tau_t$; what remains is $\gamma\sum_oP(O_{t+1}=o\mid h_t,a)\big[V^\pi_{t+1}(h_{t+1})-\hat V_{t+1}(M_{t+1})\big]$, and by the second lines of Proposition~\ref{prop:bellman-h} and Definition~\ref{def:bellman-m} and the tower property this is the last term. (a) Lemma~\ref{lem:pred}(b) with $(X,Z)=(R_{t+1},A_t)$ and $(O_{t+1},A_t)$. (b) By Lemma~\ref{lem:pred}(a) and~(c), $\E[P(O_{t+1}=o\mid h_t,a)\mid M_t,A_t=a]=P(O_{t+1}=o\mid M_t,a)$, and $\hat V_{t+1}(f(M_t,a,o))$ depends on $(M_t,a,o)$ only.
+\end{proof}
+
+So the prediction error satisfies a Bellman equation of its own: its reward at each step is $\delta+\gamma\tau$, the difference between the history's and the memory's prediction of the agent's own target $R_{t+1}+\gamma\hat V_{t+1}(M_{t+1})$. Written out for $T=t+3$,
+\[
+Q^\pi_t(h_t,a)-\hat Q_t(M_t,a)=\delta_t+\gamma\tau_t+\gamma\,\E\big[\delta_{t+1}+\gamma\tau_{t+1}\,\big|\,h_t,a\big]+\gamma^2\,\E\big[\delta_{t+2}\,\big|\,h_t,a\big],
+\]
+with $\tau_{t+2}=0$ because $\hat V_{t+3}=0$: the reward $R_{t+k+1}$ enters with $\gamma^k$, as in the return, through the reward term of $D_{t+k}$.
+
+\subsection{The first split and the order of actions}
+
+\begin{proposition}[The reward difference at the decision time]\label{prop:delta-split}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol}, for every $(h_t,a)$ that occurs, with $M=M_t$ and the sums over the values $\rho$ of $R_{t+1}$ with $P(R_{t+1}=\rho\mid M)>0$,
+\begin{align*}
+\delta_t(h_t,a)&=\big(\E[R_{t+1}\mid h_t]-\E[R_{t+1}\mid M]\big)\\
+&\quad+\sum_\rho\rho\,\big[P(\rho\mid h_t)-P(\rho\mid M)\big]\Big[\frac{P(\rho\mid M,a)}{P(\rho\mid M)}-1\Big]\\
+&\quad+\sum_\rho\rho\,P(\rho\mid h_t)\,\frac{P(a\mid h_t,\rho)-P(a\mid M,\rho)}{\pi(a\mid M)}.
+\end{align*}
+\begin{enumerate}
+\item[(a)] The first term is the same for every action, and it is zero when the reward part $I(h_t;R_{t+1}\mid M_t)$ of $D^0_t$ is zero.
+\item[(b)] The second term is zero when the reward part of $D^0_t$ is zero, and also when $I(A_t;R_{t+1}\mid M_t)=0$, the reward part of $E_t(M)$ in the reward-first order.
+\item[(c)] The third term is zero when the reward part $I(h_t;A_t\mid M_t,R_{t+1})$ of $\dE_t$ is zero, and its average over $a$ with weights $\pi(a\mid M)$ is zero.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+By Bayes' rule and $P(a\mid h_t)=\pi(a\mid M)$ (Assumption~\ref{as:pol}), $P(\rho\mid h_t,a)=P(\rho\mid h_t)P(a\mid h_t,\rho)/\pi(a\mid M)$, and likewise $P(\rho\mid M,a)=P(\rho\mid M)P(a\mid M,\rho)/\pi(a\mid M)$. Subtract, and add and subtract $P(\rho\mid h_t)P(a\mid M,\rho)/\pi(a\mid M)$:
+\[
+\delta_t=\sum_\rho\rho\,\big[P(\rho\mid h_t)-P(\rho\mid M)\big]\frac{P(a\mid M,\rho)}{\pi(a\mid M)}+\sum_\rho\rho\,P(\rho\mid h_t)\,\frac{P(a\mid h_t,\rho)-P(a\mid M,\rho)}{\pi(a\mid M)}.
+\]
+In the first sum, $P(a\mid M,\rho)/\pi(a\mid M)=P(\rho\mid M,a)/P(\rho\mid M)$ (Bayes' rule); writing this ratio as $1$ plus the ratio minus $1$ gives the first two terms. (a) and (b): Lemma~\ref{lem:pred}(b) with $(X,Z)=(R_{t+1},\text{nothing})$; and $I(A_t;R_{t+1}\mid M_t)=0$ means $P(\rho\mid M,a)=P(\rho\mid M)$ (T3). (c) Lemma~\ref{lem:pred}(b) with $(X,Z)=(A_t,R_{t+1})$; and $\sum_a\big[P(a\mid h_t,\rho)-P(a\mid M,\rho)\big]=0$.
+\end{proof}
+
+The order of two actions $a,b$ for a history is changed by $\delta_t$ only through $\delta_t(h_t,a)-\delta_t(h_t,b)$, in which the first term cancels. So the reward information that can change the order at the decision time is that of $\dE_t$, and that of $D^0_t$ only when the memory itself sees the action change the reward ($I(A_t;R_{t+1}\mid M_t)>0$). By Proposition~\ref{prop:gap}(b), all of these terms average to zero over the histories behind $M_t$.
+
+At a later time $j$ the action $A_j$ is drawn by $\pi$, and the per-step error is averaged over it.
+
+\begin{proposition}[The per-step error at a later time]\label{prop:future}
+Under Assumptions~\ref{as:mem} and~\ref{as:pol}, for every $h_j$ that occurs, with $M=M_j$ and $y(a,o)=r(o)+\gamma\,\hat V_{j+1}(f(M,a,o))$,
+\begin{align*}
+&\sum_a\pi(a\mid M)\big[\delta_j(h_j,a)+\gamma\tau_j(h_j,a)\big]\\
+&\quad=\sum_o\big[P(O_{j+1}=o\mid h_j)-P(O_{j+1}=o\mid M)\big]\\
+&\qquad\times\sum_aP(A_j=a\mid M,O_{j+1}=o)\,y(a,o)\\
+&\qquad+\gamma\sum_oP(O_{j+1}=o\mid h_j)\\
+&\qquad\times\sum_a\big[P(A_j=a\mid h_j,o)-P(A_j=a\mid M,o)\big]\,\hat V_{j+1}(f(M,a,o)).
+\end{align*}
+The first term is zero when $D^0_j=0$. The second contains no reward, and it is zero when $\dE_j=0$ or when $\hat V_{j+1}(f(M,a,o))$ does not depend on $a$.
+\end{proposition}
+
+\begin{proof}
+$\delta_j+\gamma\tau_j=\sum_o\big[P(o\mid h_j,a)-P(o\mid M,a)\big]y(a,o)$. Multiply by $\pi(a\mid M)=P(a\mid h_j)=P(a\mid M)$ (Assumption~\ref{as:pol}) and sum over $a$; then $P(a\mid h_j)P(o\mid h_j,a)=P(o\mid h_j)P(a\mid h_j,o)$, and the same with $M$. Add and subtract $P(o\mid h_j)P(a\mid M,o)$. In the second part the term $r(o)$ drops, since $\sum_a\big[P(a\mid h_j,o)-P(a\mid M,o)\big]=0$. The zero conditions are Lemma~\ref{lem:pred}(b) with $(X,Z)=(O_{j+1},\text{nothing})$ and $(A_j,O_{j+1})$.
+\end{proof}
+
+So at later times the empowerment mismatch $\dE_j$ does not enter through the reward, but it can enter through the value of the next memory, when that value depends on the agent's own action.
+
+\subsection{Single-step improvement and the return}
+
+\begin{proposition}[Single-step improvement]\label{prop:improve}
+Under Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol}, let $\pi'$ read the memory and differ from $\pi$ only at time $t<T$. Then
+\[
+J(\pi')-J(\pi)=\gamma^{t-1}\,\E\Big[\sum_a\big(\pi'(a\mid M_t)-\pi(a\mid M_t)\big)\big(\hat Q_t(M_t,a)+\varepsilon_t(M_t,a)\big)\Big],
+\]
+where the expectation is under $\pi$ and
+\begin{align*}
+\varepsilon_t(m,a)&=\E[Q^\pi_t(h_t,a)\mid M_t=m]-\hat Q_t(m,a)\\
+&=\gamma\,\E\big[Q^\pi_{t+1}(h_{t+1},A_{t+1})-\hat Q_{t+1}(M_{t+1},A_{t+1})\,\big|\,M_t=m,A_t=a\big].
+\end{align*}
+\end{proposition}
+
+\begin{proof}
+$G_1=\sum_{n<t}\gamma^{n-1}R_{n+1}+\gamma^{t-1}G_t$. Before $t$ the two policies agree, so the rewards up to $R_t$ and the law of $h_t$ are the same. After $t$ both follow $\pi$, so $\E_{\pi'}[G_t\mid h_t]=\sum_a\pi'(a\mid M_t)Q^\pi_t(h_t,a)$, while $\E_\pi[G_t\mid h_t]=\sum_a\pi(a\mid M_t)Q^\pi_t(h_t,a)$. Hence $J(\pi')-J(\pi)=\gamma^{t-1}\E\big[\sum_a(\pi'-\pi)(a\mid M_t)\,Q^\pi_t(h_t,a)\big]$. Since $\pi'-\pi$ depends on $M_t$ only, the tower property over $h_t$ given $M_t$ replaces $Q^\pi_t(h_t,a)$ by $\E[Q^\pi_t(h_t,a)\mid M_t]=\hat Q_t(M_t,a)+\varepsilon_t(M_t,a)$. For the second form of $\varepsilon_t$, average Proposition~\ref{prop:gap} over $h_t$ given $(M_t,A_t=a)$, using Lemma~\ref{lem:pred}(c) and Proposition~\ref{prop:gap}(b).
+\end{proof}
+
+\begin{corollary}\label{cor:improve}
+Under the assumptions of Proposition~\ref{prop:improve}, let $\pi'$ choose at time $t$ an action that maximises $\hat Q_t(M_t,\cdot)$.
+\begin{enumerate}
+\item[(a)] If $\varepsilon_t(m,\cdot)$ does not depend on the action for every $m$, then $J(\pi')\ge J(\pi)$. So $J(\pi')<J(\pi)$ requires $\varepsilon_t(m,\cdot)$ to vary with the action for some $m$.
+\item[(b)] If, for every $j=t+1,\dots,T-1$, $D^0_j=0$, and either $\dE_j=0$ or $\hat V_{j+1}(f(m,a,o))$ does not depend on $a$, then $\varepsilon_t=0$ and $J(\pi')\ge J(\pi)$. In particular this holds when $D_j=0$ for $j>t$, whatever $D_t$.
+\end{enumerate}
+\end{corollary}
+
+\begin{proof}
+(a) The term in $\varepsilon_t$ is $\E\big[\varepsilon_t(M_t,\hat a)-\sum_a\pi(a\mid M_t)\varepsilon_t(M_t,a)\big]$, which is zero, and $\sum_a(\pi'-\pi)\hat Q_t\ge0$ by the choice of $\pi'$. (b) Averaging Proposition~\ref{prop:gap} at time $j$ over $A_j$ given $h_j$ (law $\pi(\cdot\mid M_j)$) gives $\E[Q^\pi_j-\hat Q_j\mid h_j]=\sum_a\pi(a\mid M_j)(\delta_j+\gamma\tau_j)+\gamma\,\E\big[\E[Q^\pi_{j+1}-\hat Q_{j+1}\mid h_{j+1}]\,\big|\,h_j\big]$. Under the conditions, the first term is zero for every $j>t$ by Proposition~\ref{prop:future}; by induction from $j=T-1$, $\E[Q^\pi_{t+1}-\hat Q_{t+1}\mid h_{t+1}]=0$, and $\varepsilon_t=0$ by its second form.
+\end{proof}
+
+The defect at the decision time, $D_t$, does not enter $\varepsilon_t$: what the memory has already lost limits how good a memory-based decision can be, but does not make a greedy step on $\hat Q_t$ worse. A greedy step can fail only through later steps.
+
+\subsection{Examples}
+
+\begin{enumerate}
+\item \emph{The order at the decision time} ($\gamma=0$, $\pi$ uniform, a bit $c$ in the history but not in the memory). (i) $R_{t+1}=\mathbf 1[A_t=c]$: the reward parts of $D^0_t$ and of $I(A_t;R_{t+1}\mid M_t)$ are zero, that of $\dE_t$ is $\log2$; only the third term of Proposition~\ref{prop:delta-split} is present, and the history orders the actions while the memory does not. (ii) $R_{t+1}=c$: $\dE_t=0$ and $I(A_t;R_{t+1}\mid M_t)=0$; only the first term is present and the order does not change. (iii) $A_t=1$ gives $R_{t+1}=0.6$; $A_t=0$ gives $R_{t+1}\in\{0,1\}$ with $P(R_{t+1}=1)$ equal to $0.9$ or $0.1$ for two equally likely histories behind the memory. The reward reveals the action, so the reward part of $\dE_t$ is zero, but $I(A_t;R_{t+1}\mid M_t)>0$; through the second term the memory prefers $1$ ($0.5<0.6$) while one of the histories prefers $0$ ($0.9>0.6$).
+\item \emph{A greedy step fails through $D^0$ at a later step} ($\gamma=1$, $T=t+2$, $\pi$ uniform, the memory constant at $t$ and $t+1$). $A_t\in\{L,R\}$ gives $R_{t+1}=0$ or $0.4$ and sets a hidden state $x$ or $y$; at $t+1$, $R_{t+2}$ is $2$ for $L$ and $0$ for $R$ in $x$, and $0$ for $L$ and $1$ for $R$ in $y$. Then $D_t=0$ and $D^0_{t+1}>0$; $\hat Q_t=(0.75,1.15)$ but $\E[Q^\pi_t\mid M_t]=(1,0.9)$, so $\varepsilon_t=(0.25,-0.25)$ and the greedy step to $R$ gives $J(\pi')-J(\pi)=0.9-0.95=-0.05$.
+\item \emph{A greedy step fails through $\dE$ at a later step, with $D^0=0$} ($\gamma=1$, $T=t+3$, $\pi$ uniform). $A_t=L$ gives $R_{t+1}=0$ and sets a hidden bit $s=0$; $A_t=R$ gives $R_{t+1}=0.5$ and $s=1$. $M_{t+1}$ does not contain $s$; $R_{t+2}=\mathbf 1[A_{t+1}=s]$; $M_{t+2}$ stores $(A_{t+1},R_{t+2})$ and so recovers $s$; $R_{t+3}=2\cdot\mathbf 1[s=0]$. Then $D_t=0$, $D^0_{t+1}=0$, $\dE_{t+1}=D_{t+1}=\log2$, $D_{t+2}=0$, and $\hat V_{t+2}$ depends on $A_{t+1}$. $\hat Q_t=(1.5,2.0)$ but $\E[Q^\pi_t\mid M_t]=(2.5,1.0)$, and the greedy step to $R$ gives $J(\pi')-J(\pi)=1.0-1.75=-0.75$.
+\end{enumerate}
+
+\subsection{Not yet established}
+
+\begin{itemize}
+\item The conditions of Corollary~\ref{cor:improve}(b) are sufficient; it is not known whether they are necessary when the value of the next memory depends on the action.
+\item Every link between an information term and a value term above is a zero condition. The size of $\varepsilon_t$ is given by the predictions, not by the information terms.
+\item Changing the policy at several times at once is not covered: the law of the history behind the memory then changes.
+\item The second split, $D_t=\dP_t+D^+_t$, has not yet been related to the prediction error.
+\item None of the statements of this section has been checked by exact enumeration yet.
+\end{itemize}
 
 \bibliographystyle{plainnat}
 \bibliography{references}
