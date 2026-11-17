@@ -20,6 +20,7 @@
 \newtheorem{assumption}{Assumption}
 \theoremstyle{remark}
 \newtheorem{remark}[proposition]{Remark}
+\newtheorem{example}[proposition]{Example}
 
 \newcommand{\E}{\mathbb{E}}
 \newcommand{\dE}{\Delta E}
@@ -806,8 +807,66 @@ The second filter uses the first split, $D_j=D^0_j+\dE_j$; the first and third u
 \item The conditions of Corollary~\ref{cor:improve}(b) are sufficient; it is not known whether they are necessary when the value of the next memory depends on the action.
 \item Every link between an information term and a value term above is a zero condition. The size of $\varepsilon_t$ is given by the predictions, not by the information terms.
 \item Changing the policy at several times at once is not covered: the law of the history behind the memory then changes.
-\item The second split, $D_t=\dP_t+D^+_t$, has not yet been related to the prediction error.
+\item The second split, $D_t=\dP_t+D^+_t$, enters only through the selection of Section~\ref{sec:adapt}; no condition for improvement is known from it.
 \end{itemize}
+
+\section{The agent's next action and a changing policy}\label{sec:adapt}
+
+The assumptions and notation of Section~\ref{sec:prelim} are kept. The statements of this section were checked by exact enumeration in the same way as those of Section~\ref{sec:prelim} (largest error $5\cdot10^{-16}$); these checks are not yet part of \texttt{checks/verify\_note.py}.
+
+\subsection{Selection by the next action}
+
+Two predictions of the return use the next action. The \emph{action-conditioned prediction} $\E[G_t\mid M_t,A_t=a,A_{t+1}=a']$ is what a predictor fitted to the actions actually taken learns. The \emph{planning prediction} is the value of taking $a$ and then $a'$ whatever $O_{t+1}$ is: for a history,
+\[
+Q^\pi_t(h,a;a')=\sum_oP(O_{t+1}=o\mid h_t=h,a)\big[r(o)+\gamma\,Q^\pi_{t+1}(h_{t+1},a')\big],
+\]
+and from the memory, $\sum_hP(h_t=h\mid M_t)\,Q^\pi_t(h,a;a')$.
+
+\begin{proposition}[Two selections by the next action]\label{prop:selection}
+Under Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol}, for $(M_t,a,a')$ with $P(A_{t+1}=a'\mid M_t,a)>0$,
+\[
+\E[G_t\mid M_t,a,a']-\sum_hP(h_t=h\mid M_t)\,Q^\pi_t(h,a;a')=S^{\mathrm{hist}}+S^{\mathrm{obs}},
+\]
+where
+\begin{align*}
+S^{\mathrm{hist}}&=\sum_h\big[P(h_t=h\mid M_t,a,a')-P(h_t=h\mid M_t)\big]\,\E[G_t\mid h_t=h,a,a'],\\
+S^{\mathrm{obs}}&=\sum_hP(h_t=h\mid M_t)\big(\E[G_t\mid h_t=h,a,a']-Q^\pi_t(h,a;a')\big).
+\end{align*}
+\begin{enumerate}
+\item[(a)] $P(h_t\mid M_t,a,a')=P(h_t\mid M_t)\,P(a'\mid h_t,a)/P(a'\mid M_t,a)$; so $S^{\mathrm{hist}}=0$ when $\dP_t=0$.
+\item[(b)] $\E[G_t\mid h_t,a,a']=\sum_oP(o\mid h_t,a,a')\big[r(o)+\gamma Q^\pi_{t+1}(h_{t+1},a')\big]$ with $P(o\mid h_t,a,a')=P(o\mid h_t,a)\,\pi(a'\mid f(M_t,a,o))/P(a'\mid h_t,a)$; so $S^{\mathrm{obs}}=0$ when $P_{t+1}=0$.
+\item[(c)] The converses do not hold: $S^{\mathrm{hist}}$ and $S^{\mathrm{obs}}$ are differences of expected returns and can vanish while $\dP_t>0$ or $P_{t+1}>0$. For instance $S^{\mathrm{hist}}=0$ whatever $\dP_t$ when $\E[G_t\mid h_t,a,a']$ does not depend on $h_t$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+The identity: add and subtract $\sum_hP(h_t=h\mid M_t)\,\E[G_t\mid h_t=h,a,a']$, and use the tower property over $h_t$ given $(M_t,a,a')$. (a) Bayes' rule, and $P(h_t\mid M_t,a)=P(h_t\mid M_t)$ (Lemma~\ref{lem:pred}(c)). By Proposition~\ref{prop:dP} and Lemma~\ref{lem:pred}(b), $\dP_t=0$ gives $P(a'\mid h_t,a)=P(a'\mid M_t,a)$ for every $h_t$ that occurs, so the weights are equal. (b) $G_t=R_{t+1}+\gamma G_{t+1}$, the tower property over $O_{t+1}$ given $(h_t,a,a')$, $\E[G_{t+1}\mid h_{t+1},A_{t+1}=a']=Q^\pi_{t+1}(h_{t+1},a')$, and Bayes' rule with $P(a'\mid h_t,a,o)=\pi(a'\mid f(M_t,a,o))$ (Assumptions~\ref{as:mem} and~\ref{as:pol}). $P_{t+1}=0$ means $O_{t+1}$ and $A_{t+1}$ are independent given $(h_t,A_t)$ (T3), so $P(o\mid h_t,a,a')=P(o\mid h_t,a)$ and $\E[G_t\mid h_t,a,a']=Q^\pi_t(h_t,a;a')$. (c) In the example, the bracket in $S^{\mathrm{hist}}$ sums to zero.
+\end{proof}
+
+By Definition~\ref{def:EP} and Proposition~\ref{prop:dP}, $P_{t+1}(M)=P_{t+1}+\dP_t$: the information the next action carries about the next observation, seen from the memory, is the part carried through the new observation and the part carried through the hidden past. This is an identity between informations. The sizes of $S^{\mathrm{obs}}$ and $S^{\mathrm{hist}}$ are not these informations; only the zero conditions (a) and (b) link them. The action-conditioned prediction is the correct conditional expectation of the return under $\pi$; the two terms measure its difference from the planning prediction, which matters only when the action-conditioned prediction is used to evaluate committing to $a'$.
+
+\begin{example}[B and B$'$]
+Let $\gamma=1$, $T=3$, $M_1$ constant, $O_2=(0.3A_1,c)$ with a uniform bit $c$, $M_2=(A_1,c)$, $\pi_2(A_2=c\mid M_2)=0.8$, $\pi_1$ uniform, and $R_3=(1+A_1)\mathbf 1[A_2=c]$. In B the bit $c$ is already in $O_1$, which $M_1$ does not keep; in B$'$ it is drawn with $O_2$. The memories, actions and observations seen by the memory have the same law in B and B$'$, so every quantity computed from them coincides: $\E[G_1\mid M_1,a,a']$ is $0.8$ for $a=0$ and $1.9$ for $a=1$, the planning prediction is $0.5$ and $1.3$, and $P_2(M)=0.193$. In B, $\dP_1=0.193$ and $P_2=0$, and the whole difference is $S^{\mathrm{hist}}$ ($0.3$ and $0.6$); in B$'$, $\dP_1=0$ and $P_2=0.193$, and the whole difference is $S^{\mathrm{obs}}$. A memory at time $1$ that kept $c$ would remove the difference in B; no memory at time $1$ can remove it in B$'$.
+\end{example}
+
+\subsection{A memory model that depends on the policy}
+
+By Lemma~\ref{lem:pred}(a),(c), the memory's prediction is $P_\pi(O_{n+1}=o\mid M_n=m,A_n=a)=\sum_hP_\pi(h_n=h\mid M_n=m)\,P(o\mid h,a)$. By Assumption~\ref{as:env}, $P(o\mid h,a)$ does not depend on the policy, so the memory's model depends on the policy only through the law of the histories behind the memory.
+
+\begin{proposition}[Model shift after a policy change]\label{prop:shift}
+Under Assumptions~\ref{as:env}, \ref{as:mem} and~\ref{as:pol}, let $\pi'$ read the memory and differ from $\pi$ only at time $t+1$, and let $w=\pi'_{t+1}(A_{t+1}\mid M_{t+1})/\pi_{t+1}(A_{t+1}\mid M_{t+1})$. The memory's models at times $n\le t+1$ are the same under $\pi$ and $\pi'$, and for $n\ge t+2$ and $(m,a)$ that occur at time $n$,
+\begin{align*}
+&P_{\pi'}(O_{n+1}=o\mid M_n=m,A_n=a)-P_\pi(O_{n+1}=o\mid M_n=m,A_n=a)\\
+&\quad=\frac{\operatorname{Cov}_\pi\big(w,\,P(O_{n+1}=o\mid h_n,a)\,\big|\,M_n=m\big)}{\E_\pi[w\mid M_n=m]}.
+\end{align*}
+The shift is zero when $I(M_{t+1},A_{t+1};O_{n+1}\mid M_n,A_n)=0$ under $\pi$, and this information is at most $D_n$.
+\end{proposition}
+
+\begin{proof}
+The probability of a history under a memory-reading policy is a product of environment factors and policy factors, and only $\pi_{t+1}(A_{t+1}\mid M_{t+1})$ changes. So the law of $h_n$ under $\pi'$ is that under $\pi$ multiplied by $w$ for $n\ge t+2$, and unchanged for $n\le t+1$; hence $P_{\pi'}(h_n\mid m)=P_\pi(h_n\mid m)\,w/\E_\pi[w\mid m]$, and substituting in the memory's prediction gives the formula, since $\E_\pi[P(o\mid h_n,a)\mid m]=P_\pi(o\mid m,a)$. The weight $w$ is a function of $(M_{t+1},A_{t+1})$, which is a function of $h_n$; by the tower property the covariance equals $\operatorname{Cov}_\pi\big(w,P(O_{n+1}=o\mid M_{t+1},A_{t+1},M_n,A_n=a)\mid M_n=m\big)$, using $P(h_n\mid\cdot,A_n)=P(h_n\mid\cdot)$ when $M_n$ is among the conditions (Lemma~\ref{lem:action}). If the information is zero, this prediction equals $P(O_{n+1}=o\mid M_n,a)$, which is constant given $M_n=m$, and the covariance is zero. The bound is data processing, $(M_{t+1},A_{t+1})$ being a function of $h_n$.
+\end{proof}
+
+The reweighting by $w$ is the importance weight of off-policy evaluation. The condition involves only memories, actions and observations, so it can be estimated from trajectory data. In the exact checks the shift reached $0.031$ for random memories, and was zero when $M_{t+2}$ keeps $(M_{t+1},A_{t+1})$.
 
 \bibliographystyle{plainnat}
 \bibliography{references}
