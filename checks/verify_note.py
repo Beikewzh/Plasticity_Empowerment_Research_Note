@@ -9,6 +9,9 @@ and an environment whose law of the next observation is drawn at random for ever
 (history, action) pair. All quantities are computed from the exact law of the
 trajectory (O_1, A_1, ..., O_{T+1}, A_{T+1}). Each check is labelled with the number
 of the statement it tests. Logarithms are natural. Pure Python.
+
+Section 6 (values of later policies) uses the same random worlds, a world built so that the
+conditions of Proposition 6.8 hold (InfoWorld), and the three memories of Example 6.9 (KeyWorld).
 """
 import math
 import random
@@ -44,6 +47,15 @@ class World:
         self.pi = {m: dict(zip(ACTS, normalize([rng.random() + 0.2 for _ in ACTS]))) for m in MEMS}
         self._env = {}
         self._enc = {}
+
+    def first_mem(self, o):
+        return self.f0[o]
+
+    def next_mem(self, m, a, o):
+        return self.f[(m, a, o)]
+
+    def beh(self, m):
+        return self.pi[m]
 
     def clone(self):
         w = World(self.seed, self.T, self.gamma, self.rand_step)
@@ -292,52 +304,459 @@ def check_steps(J, w, rec):
             rec.eq('Lem 2.1 I(h_t;A_t+k|M_t,A_t:t+k-1,O_t+1:t+k)=0', J.I([h], [('A', t + k)], Y(t, k)), 0.0)
 
 
-def check_sum(J, w, rec):
-    """Proposition 6.1: the terms at t, t+1, t+2 and their sum."""
+# ================================================================ Section 6
+# Worlds used here provide: T, gamma, p0, env(h, a), first_mem(o), next_mem(m, a, o), beh(m).
+# A history is h = (observations O_1..O_n, actions A_1..A_{n-1}); the reward is o[0].
+# Trajectories run to (O_T, A_T); values use the final time T, so G_n = R_{n+1} + ... + gamma^{T-n-1} R_T.
+
+LOG2 = math.log(2)
+
+
+def mem6(w, h):
+    cache = w.__dict__.setdefault('_mem6', {})
+    if h not in cache:
+        obs, acts = h
+        m = w.first_mem(obs[0])
+        for k in range(1, len(obs)):
+            m = w.next_mem(m, acts[k - 1], obs[k])
+        cache[h] = m
+    return cache[h]
+
+
+def joint6(w):
+    T, tr = w.T, []
+
+    def rec(obs, acts, mems, prob):
+        t = len(obs)
+        m = w.first_mem(obs[0]) if t == 1 else w.next_mem(mems[-1], acts[-1], obs[-1])
+        for a, pa in w.beh(m).items():
+            if pa <= 0:
+                continue
+            if t == T:
+                tr.append((obs, acts + (a,), mems + (m,), prob * pa))
+                continue
+            for o, po in w.env((obs, acts), a).items():
+                if po > 0:
+                    rec(obs + (o,), acts + (a,), mems + (m,), prob * pa * po)
+
+    for o, po in w.p0.items():
+        if po > 0:
+            rec((o,), (), (), po)
+
+    def atom(a):
+        kind, t = a
+        if kind == 'O':
+            return [x[0][t - 1] for x in tr]
+        if kind == 'A':
+            return [x[1][t - 1] for x in tr]
+        if kind == 'M':
+            return [x[2][t - 1] for x in tr]
+        if kind == 'R':
+            return [x[0][t - 1][0] for x in tr]
+        if kind == 'h':
+            return [(x[0][:t], x[1][:t - 1]) for x in tr]
+        raise KeyError(a)
+
+    J = Joint([x[3] for x in tr], atom)
+    hists = {n: sorted(set(J.vals(('h', n))), key=repr) for n in range(1, T + 1)}
+    return J, hists
+
+
+def q_paths(w, pil, n, h, a):
+    """E^{pi'}[G_n | h_n = h, A_n = a], by enumerating every continuation (no Bellman equation used)."""
+    T, g = w.T, w.gamma
+    total = 0.0
+
+    def rec(hk, ak, prob, ret):
+        nonlocal total
+        obs, acts = hk
+        k = len(obs)
+        mk = mem6(w, hk)
+        for o, po in w.env(hk, ak).items():
+            if po <= 0:
+                continue
+            r = ret + g ** (k - n) * o[0]
+            if k + 1 == T:
+                total += prob * po * r
+                continue
+            h1 = (obs + (o,), acts + (ak,))
+            m1 = w.next_mem(mk, ak, o)
+            for a1, pa in pil[k + 1](m1).items():
+                if pa > 0:
+                    rec(h1, a1, prob * po * pa, r)
+
+    rec(h, a, 1.0, 0.0)
+    return total
+
+
+def path_sum(w, pil, n, h, a, fn):
+    """E^{pi'}[ sum_{k=n}^{T-1} gamma^{k-n} fn(k, h_k, A_k) | h_n = h, A_n = a ], by enumerating paths."""
+    T, g = w.T, w.gamma
+    total = 0.0
+
+    def rec(hk, ak, k, prob):
+        nonlocal total
+        total += prob * g ** (k - n) * fn(k, hk, ak)
+        if k + 1 == T:
+            return
+        obs, acts = hk
+        mk = mem6(w, hk)
+        for o, po in w.env(hk, ak).items():
+            if po <= 0:
+                continue
+            h1 = (obs + (o,), acts + (ak,))
+            m1 = w.next_mem(mk, ak, o)
+            for a1, pa in pil[k + 1](m1).items():
+                if pa > 0:
+                    rec(h1, a1, k + 1, prob * po * pa)
+
+    rec(h, a, n, 1.0)
+    return total
+
+
+def q_bellman_hist(w, pil, hists, t):
+    """Proposition 6.2: Q^{pi'}_n(h, a) by the Bellman equation on the history."""
+    T, g = w.T, w.gamma
+    Q = {}
+
+    def V(n1, h1):
+        if n1 == T:
+            return 0.0
+        return sum(p * Q[(n1, h1, a1)] for a1, p in pil[n1](mem6(w, h1)).items() if p > 0)
+
+    for n in range(T - 1, t - 1, -1):
+        for h in hists[n]:
+            m = mem6(w, h)
+            for a in ACTS_OF(w, h):
+                s = 0.0
+                for o, po in w.env(h, a).items():
+                    if po <= 0:
+                        continue
+                    h1 = (h[0] + (o,), h[1] + (a,))
+                    s += po * (o[0] + g * V(n + 1, h1))
+                Q[(n, h, a)] = s
+    return Q
+
+
+def ACTS_OF(w, h):
+    """Every action is evaluated at every history that occurs (the current action is set)."""
+    return list(w.beh(mem6(w, h)).keys())
+
+
+def q_hat(w, J, pil, t, via='O'):
+    """Definition 6.3 (via='O'), or the form of Lemma 6.4 (via='RM')."""
+    T, g = w.T, w.gamma
+    Qh, Vh = {}, {}
+    for n in range(T - 1, t - 1, -1):
+        if via == 'O':
+            model = J.cdist([('O', n + 1)], [('M', n), ('A', n)])
+            for (m, a), d in model.items():
+                s = 0.0
+                for (o,), p in d.items():
+                    nxt = 0.0 if n + 1 == T else Vh[(n + 1, w.next_mem(m, a, o))]
+                    s += p * (o[0] + g * nxt)
+                Qh[(n, m, a)] = s
+        else:
+            _, er = J.cexp(J.vals(('R', n + 1)), [('M', n), ('A', n)])
+            mm = J.cdist([('M', n + 1)], [('M', n), ('A', n)])
+            for (m, a), d in mm.items():
+                nxt = 0.0 if n + 1 == T else sum(p * Vh[(n + 1, m1)] for (m1,), p in d.items())
+                Qh[(n, m, a)] = er[(m, a)] + g * nxt
+        if n > t:
+            for m in set(k[0] for k in J.cdist([('A', n)], [('M', n)])):
+                Vh[(n, m)] = sum(p * Qh[(n, m, a)] for a, p in pil[n](m).items() if p > 0)
+    return Qh, Vh
+
+
+def hist_preds(w, h, a):
+    """E[R_{n+1} | h_n, a] and P(M_{n+1} | h_n, a), from the environment and the memory map only."""
+    m = mem6(w, h)
+    er, pm = 0.0, defaultdict(float)
+    for o, po in w.env(h, a).items():
+        er += po * o[0]
+        pm[w.next_mem(m, a, o)] += po
+    return er, dict(pm)
+
+
+def kl(p, q):
+    return sum(pv * math.log(pv / q[k]) for k, pv in p.items() if pv > 0)
+
+
+def check_sec6_terms(J, w, hists, rec, tag=''):
+    """Lemma 6.1(b) for O and M', Proposition 6.6."""
     T = w.T
-    for t in range(1, T - 1):
-        tot = {k: 0.0 for k in ('D', 'D0', 'dE', 'dP', 'Dp', 'rD', 'sD', 'rD0', 'rdE', 'rdP', 'rDp', 'sD0', 'sdE', 'sdP', 'sDp')}
-        for n in (t, t + 1, t + 2):
-            h, M, A, O1, A1, R1, B1 = ('h', n), ('M', n), ('A', n), ('O', n + 1), ('A', n + 1), ('R', n + 1), ('Ob', n + 1)
-            I = J.I
-            tot['D'] += I([h], [O1], [M, A]); tot['D0'] += I([h], [O1], [M]); tot['dE'] += I([h], [A], [M, O1])
-            tot['dP'] += I([h], [A1], [M, A]); tot['Dp'] += I([h], [O1], [M, A, A1])
-            tot['rD'] += I([h], [R1], [M, A]); tot['sD'] += I([h], [B1], [M, A, R1])
-            tot['rD0'] += I([h], [R1], [M]); tot['sD0'] += I([h], [B1], [M, R1])
-            tot['rdE'] += I([h], [A], [M, R1]); tot['sdE'] += I([A], [B1], [h, R1]) - I([A], [B1], [M, R1])
-            tot['rdP'] += I([R1], [A1], [M, A]) - I([R1], [A1], [h, A]); tot['sdP'] += I([h], [A1], [M, A, R1])
-            tot['rDp'] += I([h], [R1], [M, A, A1]); tot['sDp'] += I([h], [B1], [M, A, A1, R1])
-        rec.eq('Prop 6.1 sum D = sum D0 + sum dE', tot['D'], tot['D0'] + tot['dE'])
-        rec.eq('Prop 6.1 sum D = sum dP + sum D+', tot['D'], tot['dP'] + tot['Dp'])
-        rec.eq('Prop 6.1 sum D = reward terms + rest terms', tot['D'], tot['rD'] + tot['sD'])
-        rec.eq('Prop 6.1 reward terms = D0 + dE reward terms', tot['rD'], tot['rD0'] + tot['rdE'])
-        rec.eq('Prop 6.1 reward terms = dP + D+ reward terms', tot['rD'], tot['rdP'] + tot['rDp'])
-        rec.eq('Prop 6.1 rest terms = D0 + dE rest terms', tot['sD'], tot['sD0'] + tot['sdE'])
-        rec.eq('Prop 6.1 rest terms = dP + D+ rest terms', tot['sD'], tot['sdP'] + tot['sDp'])
-        rec.eq('Prop 6.1 sum D0 = its reward + rest terms', tot['D0'], tot['rD0'] + tot['sD0'])
-        rec.eq('Prop 6.1 sum dE = its reward + rest terms', tot['dE'], tot['rdE'] + tot['sdE'])
-        rec.eq('Prop 6.1 sum dP = its reward + rest terms', tot['dP'], tot['rdP'] + tot['sdP'])
-        rec.eq('Prop 6.1 sum D+ = its reward + rest terms', tot['Dp'], tot['rDp'] + tot['sDp'])
-        # Proposition 6.2, observation first
-        o = {k: 0.0 for k in ('rD', 'sD', 'rD0', 'sD0', 'rdE', 'sdE', 'rdP', 'sdP', 'rDp', 'sDp', 'co')}
-        for n in (t, t + 1, t + 2):
-            h, M, A, A1, R1, B1 = ('h', n), ('M', n), ('A', n), ('A', n + 1), ('R', n + 1), ('Ob', n + 1)
-            I = J.I
-            o['sD'] += I([h], [B1], [M, A]); o['rD'] += I([h], [R1], [M, A, B1])
-            o['sD0'] += I([h], [B1], [M]); o['rD0'] += I([h], [R1], [M, B1])
-            o['sdE'] += I([h], [A], [M, B1]); o['rdE'] += I([A], [R1], [h, B1]) - I([A], [R1], [M, B1])
-            o['sdP'] += I([B1], [A1], [M, A]) - I([B1], [A1], [h, A]); o['rdP'] += I([h], [A1], [M, A, B1])
-            o['sDp'] += I([h], [B1], [M, A, A1]); o['rDp'] += I([h], [R1], [M, A, A1, B1])
-            o['co'] += I([h], [R1], [M, A]) - I([h], [R1], [M, A, B1])
-        rec.eq('Prop 6.2 sum D = rest terms + reward terms', tot['D'], o['sD'] + o['rD'])
-        rec.eq('Prop 6.2 reward terms = D0 + dE reward terms', o['rD'], o['rD0'] + o['rdE'])
-        rec.eq('Prop 6.2 reward terms = dP + D+ reward terms', o['rD'], o['rdP'] + o['rDp'])
-        rec.eq('Prop 6.2 rest terms = D0 + dE rest terms', o['sD'], o['sD0'] + o['sdE'])
-        rec.eq('Prop 6.2 rest terms = dP + D+ rest terms', o['sD'], o['sdP'] + o['sDp'])
-        rec.eq('Prop 6.2 sums of D0, dE, dP, D+ = their rest + reward terms',
-               tot['D0'] + tot['dE'] + tot['dP'] + tot['Dp'], o['sD0'] + o['rD0'] + o['sdE'] + o['rdE'] + o['sdP'] + o['rdP'] + o['sDp'] + o['rDp'])
-        rec.eq('Prop 6.2 reward terms (reward first) - (observation first) = sum of co-informations', tot['rD'] - o['rD'], o['co'])
-        rec.eq('Prop 6.2 rest terms differ by minus the same', tot['sD'] - o['sD'], -o['co'])
+    out = {}
+    for n in range(1, T):
+        h, M, A, O1, A1, M1, R1 = ('h', n), ('M', n), ('A', n), ('O', n + 1), ('A', n + 1), ('M', n + 1), ('R', n + 1)
+        I = J.I
+        D, DM = I([h], [O1], [M, A]), I([h], [M1], [M, A])
+        dP, Dp = I([h], [A1], [M, A]), I([h], [O1], [M, A, A1])
+        rest_a = I([h], [O1], [M, A, M1])
+        b1, b2 = I([h], [M1], [M]), I([h], [A], [M, M1])
+        c2 = I([h], [M1], [M, A, A1])
+        d2 = I([h], [O1], [M, A, A1, M1])
+        rec.eq('Prop 6.6(a) D_n = D^M_n + I(h;O\'|M,A,M\')' + tag, D, DM + rest_a)
+        rec.eq('Prop 6.6(b) D^M_n = I(h;M\'|M) + I(h;A|M,M\')' + tag, DM, b1 + b2)
+        rec.eq('Prop 6.6(b) I(A;M\'|h)-I(A;M\'|M) = I(h;A|M,M\')' + tag, I([A], [M1], [h]) - I([A], [M1], [M]), b2)
+        rec.eq('Prop 6.6(c) I(h;A\'|M,A,M\') = 0' + tag, I([h], [A1], [M, A, M1]), 0.0)
+        rec.eq('Prop 6.6(c) D^M_n = dP_n + I(h;M\'|M,A,A\')' + tag, DM, dP + c2)
+        rec.eq('Prop 6.6(d) D+_n = I(h;M\'|M,A,A\') + I(h;O\'|M,A,A\',M\')' + tag, Dp, c2 + d2)
+        rec.le('Prop 6.6 dP_n <= D^M_n' + tag, dP, DM)
+        rec.le('Prop 6.6 D^M_n <= D_n' + tag, DM, D)
+        rec.eq('Prop 6.6 last term of (a) = last term of (d)' + tag, rest_a, d2)
+        rec.eq('T6 I(h;M\'|M,A,O\') = 0' + tag, I([h], [M1], [M, A, O1]), 0.0)
+        # Lemma 6.1(b): each information is the average divergence between the two predictions
+        pO = J.cdist([O1], [M, A])
+        pM = J.cdist([M1], [M, A])
+        avgO = avgM = 0.0
+        acc = defaultdict(float)
+        for (hh, aa), p in zip(J.keys([h, A]), J.P):
+            acc[(hh, aa)] += p
+        for (hh, aa), p in acc.items():
+            m = mem6(w, hh)
+            env = {(o,): q for o, q in w.env(hh, aa).items() if q > 0}
+            avgO += p * kl(env, pO[(m, aa)])
+            _, hm = hist_preds(w, hh, aa)
+            avgM += p * kl({(k,): v for k, v in hm.items() if v > 0}, pM[(m, aa)])
+        rec.eq('Lem 6.1(b) D_n = E KL(P(O\'|h,A) || P(O\'|M,A))' + tag, D, avgO)
+        rec.eq('Lem 6.1(b) D^M_n = E KL(P(M\'|h,A) || P(M\'|M,A))' + tag, DM, avgM)
+        out[n] = dict(D=D, DM=DM, dP=dP, Dp=Dp, D0=I([h], [O1], [M]), dE=I([h], [A], [M, O1]),
+                      rew=I([h], [R1], [M, A]), b1=b1, b2=b2, c2=c2)
+    return out
+
+
+def check_sec6_values(J, w, hists, pil, rec, t=1, tag=''):
+    """Proposition 6.2, Lemma 6.4, Proposition 6.7 for the later policy pil."""
+    T, g = w.T, w.gamma
+    Qp = {}
+    for n in range(t, T):
+        for h in hists[n]:
+            for a in ACTS_OF(w, h):
+                Qp[(n, h, a)] = q_paths(w, pil, n, h, a)
+    Qb = q_bellman_hist(w, pil, hists, t)
+    for k, v in Qp.items():
+        rec.eq('Prop 6.2 Bellman equation on the history' + tag, v, Qb[k])
+    Qh, Vh = q_hat(w, J, pil, t, 'O')
+    Qh2, _ = q_hat(w, J, pil, t, 'RM')
+    for k, v in Qh.items():
+        rec.eq('Lem 6.4 memory equation via E[R|M,A] and P(M\'|M,A)' + tag, v, Qh2[k])
+    ERm = {}
+    for n in range(t, T):
+        _, ERm[n] = J.cexp(J.vals(('R', n + 1)), [('M', n), ('A', n)])
+    PMm = {n: J.cdist([('M', n + 1)], [('M', n), ('A', n)]) for n in range(t, T)}
+
+    def gap(n, h, a):
+        return Qp[(n, h, a)] - Qh[(n, mem6(w, h), a)]
+
+    def delta(n, h, a):
+        er, _ = hist_preds(w, h, a)
+        return er - ERm[n][(mem6(w, h), a)]
+
+    def tau(n, h, a):
+        if n + 1 == T:
+            return 0.0
+        _, pm = hist_preds(w, h, a)
+        mm = PMm[n][(mem6(w, h), a)]
+        keys = set(pm) | set(k[0] for k in mm)
+        return sum((pm.get(k, 0.0) - mm.get((k,), 0.0)) * Vh[(n + 1, k)] for k in keys)
+
+    for n in range(t, T):
+        for h in hists[n]:
+            m = mem6(w, h)
+            for a in ACTS_OF(w, h):
+                nxt = 0.0
+                if n + 1 < T:
+                    for o, po in w.env(h, a).items():
+                        if po <= 0:
+                            continue
+                        h1 = (h[0] + (o,), h[1] + (a,))
+                        m1 = w.next_mem(m, a, o)
+                        nxt += po * sum(p * gap(n + 1, h1, a1) for a1, p in pil[n + 1](m1).items() if p > 0)
+                rec.eq('Prop 6.7 one step: gap = delta + g tau + g E[next gap]' + tag,
+                       gap(n, h, a), delta(n, h, a) + g * tau(n, h, a) + g * nxt)
+                unrolled = path_sum(w, pil, n, h, a, lambda k, hk, ak: delta(k, hk, ak) + g * tau(k, hk, ak))
+                rec.eq('Prop 6.7 unrolled: gap = E[sum g^k (delta + g tau)]' + tag, gap(n, h, a), unrolled)
+    return Qp, Qh, Vh, gap, delta, tau
+
+
+def random_later_policy(seed, T, t, mems, deterministic=False):
+    rng = random.Random(f"later|{seed}")
+    table = {}
+    for k in range(t + 1, T):
+        for m in mems:
+            if deterministic:
+                b = rng.choice(ACTS)
+                table[(k, m)] = {a: (1.0 if a == b else 0.0) for a in ACTS}
+            else:
+                table[(k, m)] = dict(zip(ACTS, normalize([rng.random() + 0.05 for _ in ACTS])))
+    return {k: (lambda m, k=k: table[(k, m)]) for k in range(t + 1, T)}
+
+
+def behaviour_as_later(w, T, t):
+    return {k: (lambda m: w.beh(m)) for k in range(t + 1, T)}
+
+
+class InfoWorld:
+    """Built so that the conditions of Proposition 6.8 hold: given (M_n, A_n), the law of the pair
+    (R_{n+1}, M_{n+1}) is fixed, and how it is spread over the observations of each pair depends on
+    the whole history. The behaviour is drawn separately (beh_seed); the environment is not."""
+    OBS = [(r, b) for r in (0, 1) for b in (0, 1, 2)]
+
+    def __init__(self, seed, T, gamma, beh_seed):
+        rng = random.Random(f"info|{seed}")
+        self.seed, self.T, self.gamma = seed, T, gamma
+        self.p0 = dict(zip(self.OBS, normalize([rng.random() + 0.1 for _ in self.OBS])))
+        self.f0 = {o: rng.choice(MEMS) for o in self.OBS}
+        self.f0[self.OBS[0]], self.f0[self.OBS[1]] = 0, 1
+        self.f = {(m, a, o): rng.choice(MEMS) for m in MEMS for a in ACTS for o in self.OBS}
+        self.q = {}
+        for m in MEMS:
+            for a in ACTS:
+                groups = sorted(set((o[0], self.f[(m, a, o)]) for o in self.OBS))
+                self.q[(m, a)] = dict(zip(groups, normalize([rng.random() + 0.1 for _ in groups])))
+        rb = random.Random(f"info|{seed}|beh|{beh_seed}")
+        self.pi = {m: dict(zip(ACTS, normalize([rb.random() + 0.2 for _ in ACTS]))) for m in MEMS}
+        self._env = {}
+
+    def first_mem(self, o):
+        return self.f0[o]
+
+    def next_mem(self, m, a, o):
+        return self.f[(m, a, o)]
+
+    def beh(self, m):
+        return self.pi[m]
+
+    def env(self, h, a):
+        key = (h, a)
+        if key not in self._env:
+            m = mem6(self, h)
+            r = random.Random(f"info|{self.seed}|env|{h!r}|{a}")
+            out = {}
+            for (rew, m1), qg in self.q[(m, a)].items():
+                members = [o for o in self.OBS if o[0] == rew and self.f[(m, a, o)] == m1]
+                for o, p in zip(members, normalize([r.random() + 0.05 for _ in members])):
+                    out[o] = qg * p
+            self._env[key] = out
+        return self._env[key]
+
+
+class KeyWorld:
+    """Example 6.9. memory = 'C' (M_1 = c), 'S' (M_1 = s) or 'C2' (M_1 = c, M_2 also stores s)."""
+
+    def __init__(self, memory):
+        self.T, self.gamma, self.memory = 3, 1.0, memory
+        self.p0 = {(0, (c, s)): 0.25 for c in (0, 1) for s in (0, 1)}
+
+    def env(self, h, a):
+        obs, acts = h
+        n = len(obs)
+        if n == 1:
+            c, s = obs[0][1]
+            if a == c:
+                return {(0, (0, s)): 0.5, (0, (1, s)): 0.5}
+            return {(0, ('blank', s)): 1.0}
+        if n == 2:
+            x = obs[1][1][0]
+            if x == 'blank':
+                return {(0, 0): 0.5, (1, 0): 0.5}
+            return {(1 if a == x else 0, 0): 1.0}
+        return {(0, 0): 1.0}
+
+    def first_mem(self, o):
+        c, s = o[1]
+        return s if self.memory == 'S' else c
+
+    def next_mem(self, m, a, o):
+        if isinstance(o[1], tuple):
+            x, s = o[1]
+            return (x, s) if self.memory == 'C2' else x
+        return 'end'
+
+    def beh(self, m):
+        return {0: 0.5, 1: 0.5}
+
+
+def key_later(m):
+    x = m[0] if isinstance(m, tuple) else m
+    if x in (0, 1):
+        return {x: 1.0, 1 - x: 0.0}
+    return {0: 0.5, 1: 0.5}
+
+
+def check_example(rec):
+    expect = {  # in units of log 2
+        'C': dict(D=1, D0=1, dE=0, dP=0, Dp=1, DM=0),
+        'S': dict(D=1, D0=0, dE=1, dP=0, Dp=1, DM=1, b1=0, b2=1, c2=1),
+        'C2': dict(D=1, D0=1, dE=0, dP=0, Dp=1, DM=1),
+    }
+    for mem, ex in expect.items():
+        w = KeyWorld(mem)
+        J, hists = joint6(w)
+        tag = f' [Ex 6.9 {mem}]'
+        terms = check_sec6_terms(J, w, hists, rec, tag)
+        for k, v in ex.items():
+            rec.eq(f'Ex 6.9 memory {mem}: {k}_1 / log 2 = {v}', terms[1][k] / LOG2, v)
+        rec.eq(f'Ex 6.9 memory {mem}: reward parts at n = 1, 2 are 0', terms[1]['rew'] + terms[2]['rew'], 0.0)
+        beh = behaviour_as_later(w, 3, 1)
+        Qp, Qh, Vh, gap, delta, tau = check_sec6_values(J, w, hists, beh, rec, 1, tag + ' pi')
+        for h in hists[1]:
+            for a in (0, 1):
+                rec.eq(f'Ex 6.9 memory {mem}: Q^pi_1 = 1/2', Qp[(1, h, a)], 0.5)
+                rec.eq(f'Ex 6.9 memory {mem}: error of the critic of pi = 0', gap(1, h, a), 0.0)
+                rec.eq(f'Ex 6.9 memory {mem}: tau^pi_1 = 0', tau(1, h, a), 0.0)
+        lat = {2: key_later}
+        Qp, Qh, Vh, gap, delta, tau = check_sec6_values(J, w, hists, lat, rec, 1, tag + " pi'")
+        for h in hists[1]:
+            c = h[0][0][1][0]
+            for a in (0, 1):
+                rec.eq(f"Ex 6.9 memory {mem}: Q^pi'_1 = 1 if a = c else 1/2", Qp[(1, h, a)], 1.0 if a == c else 0.5)
+                want = (0.25 if a == c else -0.25) if mem == 'S' else 0.0
+                rec.eq(f"Ex 6.9 memory {mem}: error under pi' = {'+-1/4' if mem == 'S' else '0'}", gap(1, h, a), want)
+                rec.eq(f"Ex 6.9 memory {mem}: tau^pi'_1 = error under pi'", tau(1, h, a), want)
+        if mem == 'S':
+            for (n, m, a), v in Qh.items():
+                if n == 1:
+                    rec.eq("Ex 6.9 memory S: hat Q^pi'_1 = 3/4", v, 0.75)
+
+
+def check_info_world(rec):
+    for seed, T in ((11, 4), (12, 3), (13, 4)):
+        worlds = [InfoWorld(seed, T, 0.9, b) for b in (0, 1)]
+        qhats = []
+        for i, w in enumerate(worlds):
+            J, hists = joint6(w)
+            tag = ' [info world]'
+            terms = check_sec6_terms(J, w, hists, rec, tag)
+            for n in range(1, T):
+                rec.eq('Prop 6.8 world: reward part = 0', terms[n]['rew'], 0.0)
+                rec.eq('Prop 6.8 world: D^M_n = 0', terms[n]['DM'], 0.0)
+                rec.le('Prop 6.8 world: D_n >= 0.001 (the world is not trivial)', 1e-3, terms[n]['D'])
+            pols = [random_later_policy(f"{seed}|{j}", T, 1, MEMS, deterministic=(j == 2)) for j in range(3)]
+            pols.append(behaviour_as_later(w, T, 1))
+            qh_this = []
+            for j, pil in enumerate(pols):
+                Qp, Qh, Vh, gap, delta, tau = check_sec6_values(J, w, hists, pil, rec, 1, tag)
+                for (n, h, a) in Qp:
+                    rec.eq('Prop 6.8(a) Q^pi\'_n(h,a) = hat Q^pi\'_n(M_n,a) for every later policy', gap(n, h, a), 0.0)
+                qh_this.append(Qh)
+            qhats.append(qh_this)
+            print(f"  info world seed {seed} behaviour {i} (T={T}, {J.N} trajectories) done", flush=True)
+        for Qa, Qb in zip(qhats[0][:3], qhats[1][:3]):  # the three later policies shared by both behaviours
+            for k in Qa:
+                rec.eq('Prop 6.8(b) hat Q^pi\' is the same under a second behaviour', Qa[k], Qb[k])
+
+
+def check_random_sec6(rec):
+    for seed, T in ((1, 4), (2, 4), (3, 3), (4, 3)):
+        w = World(seed, T, 0.9)
+        J, hists = joint6(w)
+        check_sec6_terms(J, w, hists, rec)
+        pols = [random_later_policy(f"rand|{seed}|{j}", T, 1, MEMS, deterministic=(j == 1)) for j in range(2)]
+        pols.append(behaviour_as_later(w, T, 1))
+        for pil in pols:
+            check_sec6_values(J, w, hists, pil, rec, 1)
+        print(f"  section 6, random world seed {seed} (T={T}, {J.N} trajectories) done", flush=True)
 
 
 def main():
@@ -347,8 +766,10 @@ def main():
         J = world_joint(w)
         check_one_step(J, w, rec)
         check_steps(J, w, rec)
-        check_sum(J, w, rec)
         print(f"seed {seed} (T={T}, {J.N} trajectories) done", flush=True)
+    check_random_sec6(rec)
+    check_info_world(rec)
+    check_example(rec)
     ok = rec.report()
     print("ALL PASS" if ok else "SOME CHECKS FAILED")
     sys.exit(0 if ok else 1)
