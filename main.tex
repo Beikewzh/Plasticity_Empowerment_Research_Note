@@ -37,7 +37,7 @@
 \maketitle
 
 \begin{abstract}
-For an agent that acts on a memory, we derive the empowerment and plasticity mismatches between the history and the memory, the two splits of the state defect, and three ways to separate the reward inside them. We then follow the interaction over several steps: the Bellman equations of every later policy on the history and on the memory, the history's information about the agent's next memory and its relation to the two splits, and two zero conditions, on the reward part and on this information, under which the memory gives the value of every later policy that reads it. Every derivation is written term by term, and every cancellation names the assumption or lemma that allows it.
+For an agent that acts on a memory, we derive the empowerment and plasticity mismatches between the history and the memory, the two splits of the state defect, and three ways to separate the reward inside them. We then follow the interaction over several steps: the Bellman equations of every later policy on the history and on the memory, the history's information about the agent's next memory and its relation to the two splits, and two zero conditions, on the reward part and on this information, under which the memory gives the value of every later policy that reads it. Finally, for a memory with few values, we optimise one step of the memory for the return, for this information and for the memory's coding cost, following \citet{still2012information}, and find which information the best memory keeps. Every derivation is written term by term, and every cancellation names the assumption or lemma that allows it.
 \end{abstract}
 
 \section{Setting}\label{sec:setting}
@@ -68,7 +68,7 @@ $M_1=f_1(O_1)$ and $M_{t+1}=f(M_t,A_t,O_{t+1})$ for fixed maps $f_1,f$. Hence $M
 $P(A_t=a\mid h_t)=\pi(a\mid M_t)$: the action depends on the history only through the memory.
 \end{assumption}
 
-Every numbered statement was checked numerically. The script \texttt{checks/verify\_note.py} computes the exact law of all trajectories in small random environments whose next observation depends on the whole history, and, for Section~\ref{sec:bellman}, also in the environments described there; it tests each numbered statement for a finite horizon, and the largest error is $10^{-13}$.
+Every numbered statement was checked numerically. The script \texttt{checks/verify\_note.py} computes the exact law of all trajectories in small random environments whose next observation depends on the whole history, and, for Sections~\ref{sec:bellman} and~\ref{sec:capacity}, also in the environments described there; it tests each numbered statement for a finite horizon, and the largest error is $10^{-13}$.
 
 \section{Tools}\label{sec:tools}
 
@@ -705,7 +705,155 @@ S & $1$ & $0$ & $1$ & $1$ & $0$ & $+\tfrac14$ if $a=c$, $-\tfrac14$ if $a\ne c$\
 In both memories $\dP_1=0$, $D^+_1=D_1$, and the reward parts at times $1$ and $2$ are zero. For memory C, $D_1$ is the information about $s$ in the second observation, which does not reach $M_2$. For memory S, $D^M_1$ is the information that $c$ gives about whether $e$ is shown; it equals $I(h_1;A_1\mid M_1,M_2)$ in Proposition~\ref{prop:DM}(b), with $I(h_1;M_2\mid M_1)=0$, and $I(h_1;M_2\mid M_1,A_1,A_2)$ in~(c). Under $\pi$ every value is $\tfrac12$, since $A_2$ is uniform, so the error of the critic of $\pi$ is zero for both memories, and $\tau^\pi_1=0$ because $\hat V^\pi_2=\tfrac12$ at every next memory. Under $\pi'$, $Q^{\pi'}_1(h_1,a)$ is $1$ when $a=c$ and $\tfrac12$ otherwise; memory C gives the same values, and memory S gives $\tfrac34$ for both actions, which is the error $\tau^{\pi'}_1=\pm\tfrac14$, since $\hat V^{\pi'}_2$ is $1$ when $M_2$ shows $e$ and $\tfrac12$ at a blank. So memory C satisfies the conditions of Proposition~\ref{prop:every} and memory S does not, while $D_1$ and the error of the critic of $\pi$ are the same for both. If $M_2$ also stored $s$, memory C would have $D^M_1=1$ with the same errors under $\pi$ and $\pi'$: the conditions are sufficient, and they concern the memory at every time.
 \end{example}
 
-\paragraph{What is known.} The one-step empowerment and plasticity are those of \citet{abel2025plasticity}; the chain rule and the other tools are standard; the partial information decomposition is that of \citet{williams2010nonnegative}, with the conditional form of \citet{matthias2025novel} and the measure of \citet{bertschinger2014quantifying}. The terms $D^0_t$, $D^+_t$, the two splits and the reward parts are defined and derived here; a short search did not find them elsewhere. The Bellman equations of Section~\ref{sec:bellman} are standard \citep{sutton2018reinforcement}. The two conditions of Proposition~\ref{prop:every} are those of an information state of \citet{subramanian2022approximate}, a memory that predicts the expected reward and the law of the memory at the next time as well as the history does, with the reward part in place of their condition on the expected reward; \citet{ni2024bridging} call them reward prediction and self-prediction, and that such a memory gives the values of the policies that read it is known in this literature. The relations of $D^M_n$ to the terms of Section~\ref{sec:splits} in Proposition~\ref{prop:DM} follow the steps of Section~\ref{sec:splits}; we have not searched for them.
+\section{A memory of limited capacity}\label{sec:capacity}
+
+This section asks which information a memory with few values should keep. We follow \citet{still2012information}: one time step is optimised while everything else is held fixed, so that the later rewards enter that step through a fixed action value, and the objective adds an information term and a coding cost to the return; as in \citet{still2009information}, the coding cost is that of the memory. The information term is the one that Section~\ref{sec:bellman} shows the value needs, the history's information about the reward and the next memory.
+
+\paragraph{Setting.} Fix a time $t<T$. In this section the following replaces Assumptions~\ref{as:mem} and~\ref{as:pol} at time $t$. The memory $M_t$ takes values in a finite set $\mathcal M$ and is drawn from an \emph{encoder} $q(m\mid h_t)$, a law on $\mathcal M$ for each history. The action is drawn from a fixed policy $\pi_t(a\mid m)$ with $\pi_t(a\mid m)>0$. The next memory is a fixed function $M_{t+1}=g(h_{t+1})$ of the history, and $Q(h,a)$ is a fixed action value, the same for every encoder. The value $Q^{\pi'}_t$ of Section~\ref{sec:bellman} is such an action value when the later memories are fixed functions of the history, since the encoder changes only $A_t$, which is set in $Q^{\pi'}_t(h,a)$. We write $Y_{t+1}=(R_{t+1},M_{t+1})$, $p(h)$ for the law of $h_t$, and $q(m)=\sum_hp(h)\,q(m\mid h)$. The law of the experience at time $t$ is
+\[
+P(h_t=h,M_t=m,A_t=a,Y_{t+1}=y)=p(h)\,q(m\mid h)\,\pi_t(a\mid m)\,P(Y_{t+1}=y\mid h,a),
+\]
+where $P(Y_{t+1}=y\mid h,a)$ is computed from $e$ and $g$. Since $M_{t+1}$ is not computed from $M_t$, the memory at time $t$ acts only through the action $A_t$ and through what it predicts; a memory that carries information to a later time is outside this setting.
+
+\begin{definition}\label{def:objective}
+For $\alpha,\beta\ge0$ and $\lambda>0$, the objective of an encoder $q$ is
+\[
+F[q]=\alpha\,\E[Q(h_t,A_t)]-\beta\,I(h_t;Y_{t+1}\mid M_t,A_t)-\lambda\,I(h_t;M_t).
+\]
+\end{definition}
+
+The first term is the return. The second is the history's information about the reward and the next memory beyond the memory and the action, which Section~\ref{sec:bellman} shows the value needs. The third is the information that the memory keeps about the history; a memory with $K$ values has $I(h_t;M_t)\le\log K$, and $\lambda$ is the price of this capacity.
+
+\begin{lemma}[The three terms]\label{lem:terms7}
+For every encoder $q$ and every $(m,a)$ with $q(m)>0$:
+\begin{enumerate}
+\item[(a)] $P(h_t=h\mid M_t=m,A_t=a)=P(h_t=h\mid M_t=m)=p(h)\,q(m\mid h)/q(m)$, and the law of $Y_{t+1}$ given $(h_t,M_t,A_t)=(h,m,a)$ is $P(Y_{t+1}\mid h,a)$;
+\item[(b)] $\E[Q(h_t,A_t)]=\sum_{h,m}p(h)\,q(m\mid h)\,U(h,m)$, with $U(h,m)=\sum_a\pi_t(a\mid m)\,Q(h,a)$;
+\item[(c)] $I(h_t;Y_{t+1}\mid M_t,A_t)=\sum_{h,m}p(h)\,q(m\mid h)\,d(h,m)$, with
+\begin{align*}
+d(h,m)&=\sum_a\pi_t(a\mid m)\,\KL\big(P(Y_{t+1}\mid h,a)\,\|\,P(Y_{t+1}\mid m,a)\big),\\
+P(Y_{t+1}\mid m,a)&=\sum_hP(h_t=h\mid M_t=m)\,P(Y_{t+1}\mid h,a);
+\end{align*}
+\item[(d)] $I(h_t;M_t)=\sum_{h,m}p(h)\,q(m\mid h)\log\big(q(m\mid h)/q(m)\big)$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+(a) Summing the law over $h$ and $y$ gives $P(M_t=m,A_t=a)=q(m)\,\pi_t(a\mid m)$; dividing the law, summed over $y$, by it cancels $\pi_t(a\mid m)$. The second statement is the last factor of the law. (b) The expectation under the law, summed first over $y$ and then over $a$. (c) Here $M_t$ is not a function of $h_t$, so (T4) does not apply, and we compute both entropies of (T1):
+\begin{align*}
+I(h_t;Y_{t+1}\mid M_t,A_t)&=H(Y_{t+1}\mid M_t,A_t)-H(Y_{t+1}\mid h_t,M_t,A_t) \why{T1}\\
+&=\E\big[-\log P(Y_{t+1}\mid M_t,A_t)\big]-\E\big[-\log P(Y_{t+1}\mid h_t,A_t)\big] \why{(a)}\\
+&=\E\big[\KL\big(P(Y_{t+1}\mid h_t,A_t)\,\|\,P(Y_{t+1}\mid M_t,A_t)\big)\big] \why{expectation over $Y_{t+1}$ first, (a)},
+\end{align*}
+and the remaining expectation over $(h_t,M_t,A_t)$ is the sum in (c). By (a), $P(Y_{t+1}\mid m,a)=\sum_hP(h_t=h\mid m,a)\,P(Y_{t+1}\mid h,a)=\sum_hP(h_t=h\mid m)\,P(Y_{t+1}\mid h,a)$. (d) The definition of the mutual information under the law $p(h)\,q(m\mid h)$.
+\end{proof}
+
+\begin{proposition}[Derivatives]\label{prop:deriv7}
+Fix $h$ with $p(h)>0$ and $m$ with $q(m)>0$ and $d(h,m)<\infty$. As functions of the number $q(m\mid h)$, with $q(m)$ and $P(Y_{t+1}\mid m,a)$ as in Lemma~\ref{lem:terms7}, the three expressions of Lemma~\ref{lem:terms7} have the partial derivatives
+\begin{align*}
+\frac{\partial\,\E[Q(h_t,A_t)]}{\partial q(m\mid h)}&=p(h)\,U(h,m),\\
+\frac{\partial\,I(h_t;Y_{t+1}\mid M_t,A_t)}{\partial q(m\mid h)}&=p(h)\,d(h,m),\\
+\frac{\partial\,I(h_t;M_t)}{\partial q(m\mid h)}&=p(h)\log\frac{q(m\mid h)}{q(m)},
+\end{align*}
+the last when $q(m\mid h)>0$.
+\end{proposition}
+
+\begin{proof}
+The first expression is linear in $q(m\mid h)$ with coefficient $p(h)\,U(h,m)$. For the third, $\sum_{h'}p(h')\,q(m\mid h')\log q(m)=q(m)\log q(m)$, so
+\[
+I(h_t;M_t)=\sum_{h',m'}p(h')\,q(m'\mid h')\log q(m'\mid h')-\sum_{m'}q(m')\log q(m'),
+\]
+whose derivative is $p(h)\big(\log q(m\mid h)+1\big)-p(h)\big(\log q(m)+1\big)$, and the two $1$'s cancel. For the second, write $N(m,a,y)=\sum_{h'}p(h')\,q(m\mid h')\,\pi_t(a\mid m)\,P(Y_{t+1}=y\mid h',a)$ and $N(m,a)=q(m)\,\pi_t(a\mid m)$, so that $P(Y_{t+1}=y\mid m,a)=N(m,a,y)/N(m,a)$ and $\sum_yN(m,a,y)=N(m,a)$. Then
+\begin{align*}
+I(h_t;Y_{t+1}\mid M_t,A_t)&=\sum_{h',m',a}p(h')\,q(m'\mid h')\,\pi_t(a\mid m')\sum_yP(y\mid h',a)\log P(y\mid h',a)\\
+&\quad-\sum_{m',a,y}N(m',a,y)\log N(m',a,y)+\sum_{m',a}N(m',a)\log N(m',a),
+\end{align*}
+where we wrote $P(y\mid h',a)$ for $P(Y_{t+1}=y\mid h',a)$. The derivative of the three lines with respect to $q(m\mid h)$ is
+\begin{align*}
+&p(h)\sum_a\pi_t(a\mid m)\sum_yP(y\mid h,a)\log P(y\mid h,a)\\
+&\quad-p(h)\sum_a\pi_t(a\mid m)\sum_yP(y\mid h,a)\big(\log N(m,a,y)+1\big)\\
+&\quad+p(h)\sum_a\pi_t(a\mid m)\big(\log N(m,a)+1\big).
+\end{align*}
+The $1$'s cancel because $\sum_yP(y\mid h,a)=1$, and what remains is
+\[
+p(h)\sum_a\pi_t(a\mid m)\sum_yP(y\mid h,a)\log\frac{P(y\mid h,a)}{N(m,a,y)/N(m,a)}=p(h)\,d(h,m).
+\] Since $d(h,m)<\infty$, $N(m,a,y)>0$ wherever $P(y\mid h,a)>0$, so every logarithm is finite and the derivative exists.
+\end{proof}
+
+So moving the history $h$ towards the memory value $m$ changes the information term by $d(h,m)$, the divergence between $h$'s own prediction of the reward and the next memory and the prediction of the histories already at $m$; the change of these predictions themselves contributes nothing, as in the information bottleneck \citep{tishby1999information}.
+
+\begin{proposition}[The best encoder]\label{prop:encoder}
+Let $q$ maximise $F$ over encoders, let $h$ have $p(h)>0$, and let $S(h)=\{m:q(m\mid h)>0\}$.
+\begin{enumerate}
+\item[(a)] The quantity $\alpha\,U(h,m)-\beta\,d(h,m)-\lambda\log\big(q(m\mid h)/q(m)\big)$ is the same for every $m\in S(h)$; equivalently, for $m\in S(h)$,
+\[
+q(m\mid h)=\frac{q(m)\exp\big\{\big[\alpha\,U(h,m)-\beta\,d(h,m)\big]/\lambda\big\}}{\sum_{m'\in S(h)}q(m')\exp\big\{\big[\alpha\,U(h,m')-\beta\,d(h,m')\big]/\lambda\big\}}.
+\]
+\item[(b)] Every $m$ with $q(m)>0$ and $d(h,m)<\infty$ belongs to $S(h)$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+(a) Let $m,m'\in S(h)$. Both $P(Y_{t+1}\mid m,a)$ and $P(Y_{t+1}\mid m',a)$ are averages that include $h$ with positive weight, so they are positive wherever $P(Y_{t+1}\mid h,a)$ is, and $d(h,m),d(h,m')<\infty$. Moving a mass $\varepsilon$ from $m'$ to $m$ at $h$ gives an encoder for every small $\varepsilon$ of either sign, and by Proposition~\ref{prop:deriv7} $F$ changes at the rate $p(h)\big[G(m)-G(m')\big]$, where $G(m)=\alpha\,U(h,m)-\beta\,d(h,m)-\lambda\log\big(q(m\mid h)/q(m)\big)$. At a maximiser this rate is zero, so $G(m)=G(m')$. Writing $G(m)=c$ for $m\in S(h)$ and solving for $q(m\mid h)$ gives $q(m\mid h)=q(m)\exp\{[\alpha U(h,m)-\beta d(h,m)-c]/\lambda\}$, and $c$ is fixed by $\sum_{m\in S(h)}q(m\mid h)=1$.
+
+(b) Suppose that $q(m)>0$, $d(h,m)<\infty$ and $q(m\mid h)=0$, take $m'\in S(h)$, and move a mass $\varepsilon>0$ from $m'$ to $m$ at $h$. By Proposition~\ref{prop:deriv7}, the return and the information term change by $O(\varepsilon)$, and so do the terms of $I(h_t;M_t)$ other than the new term $p(h)\,\varepsilon\log\big(\varepsilon/q(m)\big)$. Hence $F$ changes by $\lambda\,p(h)\,\varepsilon\log(1/\varepsilon)+O(\varepsilon)$, which is positive for small $\varepsilon$, so $q$ is not a maximiser.
+\end{proof}
+
+A history is thus sent to the memory values whose policy takes actions of high value for it and whose prediction of the reward and the next memory is close to its own, and $\lambda$ sets how sharply. A memory value whose prediction puts zero probability on an outcome that $h$ can produce has $d(h,m)=\infty$ and receives no mass from $h$, which is how a maximiser can be a deterministic encoder although $\lambda>0$.
+
+\begin{corollary}[A policy that does not read the memory]\label{cor:noread}
+If $\pi_t(\cdot\mid m)$ is the same law for every $m$, then $\E[Q(h_t,A_t)]$ is the same for every encoder, and the maximisers of $F$ do not depend on $\alpha$.
+\end{corollary}
+
+\begin{proof}
+$U(h,m)=\sum_a\pi_t(a)\,Q(h,a)$ does not depend on $m$, so by Lemma~\ref{lem:terms7}(b), $\E[Q(h_t,A_t)]=\sum_hp(h)\,U(h)\sum_mq(m\mid h)=\sum_hp(h)\,U(h)$.
+\end{proof}
+
+\begin{example}[Looking for a key, one bit]\label{ex:key7}
+Take the world of Example~\ref{ex:key} at $t=1$, with $\pi_1$ uniform, $M_2$ what the second observation shows in place of $e$, and the later policy uniform, so that $Q(h_1,a)=\tfrac12$. The memory $M_1$ has two values, and $H$ is measured in nats. For every encoder,
+\[
+\E[Q(h_1,A_1)]=\tfrac12,\qquad I(h_1;Y_2\mid M_1,A_1)=H(c\mid M_1),\qquad I(h_1;M_1)\ge\log2-H(c\mid M_1),
+\]
+with equality in the last exactly when $M_1$ depends on $h_1$ only through $c$. Hence
+\[
+F[q]\le\tfrac\alpha2-\lambda\log2-(\beta-\lambda)\,H(c\mid M_1),
+\]
+with equality exactly when $M_1$ depends on $h_1$ only through $c$. The best encoder stores $c$ when $\beta>\lambda$, with $F=\tfrac\alpha2-\lambda\log2$, and stores nothing when $\beta<\lambda$, with $F=\tfrac\alpha2-\beta\log2$; storing $s$ gives $F=\tfrac\alpha2-(\beta+\lambda)\log2$ and is never best.
+\end{example}
+
+\begin{proof}[Derivation]
+The first identity is Corollary~\ref{cor:noread} with $Q=\tfrac12$. For the second, $h_1$ consists of $c$ and $s$ (and the reward $0$), $R_2=0$, and given $(h_1,A_1=a)$ the next memory $M_2$ is a uniform bit if $a=c$ and a blank otherwise. By Lemma~\ref{lem:terms7}(a), $H(Y_2\mid h_1,M_1,A_1)=P(A_1=c)\log2=\tfrac12\log2$, since $A_1$ is uniform and independent of $(h_1,M_1)$. Given $(M_1,A_1)=(m,a)$, $M_2$ shows a bit with probability $P(c=a\mid m)$ and a blank otherwise, so $H(Y_2\mid M_1=m,A_1=a)=H_b\big(P(c=a\mid m)\big)+P(c=a\mid m)\log2$, with $H_b$ the binary entropy. Averaging over the uniform $a$, and using $H_b(P(c=0\mid m))=H_b(P(c=1\mid m))=H(c\mid M_1=m)$, gives $H(Y_2\mid M_1,A_1)=H(c\mid M_1)+\tfrac12\log2$, and (T1) gives $I(h_1;Y_2\mid M_1,A_1)=H(c\mid M_1)$. For the third,
+\begin{align*}
+I(h_1;M_1)&=I(c,s;M_1)=I(c;M_1)+I(s;M_1\mid c) \why{T2}\\
+&\ge I(c;M_1)=\log2-H(c\mid M_1) \why{T3; $c$ uniform},
+\end{align*}
+with equality exactly when $I(s;M_1\mid c)=0$. Substituting into $F=\alpha\E[Q]-\beta I(h_1;Y_2\mid M_1,A_1)-\lambda I(h_1;M_1)$ gives the bound. If $\beta>\lambda$, the bound is largest at $H(c\mid M_1)=0$, which a memory equal to $c$ attains with equality. If $\beta<\lambda$, it is largest at $H(c\mid M_1)=\log2$, and equality then needs $M_1$ independent of $c$ and depending on $h_1$ only through $c$, that is, independent of $h_1$. A memory equal to $s$ has $H(c\mid M_1)=\log2$ and $I(h_1;M_1)=\log2$.
+\end{proof}
+
+Under the uniform policy the critic of $\pi$ prefers neither memory (Example~\ref{ex:key}), and here the return term has no effect at all; the information term decides, and it decides for $c$ as soon as its weight exceeds the price of capacity.
+
+\begin{example}[Two keys, one bit]\label{ex:twokeys}
+The first observation shows three independent uniform bits $c_A$, $c_B$ and $s$. The action $A_1=(a_A,a_B)$ chooses a side for each key; the second observation shows a uniform bit $e_A$ if $a_A=c_A$ and a blank otherwise, the same for key $B$, and $s$ again, with $R_2=0$. Then $R_3=\mathbf 1[b_A=e_A]+2\cdot\mathbf 1[b_B=e_B]$ for $A_2=(b_A,b_B)$, and $T=3$, $\gamma=1$. The memory $M_1$ has two values, $M_2$ is what the second observation shows for the two keys, and $\pi_1(a\mid m)$ chooses $(m,m)$ with probability $0.9$ and each other action with probability $0.1/3$, so the action reads the memory as the side to look at. We take $\alpha=\beta=1$, $\lambda=0.1$, and three action values: (i) the later policy uniform; (ii) the later policy that chooses $b_X=e_X$ when $M_2$ shows $e_X$ and is uniform at a blank; (iii) $Q(h_1,a)=\E\big[R_2+\max_b\hat Q_2(M_2,b)\mid h_1,a\big]$ with $\hat Q_2$ of Definition~\ref{def:bellman-m} computed from the experience of the uniform policy. At time $2$ the reward part is zero, since $M_2$ shows $e_X$ whenever the history does, so by Proposition~\ref{prop:every} $\max_b\hat Q_2(M_2,b)$ is the value of the best later policy that reads $M_2$, and (iii) equals (ii) for every $(h_1,a)$. For five encoders that store one bit, the exact values are:
+\begin{center}
+\small
+\begin{tabular}{lccccc}
+\toprule
+memory stores & $\E[Q]$ in (i) & $\E[Q]$ in (ii), (iii) & $I(h_1;Y_2\mid M_1,A_1)/\log2$ & $F$ in (i) & $F$ in (ii), (iii)\\
+\midrule
+$c_A$ & $1.5$ & $2.467$ & $1$ & $0.738$ & $1.704$\\
+$c_B$ & $1.5$ & $2.683$ & $1$ & $0.738$ & $1.921$\\
+$c_A\oplus c_B$ & $1.5$ & $2.25$ & $1$ & $0.738$ & $1.488$\\
+$s$ & $1.5$ & $2.25$ & $2$ & $0.044$ & $0.794$\\
+nothing & $1.5$ & $2.25$ & $2$ & $0.114$ & $0.864$\\
+\bottomrule
+\end{tabular}
+\end{center}
+In (i) every action value is $1.5$, so the return term is the same for every encoder. The information term prefers $c_A$, $c_B$ and $c_A\oplus c_B$, each of which tells whether one look succeeds, but it gives them the same value, so the objective does not choose between the keys. In (ii) and (iii) the best of the $256$ deterministic encoders stores $c_B$, the key of reward $2$. The iteration of Proposition~\ref{prop:encoder}(a) from $20$ random encoders ends at this encoder in $12$ runs for (ii) and in $14$ runs for (iii); the other runs end at the encoder that stores $c_A$ or at another solution of the equation with $F=1.695$, so the equation has several solutions and only one of them is the maximiser.
+\end{example}
+
+So in this setting the objective answers the question in two parts. The information term keeps what predicts the reward and the next memory and drops the rest, such as $s$, without any learned policy (Example~\ref{ex:key7}). Among pieces of information that predict equally well it cannot choose, since all information terms are unchanged when the rewards are relabelled; the choice comes from the return term, which acts only when the action at $t$ reads the memory and the action values tell the pieces apart. The later policy need not have improved for this: the value of the best later policy, computed from the next memory's own model, already tells them apart when the next memory satisfies the conditions of Proposition~\ref{prop:every} (Example~\ref{ex:twokeys}(iii)). The setting does not cover a memory that carries information to a later time, since it holds the next memory fixed.
+
+\paragraph{What is known.} The one-step empowerment and plasticity are those of \citet{abel2025plasticity}; the chain rule and the other tools are standard; the partial information decomposition is that of \citet{williams2010nonnegative}, with the conditional form of \citet{matthias2025novel} and the measure of \citet{bertschinger2014quantifying}. The terms $D^0_t$, $D^+_t$, the two splits and the reward parts are defined and derived here; a short search did not find them elsewhere. The Bellman equations of Section~\ref{sec:bellman} are standard \citep{sutton2018reinforcement}. The two conditions of Proposition~\ref{prop:every} are those of an information state of \citet{subramanian2022approximate}, a memory that predicts the expected reward and the law of the memory at the next time as well as the history does, with the reward part in place of their condition on the expected reward; \citet{ni2024bridging} call them reward prediction and self-prediction, and that such a memory gives the values of the policies that read it is known in this literature. The objective of Section~\ref{sec:capacity} is that of \citet{still2012information}, with the coding cost of the memory as in \citet{still2009information} and the information term of Section~\ref{sec:bellman}; the equation of Proposition~\ref{prop:encoder} has the form of the information bottleneck \citep{tishby1999information}, and, as there, it can have several solutions. The relations of $D^M_n$ to the terms of Section~\ref{sec:splits} in Proposition~\ref{prop:DM} follow the steps of Section~\ref{sec:splits}; we have not searched for them.
 
 \bibliographystyle{plainnat}
 \bibliography{references}

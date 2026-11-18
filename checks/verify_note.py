@@ -12,6 +12,8 @@ of the statement it tests. Logarithms are natural. Pure Python.
 
 Section 6 (values of later policies) uses the same random worlds, a world built so that the
 conditions of Proposition 6.8 hold (InfoWorld), and the three memories of Example 6.9 (KeyWorld).
+Section 7 (one step with a memory of limited capacity) uses random one-step models, Example 7.6
+(KeyWorld at time 1) and Example 7.7 (TwoChainWorld).
 """
 import math
 import random
@@ -759,6 +761,394 @@ def check_random_sec6(rec):
         print(f"  section 6, random world seed {seed} (T={T}, {J.N} trajectories) done", flush=True)
 
 
+# ================================================================ Section 7
+# One time step t: histories h with law p(h), an encoder q(m | h) with K values, a fixed positive
+# policy pi_t(a | m), the law P(Y | h, a) of Y = (R_{t+1}, M_{t+1}), and a fixed action value Q(h, a).
+# F[q] = alpha E[Q(h_t, A_t)] - beta I(h_t; Y | M_t, A_t) - lambda I(h_t; M_t).
+
+class OneStep:
+    def __init__(self, p, acts, py, pi, Q, K):
+        self.p = p                  # dict h -> prob
+        self.acts = list(acts)
+        self.py = py                # dict (h, a) -> dict y -> prob
+        self.pi = pi                # function m -> dict a -> prob (positive)
+        self.Q = Q                  # dict (h, a) -> value
+        self.K = K
+        self.hs = sorted(p, key=repr)
+        self.ms = list(range(K))
+
+
+def qm_of(S, q):
+    return {m: sum(S.p[h] * q[(h, m)] for h in S.hs) for m in S.ms}
+
+
+def U_of(S, h, m):
+    return sum(pa * S.Q[(h, a)] for a, pa in S.pi(m).items())
+
+
+def pym_of(S, q):
+    """P(Y | m, a) = sum_h P(h | m) P(Y | h, a), for every m with q(m) > 0."""
+    qm, out = qm_of(S, q), {}
+    for m in S.ms:
+        if qm[m] <= 0:
+            continue
+        for a in S.acts:
+            acc = defaultdict(float)
+            for h in S.hs:
+                w = S.p[h] * q[(h, m)] / qm[m]
+                if w > 0:
+                    for y, py in S.py[(h, a)].items():
+                        acc[y] += w * py
+            out[(m, a)] = dict(acc)
+    return out
+
+
+def d_of(S, q, h, m, pym=None):
+    pym = pym if pym is not None else pym_of(S, q)
+    tot = 0.0
+    for a, pa in S.pi(m).items():
+        if pa <= 0:
+            continue
+        ref = pym[(m, a)]
+        for y, py in S.py[(h, a)].items():
+            if py <= 0:
+                continue
+            if ref.get(y, 0.0) <= 0:
+                return math.inf
+            tot += pa * py * math.log(py / ref[y])
+    return tot
+
+
+def terms7(S, q):
+    """J1 = E[Q], J2 = I(h;Y|M,A), J3 = I(h;M), by the formulas of Lemma 7.2."""
+    qm, pym = qm_of(S, q), pym_of(S, q)
+    J1 = sum(S.p[h] * q[(h, m)] * U_of(S, h, m) for h in S.hs for m in S.ms)
+    J2 = sum(S.p[h] * q[(h, m)] * d_of(S, q, h, m, pym) for h in S.hs for m in S.ms if q[(h, m)] > 0)
+    J3 = sum(S.p[h] * q[(h, m)] * math.log(q[(h, m)] / qm[m]) for h in S.hs for m in S.ms if q[(h, m)] > 0)
+    return J1, J2, J3
+
+
+def F7(S, q, al, be, la):
+    J1, J2, J3 = terms7(S, q)
+    return al * J1 - be * J2 - la * J3
+
+
+def joint7(S, q):
+    """The exact law of (h, M_t, A_t, Y), as a Joint."""
+    rows = []
+    for h in S.hs:
+        for m in S.ms:
+            if q[(h, m)] <= 0:
+                continue
+            for a, pa in S.pi(m).items():
+                for y, py in S.py[(h, a)].items():
+                    pr = S.p[h] * q[(h, m)] * pa * py
+                    if pr > 0:
+                        rows.append(((h, m, a, y), pr))
+    idx = {'h': 0, 'M': 1, 'A': 2, 'Y': 3}
+    return Joint([r[1] for r in rows], lambda k: [r[0][idx[k]] for r in rows])
+
+
+def iterate7(S, q, al, be, la, n_iter):
+    """Repeated use of the equation of Proposition 7.4."""
+    for _ in range(n_iter):
+        qm, pym = qm_of(S, q), pym_of(S, q)
+        new = {}
+        for h in S.hs:
+            w = {}
+            for m in S.ms:
+                if qm[m] <= 0:
+                    w[m] = 0.0
+                    continue
+                dv = d_of(S, q, h, m, pym)
+                w[m] = 0.0 if dv == math.inf else qm[m] * math.exp((al * U_of(S, h, m) - be * dv) / la)
+            z = sum(w.values())
+            for m in S.ms:
+                new[(h, m)] = w[m] / z
+        q = new
+    return q
+
+
+def residual7(S, q, al, be, la):
+    """Largest deviation from the equation of Proposition 7.4 on the support of q(.|h)."""
+    qm, pym = qm_of(S, q), pym_of(S, q)
+    worst = 0.0
+    for h in S.hs:
+        sup = [m for m in S.ms if q[(h, m)] > 0]
+        w = {m: qm[m] * math.exp((al * U_of(S, h, m) - be * d_of(S, q, h, m, pym)) / la) for m in sup}
+        z = sum(w.values())
+        for m in sup:
+            worst = max(worst, abs(q[(h, m)] - w[m] / z))
+    return worst
+
+
+def random_encoder(S, rng, floor=0.02):
+    q = {}
+    for h in S.hs:
+        w = normalize([rng.random() + floor for _ in S.ms])
+        for m, x in zip(S.ms, w):
+            q[(h, m)] = x
+    return q
+
+
+def random_onestep(seed, nh=4, K=3, ny=3):
+    rng = random.Random(f"onestep|{seed}")
+    hs = list(range(nh))
+    p = dict(zip(hs, normalize([rng.random() + 0.1 for _ in hs])))
+    acts = (0, 1)
+    py = {(h, a): dict(zip(range(ny), normalize([rng.random() + 0.05 for _ in range(ny)]))) for h in hs for a in acts}
+    pit = {m: dict(zip(acts, normalize([rng.random() + 0.2 for _ in acts]))) for m in range(K)}
+    Q = {(h, a): rng.random() * 2 for h in hs for a in acts}
+    return OneStep(p, acts, py, lambda m: pit[m], Q, K)
+
+
+def check_sec7_general(rec):
+    for seed in range(1, 6):
+        S = random_onestep(seed)
+        rng = random.Random(f"enc|{seed}")
+        al, be, la = 1.0, 0.7, 0.3
+        for _ in range(3):
+            q = random_encoder(S, rng)
+            J1, J2, J3 = terms7(S, q)
+            J = joint7(S, q)
+            rec.eq('Lem 7.2(c) I(h;Y|M,A) = sum p q d(h,m)', J.I(['h'], ['Y'], ['M', 'A']), J2)
+            rec.eq('Lem 7.2(d) I(h;M) formula', J.I(['h'], ['M']), J3)
+            rec.eq('Lem 7.2(b) E[Q] = sum p q U(h,m)', J.E([S.Q[(k[0], k[2])] for k in J.keys(['h', 'M', 'A', 'Y'])]), J1)
+            rec.eq('Lem 7.2(a) I(h;A|M) = 0', J.I(['h'], ['A'], ['M']), 0.0)
+            rec.eq('Lem 7.2(a) I(M;Y|h,A) = 0', J.I(['M'], ['Y'], ['h', 'A']), 0.0)
+            # Proposition 7.3: derivatives along a direction that moves mass between m and m' at h
+            qm, pym = qm_of(S, q), pym_of(S, q)
+            for h in S.hs:
+                for m, m2 in ((0, 1), (1, 2), (0, 2)):
+                    eps = 1e-6
+
+                    def moved(e):
+                        r = dict(q)
+                        r[(h, m)] += e
+                        r[(h, m2)] -= e
+                        return r
+                    tp, tm = terms7(S, moved(eps)), terms7(S, moved(-eps))
+                    num = [(a - b) / (2 * eps) for a, b in zip(tp, tm)]
+                    form = [S.p[h] * (U_of(S, h, m) - U_of(S, h, m2)),
+                            S.p[h] * (d_of(S, q, h, m, pym) - d_of(S, q, h, m2, pym)),
+                            S.p[h] * (math.log(q[(h, m)] / qm[m]) - math.log(q[(h, m2)] / qm[m2]))]
+                    for name, x, y in zip(('E[Q]', 'I(h;Y|M,A)', 'I(h;M)'), num, form):
+                        rec.fd(f'Prop 7.3 derivative of {name}', x, y)
+            # Proposition 7.4: the equation's solution is a maximiser
+        sols = [iterate7(S, random_encoder(S, rng), al, be, la, 3000) for _ in range(10)]
+        q = max(sols, key=lambda r: F7(S, r, al, be, la))
+        rec.le('Prop 7.4 residual of the equation at the best of 10 solutions', residual7(S, q, al, be, la), 1e-10)
+        F0 = F7(S, q, al, be, la)
+        best_random = max(F7(S, random_encoder(S, rng, 0.0), al, be, la) for _ in range(2000))
+        rec.le('Prop 7.4 best of 10 solutions is not beaten by 2000 random encoders', best_random, F0)
+        worst_local = -math.inf
+        for _ in range(500):
+            r = {}
+            for h in S.hs:
+                w = [max(1e-12, q[(h, m)] + 1e-3 * (rng.random() - 0.5)) for m in S.ms]
+                w = normalize(w)
+                for m, x in zip(S.ms, w):
+                    r[(h, m)] = x
+            worst_local = max(worst_local, F7(S, r, al, be, la))
+        rec.le('Prop 7.4 F(solution) >= F(small perturbations)', worst_local, F0)
+
+
+def onestep_from_world(w, pit, Q, K, ymap):
+    """Section 7 setting at t = 1 of a world: histories h_1 = O_1, Y = (R_2, M_2) with M_2 = ymap(a, o)."""
+    hs = [((o,), ()) for o in w.p0]
+    p = {h: w.p0[h[0][0]] for h in hs}
+    acts = list(w.beh(None).keys())
+    py = {}
+    for h in hs:
+        for a in acts:
+            acc = defaultdict(float)
+            for o, po in w.env(h, a).items():
+                acc[(o[0], ymap(a, o))] += po
+            py[(h, a)] = dict(acc)
+    return OneStep(p, acts, py, pit, Q, K)
+
+
+def det_encoders(S):
+    for bits in range(S.K ** len(S.hs)):
+        q, x = {}, bits
+        for h in S.hs:
+            v = x % S.K
+            x //= S.K
+            for m in S.ms:
+                q[(h, m)] = 1.0 if m == v else 0.0
+        yield q
+
+
+def enc_from(S, fn):
+    return {(h, m): (1.0 if fn(h) == m else 0.0) for h in S.hs for m in S.ms}
+
+
+def entropy_c_given_m(S, q, cfun):
+    J = Joint([S.p[h] * q[(h, m)] for h in S.hs for m in S.ms],
+              lambda k: [(cfun(h) if k == 'c' else m) for h in S.hs for m in S.ms])
+    return J.Hc(['c'], ['M'])
+
+
+def check_example_key7(rec):
+    w = KeyWorld('C')
+    uni = {k: (lambda m: {0: 0.5, 1: 0.5}) for k in (2,)}
+    hs = [((o,), ()) for o in w.p0]
+    Q = {(h, a): q_paths(w, uni, 1, h, a) for h in hs for a in (0, 1)}
+    S = onestep_from_world(w, lambda m: {0: 0.5, 1: 0.5}, Q, 2, lambda a, o: w.next_mem(None, a, o))
+    cfun = lambda h: h[0][0][1][0]
+    sfun = lambda h: h[0][0][1][1]
+    for k, v in Q.items():
+        rec.eq('Ex 7.6 every action value is 1/2', v, 0.5)
+    rng = random.Random('key7')
+    encs = [random_encoder(S, rng, 0.0) for _ in range(300)] + list(det_encoders(S))
+    for al, be, la in ((1.0, 1.0, 0.3), (1.0, 0.3, 1.0), (0.5, 2.0, 0.1)):
+        for q in encs:
+            J1, J2, J3 = terms7(S, q)
+            Hc = entropy_c_given_m(S, q, cfun)
+            rec.eq('Ex 7.6 J1 = 1/2 for every encoder', J1, 0.5)
+            rec.eq('Ex 7.6 I(h;Y|M,A) = H(c|M_1)', J2, Hc)
+            bound = al * 0.5 - la * LOG2 - (be - la) * Hc
+            rec.le('Ex 7.6 F <= alpha/2 - lambda log2 - (beta - lambda) H(c|M_1)', F7(S, q, al, be, la), bound)
+        Fc = F7(S, enc_from(S, cfun), al, be, la)
+        Fs = F7(S, enc_from(S, sfun), al, be, la)
+        F0 = F7(S, enc_from(S, lambda h: 0), al, be, la)
+        best = max(F7(S, q, al, be, la) for q in encs)
+        want = Fc if be > la else F0
+        rec.eq(f'Ex 7.6 best encoder stores {"c" if be > la else "nothing"} (beta={be}, lambda={la})', best, want)
+        rec.le('Ex 7.6 storing the sky is never best', Fs, best - 1e-6)
+        rec.eq('Ex 7.6 F(store c) = alpha/2 - lambda log 2', Fc, al * 0.5 - la * LOG2)
+        rec.eq('Ex 7.6 F(store nothing) = alpha/2 - beta log 2', F0, al * 0.5 - be * LOG2)
+
+
+class TwoChainWorld:
+    """Example 7.7. O_1 shows (c_A, c_B, s). A_1 = (a_A, a_B); O_2 shows e_X if a_X = c_X, else a blank,
+    and s again. A_2 = (b_A, b_B); R_3 = 1[b_A = e_A] + 2 1[b_B = e_B]."""
+    W = (1.0, 2.0)
+
+    def __init__(self):
+        self.T, self.gamma = 3, 1.0
+        self.p0 = {(0, (ca, cb, s)): 1 / 8 for ca in (0, 1) for cb in (0, 1) for s in (0, 1)}
+
+    def env(self, h, a):
+        obs, acts = h
+        n = len(obs)
+        if n == 1:
+            ca, cb, s = obs[0][1]
+            xa = {0: 0.5, 1: 0.5} if a[0] == ca else {'blank': 1.0}
+            xb = {0: 0.5, 1: 0.5} if a[1] == cb else {'blank': 1.0}
+            return {(0, (u, v, s)): pu * pv for u, pu in xa.items() for v, pv in xb.items()}
+        if n == 2:
+            xa, xb, s = obs[1][1]
+            parts = []
+            for x, b, wgt in ((xa, a[0], self.W[0]), (xb, a[1], self.W[1])):
+                parts.append({0.0: 0.5, wgt: 0.5} if x == 'blank' else {(wgt if b == x else 0.0): 1.0})
+            out = defaultdict(float)
+            for r1, p1 in parts[0].items():
+                for r2, p2 in parts[1].items():
+                    out[(r1 + r2, 0)] += p1 * p2
+            return dict(out)
+        return {(0, 0): 1.0}
+
+    def first_mem(self, o):
+        return 0
+
+    def next_mem(self, m, a, o):
+        if isinstance(o[1], tuple):
+            return (o[1][0], o[1][1])
+        return 'end'
+
+    def beh(self, m):
+        return {(i, j): 0.25 for i in (0, 1) for j in (0, 1)}
+
+
+def two_chain_later(m):
+    """Later policy (ii): b_X = what M_2 shows for chain X, uniform at a blank."""
+    out = {}
+    for i in (0, 1):
+        for j in (0, 1):
+            pa = (1.0 if i == m[0] else 0.0) if m[0] != 'blank' else 0.5
+            pb = (1.0 if j == m[1] else 0.0) if m[1] != 'blank' else 0.5
+            out[(i, j)] = pa * pb
+    return out
+
+
+def check_example_two_chains7(rec):
+    w = TwoChainWorld()
+    hs = [((o,), ()) for o in w.p0]
+    acts = list(w.beh(None))
+    uni = {2: (lambda m: w.beh(m))}
+    lat = {2: two_chain_later}
+    Qi = {(h, a): q_paths(w, uni, 1, h, a) for h in hs for a in acts}
+    Qii = {(h, a): q_paths(w, lat, 1, h, a) for h in hs for a in acts}
+    # (iii): the best later value from the memory's own model under the uniform behaviour (Prop 6.8)
+    J, hists = joint6(w)
+    _, er = J.cexp(J.vals(('R', 3)), [('M', 2), ('A', 2)])
+    vstar = defaultdict(lambda: -math.inf)
+    for (m, b), v in er.items():
+        vstar[m] = max(vstar[m], v)
+    Qiii = {}
+    for h in hs:
+        for a in acts:
+            Qiii[(h, a)] = sum(po * (o[0] + vstar[w.next_mem(None, a, o)]) for o, po in w.env(h, a).items())
+    for k in Qii:
+        rec.eq('Ex 7.7 (i) every action value is 1.5', Qi[k], 1.5)
+        rec.eq('Ex 7.7 (iii) best later value from the memory model = (ii)', Qiii[k], Qii[k])
+    eps = 0.1
+
+    def pit(m):
+        return {a: ((1 - eps) if a == (m, m) else eps / 3) for a in acts}
+    ymap = lambda a, o: w.next_mem(None, a, o)
+    ca = lambda h: h[0][0][1][0]
+    cb = lambda h: h[0][0][1][1]
+    sk = lambda h: h[0][0][1][2]
+    xo = lambda h: ca(h) ^ cb(h)
+    named = {'c_A': ca, 'c_B': cb, 'c_A xor c_B': xo, 'sky': sk, 'nothing': (lambda h: 0)}
+    expectEQ = {'ii': {'c_A': 2.4666666666666667, 'c_B': 2.6833333333333333, 'c_A xor c_B': 2.25, 'sky': 2.25, 'nothing': 2.25}}
+    expectJ2 = {'c_A': 1, 'c_B': 1, 'c_A xor c_B': 1, 'sky': 2, 'nothing': 2}
+    al, be, la = 1.0, 1.0, 0.1
+    results = {}
+    for tag, Q in (('i', Qi), ('ii', Qii), ('iii', Qiii)):
+        S = onestep_from_world(w, pit, Q, 2, ymap)
+        Fs = {}
+        for name, fn in named.items():
+            q = enc_from(S, fn)
+            J1, J2, J3 = terms7(S, q)
+            if tag == 'i':
+                rec.eq('Ex 7.7 (i) E[Q] = 1.5 for every encoder', J1, 1.5)
+            else:
+                rec.eq(f'Ex 7.7 ({tag}) E[Q] of storing {name}', J1, expectEQ['ii'][name])
+            rec.eq(f'Ex 7.7 I(h;Y|M,A)/log 2 of storing {name}', J2 / LOG2, expectJ2[name])
+            Fs[name] = F7(S, q, al, be, la)
+        bestdet = max(F7(S, q, al, be, la) for q in det_encoders(S))
+        results[tag] = (Fs, bestdet)
+        if tag == 'i':
+            rec.eq('Ex 7.7 (i) c_A, c_B and c_A xor c_B have the same F', Fs['c_A'], Fs['c_B'])
+            rec.eq('Ex 7.7 (i) c_A, c_B and c_A xor c_B have the same F', Fs['c_A'], Fs['c_A xor c_B'])
+            rec.eq('Ex 7.7 (i) best deterministic encoder has the F of c_A', bestdet, Fs['c_A'])
+        else:
+            rec.eq(f'Ex 7.7 ({tag}) best deterministic encoder stores c_B', bestdet, Fs['c_B'])
+        rng = random.Random(f'two|{tag}')
+        stores, Fqs = defaultdict(int), []
+        for k in range(20):
+            q = iterate7(S, random_encoder(S, rng), al, be, la, 400)
+            Fq = F7(S, q, al, be, la)
+            Fqs.append(Fq)
+            Jq = Joint([S.p[h] * q[(h, m)] for h in S.hs for m in S.ms],
+                       lambda key: [(named_val(key, h, ca, cb, sk) if key != 'M' else m) for h in S.hs for m in S.ms])
+            info = {nm: Jq.I([nm], ['M']) for nm in ('cA', 'cB', 's')}
+            top = max(info, key=info.get)
+            stores[top if info[top] > 0.99 * LOG2 else 'other'] += 1
+            rec.le(f'Ex 7.7 ({tag}) iteration does not beat the best deterministic encoder by more than 1e-6', Fq, bestdet + 1e-6)
+        rec.le(f'Ex 7.7 ({tag}) best of 20 iteration runs reaches the best deterministic F', bestdet - 1e-6, max(Fqs))
+        print(f"  Ex 7.7 ({tag}) F: " + ", ".join(f"{k} {v:.6f}" for k, v in Fs.items()) +
+              f"; best deterministic {bestdet:.6f}; iteration stores {dict(stores)}", flush=True)
+        print(f"  Ex 7.7 ({tag}) F at the end of the 20 runs: " + " ".join(f"{x:.4f}" for x in sorted(Fqs)), flush=True)
+
+
+def named_val(key, h, ca, cb, sk):
+    return {'cA': ca, 'cB': cb, 's': sk}[key](h)
+
+
 def main():
     rec = Rec()
     for seed, T in ((1, 4), (2, 4), (3, 3), (4, 3), (5, 3)):
@@ -770,6 +1160,11 @@ def main():
     check_random_sec6(rec)
     check_info_world(rec)
     check_example(rec)
+    check_sec7_general(rec)
+    print("  section 7 general checks done", flush=True)
+    check_example_key7(rec)
+    print("  Example 7.6 done", flush=True)
+    check_example_two_chains7(rec)
     ok = rec.report()
     print("ALL PASS" if ok else "SOME CHECKS FAILED")
     sys.exit(0 if ok else 1)
