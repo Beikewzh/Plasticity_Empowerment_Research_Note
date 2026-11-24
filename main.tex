@@ -55,7 +55,7 @@ An agent with a memory of fixed size gives one action distribution to all the hi
 \item \emph{Where return is lost} (Proposition~\ref{prop:layer1}). The return of any other agent minus ours is a sum, over times and memory values, of two nonnegative differences minus a third. The first is what is lost because all the histories with one memory value take the same action. In Example~1 it is $\tfrac12$, the whole difference in return.
 \item \emph{One step} (Lemma~\ref{lem:onestep}). The value of an action at a history and at its memory value differ by a part made now, in which the history and the memory predict the next observation differently, and by $\gamma$ times the error of the values at the next time. The predictions are weighted by the reward plus the value of the next memory, which is a value and not the reward of one step.
 \item \emph{The state defect and its four terms} (Propositions~\ref{prop:split1}, \ref{prop:split2} and~\ref{prop:ep}). Averaged over the action, $D_t(m,a)$ is $D^0_t+\dE_t$; at every action it is $\dP_t+D^+_t$. In Example~1, $D_1=\dE_1=\ln2$ and $D^0_1=0$.
-\item \emph{Terms and factors} (Propositions~\ref{prop:now}, \ref{prop:id2}, \ref{prop:bound2}, \ref{prop:id1}, \ref{prop:bound1}). At the action after the observation, the part made now splits as the state defect does, and each part is at most its own factor times the root of its term. At the action before the observation, for the difference between two actions, how the part made now divides is not determined, the two terms share one factor, and the bound is not smaller than the one with the state defect unsplit. The state defect depends on the environment, the memory and the weights of the histories; how it splits depends on the policy at the action where it is split; the factors depend on the values.
+\item \emph{Terms and factors} (Propositions~\ref{prop:now}, \ref{prop:id2}, \ref{prop:bound2}, \ref{prop:id1}, \ref{prop:bound1}). At the action after the observation, the part made now splits as the state defect does, and each part is at most its own factor times the root of its term. At the action before the observation, for the difference between two actions, how the part made now divides is not determined, the two terms share one factor, and the bound is not smaller than the one with the state defect unsplit. For the error of the state value the two terms have different factors (Proposition~\ref{prop:vsplit}). A factor times a term bounds the difference from below only in special cases (Proposition~\ref{prop:twosided}). The state defect depends on the environment, the memory and the weights of the histories; how it splits depends on the policy at the action where it is split; the factors depend on the values.
 \item \emph{When a term can be nonzero} (Proposition~\ref{prop:signal}). $\dE_t$ is at most the entropy of the policy, so it vanishes when the policy stops exploring. $\dP_t$ is at most the entropy of the next action, and it is zero when the next action does not vary with the observation.
 \item \emph{Evaluating} (Proposition~\ref{prop:bootstrap}). Values computed by bootstrapping on the memory differ from the averages of returns by the discounted averages of the errors of $V^\pi$ at later times.
 \item \emph{Improving} (Propositions~\ref{prop:improve}, \ref{prop:corr}, \ref{prop:cov}, \ref{prop:threeparts}). After a policy step on the same memory, the return changes by the improvement that the agent computes from its memory values, weighted by how often the new policy visits each memory value, plus a correction. The correction is the covariance, over the histories with one memory value, of how much the step changes the weight of a history and how much the history disagrees with the memory about the changed actions. It is at most a constant times the square of a small step.
@@ -68,7 +68,7 @@ An agent with a memory of fixed size gives one action distribution to all the hi
 \toprule
 What the learner does & What goes wrong on a memory & Which terms bound it\\
 \midrule
-evaluates its policy by bootstrapping (Section~\ref{sec:eval}) & averages of the errors of $V^\pi$ at later times & the terms at the later times, split at the action after the observation\\[3pt]
+evaluates its policy by bootstrapping (Section~\ref{sec:eval}) & averages of the errors of $V^\pi$ at later times & $D^0_n$ and $\dE_n$ at the later times $n$, each with its own factor\\[3pt]
 improves its policy (Section~\ref{sec:layer5}) & a correction to the improvement it computes & the average of $D_t(m,a)$ over the action, which is $D^0_t+\dE_t$, at the time of the change, and the errors at later times\\[3pt]
 acts with another policy afterwards (Section~\ref{sec:layer6}) & the values of the next memory change, the predictions do not & what the history knows about the reward and the next memory value, which lies between $\dP_t$ and $D_t$\\
 \bottomrule
@@ -77,7 +77,7 @@ acts with another policy afterwards (Section~\ref{sec:layer6}) & the values of t
 
 \paragraph{For an algorithm} (Section~\ref{sec:algo}). The statements support alternating between the memory and the policy. A policy step on a fixed memory is reliable when it is small, or when the terms at that time and the errors at later times are small. After the policy has changed, the values and the weights of the histories have changed, so what the memory lacks has another cost; Example~2 is worked through this way. The statements do not say which term to lower first, when to stop a step, or that the alternation converges.
 
-\paragraph{Limits.} Layer~1 compares with another agent and weights the histories as that other agent visits them; Layers~2 to~7 weight them as our own agent visits them, and the note does not connect the two. The bounds are not tight. In the bounds for the difference between two actions and for the correction of a policy step, separating $D^0_t$ from $\dE_t$ gains nothing over their sum; separating $\dP_t$ from $D^+_t$ can. The note has no bound yet for the error of the state value $V^\pi_t(h)-V^\pi_t(m)$ alone, where $D^0_t$ and $\dE_t$ get different factors. No statement says how to change the memory.
+\paragraph{Limits.} Layer~1 compares with another agent and weights the histories as that other agent visits them; Layers~2 to~7 weight them as our own agent visits them, and the note does not connect the two. The bounds are not tight. In the bounds for the difference between two actions and for the correction of a policy step, separating $D^0_t$ from $\dE_t$ gains nothing over their sum; separating $\dP_t$ from $D^+_t$ can. For the error of the state value they get different factors. No statement says how to change the memory.
 
 \paragraph{How the sections depend on each other.} Section~$k$ is Layer~$k$, and Section~\ref{sec:setting} is the setting. Sections~\ref{sec:setting} to~\ref{sec:layer4} are for a fixed agent, each using the ones before. Sections~\ref{sec:eval}, \ref{sec:layer5} and~\ref{sec:layer6} are for a learner. Each uses Lemma~\ref{lem:onestep} and the bounds of Sections~\ref{sec:layer2} and~\ref{sec:layer4}, and Section~\ref{sec:layer5} also uses Lemma~\ref{lem:pdl}; they do not use each other, except that Section~\ref{sec:layer5} writes one expression of Section~\ref{sec:eval}. Section~\ref{sec:algo} collects them.
 
@@ -592,13 +592,91 @@ Square, average over $h$ with the weights $\Pr(h\mid m)$, and use Minkowski's in
 &=W\sqrt{\tfrac12\big[D^0_t(m)+\dE_t(m)\big]} \why{Proposition~\ref{prop:split1}}\\
 &\le W\Big[\sqrt{\tfrac12\,D^0_t(m)}+\sqrt{\tfrac12\,\dE_t(m)}\Big].
 \end{align*}
-So Proposition~\ref{prop:bound1} follows from Proposition~\ref{prop:now}, and its right side is never smaller than the first line. For the difference between two actions, separating $D^0_t$ from $\dE_t$ gains nothing over their sum, because the two terms get the same factor. This is not so for the error of the state value, the average of \eqref{eq:now} over the action with the weights $\pi(a\mid m)$, which this note does not yet bound.
+So Proposition~\ref{prop:bound1} follows from Proposition~\ref{prop:now}, and its right side is never smaller than the first line. For the difference between two actions, separating $D^0_t$ from $\dE_t$ gains nothing over their sum, because the two terms get the same factor. This is not so for the error of the state value, the average of \eqref{eq:now} over the action with the weights $\pi(a\mid m)$ (Proposition~\ref{prop:vsplit}).
 
 \paragraph{In Example 1.} For the two actions, the root on the left of Proposition~\ref{prop:bound1} is $1$. The factor is the range $1$ divided by the probability $\tfrac12$, that is $2$, and the right side is $2\big[0+\sqrt{\ln2/2}\big]\approx1.18$. The first line of the chain above is the same number, $2\sqrt{\ln2/2}$.
 
-\paragraph{Conclusion.} At $A_{t+1}$, the difference made at time $t$ is the sum of two parts, and this division does not depend on a constant added to the values. In \eqref{eq:viaA} the history and the memory predict the next action differently, and this part is bounded with $\dP_t(m,a)$. In \eqref{eq:viaO} they predict the observation differently once the next action is given, and this part is bounded with $D^+_t(m,a)$. At $A_t$, for each action the difference is the sum of a part in which they predict the observation differently when the action is not given, and a part in which they infer the action from the observation differently; this division depends on a constant, and with the midpoint of the range the two parts are bounded with $D^0_t(m)$ and $\dE_t(m)$. The factor of this bound grows as an action becomes rare. With Proposition~\ref{prop:choose}, Proposition~\ref{prop:bound1} bounds the loss \eqref{eq:loss} by $D^0_t(m)$, $\dE_t(m)$ and the errors of $V^\pi$ at the next time. In Proposition~\ref{prop:bound2} each term has its own factor, and a term whose factor is zero does not enter; this bound is smaller than that of Proposition~\ref{prop:now} when one factor is small, and it need not be otherwise, since $\sqrt x+\sqrt y\ge\sqrt{x+y}$. In Proposition~\ref{prop:bound1} the two terms share one factor, and the bound is never smaller than what Proposition~\ref{prop:now} gives for the two actions.
+\begin{proposition}[Split at $A_t$: the error of the state value]\label{prop:vsplit}
+For every history $h$ with memory value $m$ at time $t$, write $y_a(o)=r(o)+\gamma V^\pi_{t+1}(f(m,a,o))$ and $\bar y(o)=\sum_a\Pr(a\mid m,o)\,y_a(o)$.
 
-\paragraph{Known.} Lemma~\ref{lem:klforms} is known. The two identities are algebra and Bayes' rule; we did not search the literature for them.
+(a) $V^\pi_t(h)-V^\pi_t(m)$ is the sum of a part made at time $t$,
+\begin{equation}\label{eq:vnow}
+\sum_a\pi(a\mid m)\sum_o\big[e(o\mid h,a)-\Pr(o\mid m,a)\big]\,y_a(o),
+\end{equation}
+and $\gamma\sum_a\pi(a\mid m)$ times the difference of the second parts of Lemma~\ref{lem:onestep}. The part \eqref{eq:vnow} is the sum of
+\begin{align}
+&\sum_o\big[\Pr(o\mid h)-\Pr(o\mid m)\big]\,\bar y(o), \label{eq:vzero}\\
+&\sum_o\Pr(o\mid h)\sum_a\big[\Pr(a\mid h,o)-\Pr(a\mid m,o)\big]\,y_a(o). \label{eq:vE}
+\end{align}
+
+(b) With the maximum and the minimum over the observations $o$ with $\Pr(o\mid m)>0$ and the actions $a$ with $\Pr(a\mid m,o)>0$,
+\begin{align*}
+\sqrt{\sum_h\Pr(h\mid m)\,\big[\eqref{eq:vzero}\big]^2}&\le\Big[\max_o\bar y(o)-\min_o\bar y(o)\Big]\sqrt{\tfrac12\,D^0_t(m)},\\
+\sqrt{\sum_h\Pr(h\mid m)\,\big[\eqref{eq:vE}\big]^2}&\le\max_o\Big[\max_ay_a(o)-\min_ay_a(o)\Big]\sqrt{\tfrac12\,\dE_t(m)},
+\end{align*}
+and the root of the average of $\big[\eqref{eq:vnow}\big]^2$ is at most the sum of the two right sides.
+
+(c) If $y_a(o)$ does not depend on $a$, then \eqref{eq:vE} is zero. This holds at $t=T-1$, and whenever the next memory value $f(m,a,o)$ is the same for every action.
+
+(d) For every $t<T$, with $m$ the memory value of $h$,
+\[
+\sqrt{\sum_h\Pr(h_t=h)\big[V^\pi_t(h)-V^\pi_t(m)\big]^2}\le\sum_{n=t}^{T-1}\gamma^{n-t}\sqrt{\sum_h\Pr(h_n=h)\,\big[\eqref{eq:vnow}\big]^2},
+\]
+where \eqref{eq:vnow} on the right is taken at time $n$.
+\end{proposition}
+
+\begin{proof}
+(a) $V^\pi_t(h)-V^\pi_t(m)=\sum_a\pi(a\mid m)\big[Q^\pi_t(h,a)-Q^\pi_t(m,a)\big]$ by Definitions~\ref{def:value} and~\ref{def:memvalue}; apply Lemma~\ref{lem:onestep} to each action. Sum the identity of Proposition~\ref{prop:id1} over the action: the left sides give \eqref{eq:vnow}, the first sums \eqref{eq:vzero} and the second sums \eqref{eq:vE}.
+
+(b) Lemma~\ref{lem:tool} on the observation, with $g=\bar y$, gives $\big|\eqref{eq:vzero}\big|\le\big[\max_o\bar y(o)-\min_o\bar y(o)\big]\sqrt{\KL(\Pr(\cdot\mid h)\,\|\,\Pr(\cdot\mid m))/2}$. Lemma~\ref{lem:tool} on the action, for each $o$ with $g=y_\cdot(o)$, and then Jensen's inequality over $o$, give $\big|\eqref{eq:vE}\big|\le\max_o\big[\max_ay_a(o)-\min_ay_a(o)\big]\sqrt{\sum_o\Pr(o\mid h)\,\KL(\Pr(\cdot\mid h,o)\,\|\,\Pr(\cdot\mid m,o))/2}$. Square, average over $h$ with the weights $\Pr(h\mid m)$ and use Lemma~\ref{lem:klforms}. The last claim is Minkowski's inequality.
+
+(c) $\sum_a\big[\Pr(a\mid h,o)-\Pr(a\mid m,o)\big]=0$ for every $o$.
+
+(d) In this proof only, $\nu_n$ is the left side at time $n$, $\mu_n$ is the root on the right at time $n$, $u(h,a)=\sum_oe(o\mid h,a)\big[V^\pi_{n+1}(h,a,o)-V^\pi_{n+1}(m')\big]$, and $\bar u(m,a)$ is the average of $u(h,a)$ over $h$ with the weights $\Pr(h\mid m)$. By (a), $V^\pi_n(h)-V^\pi_n(m)$ is \eqref{eq:vnow} plus $\gamma\sum_a\pi(a\mid m)\big[u(h,a)-\bar u(m,a)\big]$, so
+\begin{align*}
+\nu_n&\le\mu_n+\gamma\sqrt{\sum_h\Pr(h_n=h)\Big(\sum_a\pi(a\mid m)\big[u(h,a)-\bar u(m,a)\big]\Big)^2} \why{Minkowski's inequality}\\
+&\le\mu_n+\gamma\sqrt{\sum_h\Pr(h_n=h)\Big(\sum_a\pi(a\mid m)\,u(h,a)\Big)^2} \why{subtracting the average over $h$ given $m$ does not increase the average square}\\
+&\le\mu_n+\gamma\sqrt{\sum_{h'}\Pr(h_{n+1}=h')\big[V^\pi_{n+1}(h')-V^\pi_{n+1}(m')\big]^2} \why{Jensen's inequality; $h'=(h,a,o)$}\\
+&=\mu_n+\gamma\,\nu_{n+1}.
+\end{align*}
+Apply this for $n=t,\dots,T-1$ and use $\nu_T=0$.
+\end{proof}
+
+Here, unlike in Proposition~\ref{prop:bound1}, the two terms have different factors and no factor is divided by the probability of an action. The factor of $D^0_t(m)$ is how much the target, averaged over the action, changes with the observation. The factor of $\dE_t(m)$ is how much the target still depends on the action once the observation is given. Proposition~\ref{prop:now} also bounds \eqref{eq:vnow}, by $\sum_a\pi(a\mid m)R_a\sqrt{D_t(m,a)/2}$; neither bound is always the smaller one.
+
+\paragraph{In the examples.} In Example~1, $V^\pi_1(h)=\tfrac12=V^\pi_1(m)$: the state value is evaluated exactly although $\dE_1(m)=\ln2$, because $D^0_1(m)=0$ and the factor of $\dE_1(m)$ is zero at the last time. In Example~2 at time $1$, $D^0_1(m)=0$ and the next memory value $M_2=O_2$ is the same for both actions, so again both bounds are zero, with the uniform policy and after the policy step of Section~\ref{sec:layer5}. In both examples the whole loss is in comparing actions.
+
+\begin{proposition}[When a factor times a term bounds the difference from both sides]\label{prop:twosided}
+For every memory value $m$ at time $t$ and action $a$:
+
+(a) If only two observations are possible after $(m,a)$, let $R$ be the difference between their values of $r(o)+\gamma V^\pi_{t+1}(m')$ and $q$ the probability $\Pr(o\mid m,a)$ of one of them. Then
+\[
+q(1-q)\,R^2\,D_t(m,a)\le\sum_h\Pr(h\mid m)\,\big[\eqref{eq:now}\big]^2\le\tfrac12\,R^2\,D_t(m,a).
+\]
+
+(b) If there are two actions, $t\le T-2$ and both next actions have positive probability after $(m,a)$, let $R'$ be the difference between the two next actions $a'$ of $\sum_o\Pr(o\mid m,a,a')\big[r(o)+\gamma Q^\pi_{t+1}(m',a')\big]$ and $q'$ the probability $\Pr(a'\mid m,a)$ of one of them. Then
+\[
+q'(1-q')\,R'^2\,\dP_t(m,a)\le\sum_h\Pr(h\mid m)\,\big[\eqref{eq:viaA}\big]^2\le\tfrac12\,R'^2\,\dP_t(m,a).
+\]
+
+(c) With three or more possible observations there is no lower bound of the form of (a). In each of the following two cases $D_1(m,a)=\ln2$, the range of the reward is positive and \eqref{eq:now} is zero for every history. First case: $T=2$, $O_1$ is a fair bit $c$, the memory does not keep it, and $O_2=(c,v)$ for a fair bit $v$ that is the reward. Second case: the same, except that $O_2$ is the reward, which is $0$ if $c=0$ and $+1$ or $-1$ with probability $\tfrac12$ each if $c=1$.
+\end{proposition}
+
+\begin{proof}
+For two laws on two points, with probabilities $p$ and $q$ for the first point, $2(p-q)^2\le\KL\le(p-q)^2/\big(q(1-q)\big)$. The first inequality is Pinsker's. The second: by Jensen's inequality the divergence $\sum_xp(x)\log\big(p(x)/q(x)\big)$ is at most $\log\sum_xp(x)^2/q(x)$, which is at most $\sum_xp(x)^2/q(x)-1=(p-q)^2/\big(q(1-q)\big)$.
+
+(a) With $p_h=e(o\mid h,a)$ for the observation whose probability under the memory is $q$, \eqref{eq:now} is $\pm R\,(p_h-q)$. Multiply the two inequalities by $\Pr(h\mid m)$, sum over $h$ and use Definition~\ref{def:D}.
+
+(b) With $p_h=\Pr(a'\mid h,a)$, \eqref{eq:viaA} is $\pm R'\,(p_h-q')$. Sum over $h$ and use Lemma~\ref{lem:klforms}.
+
+(c) In the first case the history knows $c$, which is part of $O_2$, and the law of the reward is the same for both histories. In the second case the expected reward is $0$ for both histories, and $I(h_1;O_2\mid m,a)=\tfrac32\ln2-\tfrac12\ln2$.
+\end{proof}
+
+So a factor times a term is the size of the difference, up to a constant between $q(1-q)$ and $\tfrac12$, for $\dP_t$ with two actions and for $D_t$ with two possible observations. Otherwise it can overstate the difference without limit: the history may know more about a part of the observation that the value does not depend on, or about the spread of the target and not its mean.
+
+\paragraph{Conclusion.} At $A_{t+1}$, the difference made at time $t$ is the sum of two parts, and this division does not depend on a constant added to the values. In \eqref{eq:viaA} the history and the memory predict the next action differently, and this part is bounded with $\dP_t(m,a)$. In \eqref{eq:viaO} they predict the observation differently once the next action is given, and this part is bounded with $D^+_t(m,a)$. At $A_t$, for each action the difference is the sum of a part in which they predict the observation differently when the action is not given, and a part in which they infer the action from the observation differently; this division depends on a constant, and with the midpoint of the range the two parts are bounded with $D^0_t(m)$ and $\dE_t(m)$. The factor of this bound grows as an action becomes rare. With Proposition~\ref{prop:choose}, Proposition~\ref{prop:bound1} bounds the loss \eqref{eq:loss} by $D^0_t(m)$, $\dE_t(m)$ and the errors of $V^\pi$ at the next time. In Proposition~\ref{prop:bound2} each term has its own factor, and a term whose factor is zero does not enter; this bound is smaller than that of Proposition~\ref{prop:now} when one factor is small, and it need not be otherwise, since $\sqrt x+\sqrt y\ge\sqrt{x+y}$. In Proposition~\ref{prop:bound1} the two terms share one factor, and the bound is never smaller than what Proposition~\ref{prop:now} gives for the two actions. For the error of the state value, in contrast, $D^0_t(m)$ and $\dE_t(m)$ have different factors (Proposition~\ref{prop:vsplit}): the split at $A_t$ is the split for evaluating the policy, and the state defect at each action, with its split at $A_{t+1}$, is what compares actions. All of these are upper bounds; a factor times a term bounds the difference from below only in the cases of Proposition~\ref{prop:twosided}.
+
+\paragraph{Known.} Lemma~\ref{lem:klforms} is known. The two identities are algebra and Bayes' rule; we did not search the literature for them. For a model of the transitions of a Markov decision process, the difference \eqref{eq:now} is the quantity that the value-aware loss of \citet{farahmand2017vaml} minimizes; they state the chain of bounds of Lemma~\ref{lem:tool} with the largest absolute value in place of the range, and note that the bound with the divergence can be loose.
 
 \section{Layer 5: evaluating the policy on the memory}\label{sec:eval}
 
@@ -678,7 +756,7 @@ By (a), bootstrapping is off by $\gamma$ times \eqref{eq:B} at this time, plus w
 
 \paragraph{In Example 2.} At both times \eqref{eq:B} is zero: the reward at time $3$ depends on the history only through $O_2$, which the memory keeps, so $V^\pi_2(h')=V^\pi_2(m')$ for every next history. Bootstrapping on the memory gives the memory values.
 
-\paragraph{Conclusion.} Values computed from returns are the memory values, by Definition~\ref{def:memvalue}. Values computed by bootstrapping on the memory differ from them by the discounted averages of the errors of $V^\pi$ at the later times. By (d), averaged over the memory values and actions that the agent visits, the error of bootstrapping is at most the discounted sum of the evaluation errors at the later times. Proposition~\ref{prop:eval} bounds each of these by the differences made at the times $n$ after it, and at each pair $(m,a)$ such a difference is bounded with $D_n(m,a)$ (Proposition~\ref{prop:now}) and, for $n\le T-2$, with $\dP_n(m,a)$ and $D^+_n(m,a)$ (Proposition~\ref{prop:bound2}). The root of (b) at one pair $(m,a)$ is the one that appears in Propositions~\ref{prop:choose}(b) and~\ref{prop:corrbound}; it is at most the evaluation error at time $t+1$ divided by $\sqrt{\Pr(M_t=m)\,\pi(a\mid m)}$, because the square of that evaluation error is at least the average of the squares of these roots over $(M_t,A_t)$.
+\paragraph{Conclusion.} Values computed from returns are the memory values, by Definition~\ref{def:memvalue}. Values computed by bootstrapping on the memory differ from them by the discounted averages of the errors of $V^\pi$ at the later times. By (d), averaged over the memory values and actions that the agent visits, the error of bootstrapping is at most the discounted sum of the evaluation errors at the later times. What is carried is an error of the state value $V^\pi$, and Proposition~\ref{prop:vsplit}(d) bounds it with $D^0_n$ and $\dE_n$ at the later times $n$, each with its own factor. Proposition~\ref{prop:eval} bounds each of these by the differences made at the times $n$ after it, and at each pair $(m,a)$ such a difference is bounded with $D_n(m,a)$ (Proposition~\ref{prop:now}) and, for $n\le T-2$, with $\dP_n(m,a)$ and $D^+_n(m,a)$ (Proposition~\ref{prop:bound2}). The root of (b) at one pair $(m,a)$ is the one that appears in Propositions~\ref{prop:choose}(b) and~\ref{prop:corrbound}; it is at most the evaluation error at time $t+1$ divided by $\sqrt{\Pr(M_t=m)\,\pi(a\mid m)}$, because the square of that evaluation error is at least the average of the squares of these roots over $(M_t,A_t)$.
 
 \paragraph{Known.} The difference between values computed from returns and values computed by bootstrapping on an agent state, under partial observability, is studied as the $\lambda$-discrepancy by \citet{allen2024lambda}.
 
@@ -901,9 +979,9 @@ This section collects what the statements say about an agent that learns, and ma
 \toprule
 Step & What the statements say & Status\\
 \midrule
-Evaluate the policy & From returns: the memory values, by Definition~\ref{def:memvalue}. By bootstrapping on the memory: off by the discounted averages of later errors of $V^\pi$ (Proposition~\ref{prop:bootstrap}). & exact\\[3pt]
+Evaluate the policy & From returns: the memory values, by Definition~\ref{def:memvalue}. By bootstrapping on the memory: off by the discounted averages of later errors of $V^\pi$ (Proposition~\ref{prop:bootstrap}), which are bounded with $D^0_n$ and $\dE_n$ (Proposition~\ref{prop:vsplit}). & exact; bound\\[3pt]
 Improve the policy, memory fixed & The return changes by the computed improvement plus a correction (Proposition~\ref{prop:improve}). The correction is at most a constant times the square of a small step (Proposition~\ref{prop:corr}), zero when the histories with one memory value took their past actions with the same ratios or agree about the changed actions (Proposition~\ref{prop:cov}), and bounded with $D^0_t$, $\dE_t$ and the later errors (Proposition~\ref{prop:corrbound}). & exact; bound\\[3pt]
-Train the memory, policy fixed & The loss \eqref{eq:loss}, the evaluation error and the correction are bounded by terms times factors, so lowering the terms lowers these bounds while the factors stay fixed. No statement says how a change of the memory update changes the terms. & bound only\\[3pt]
+Train the memory, policy fixed & The loss \eqref{eq:loss}, the evaluation error and the correction are bounded by terms times factors, so lowering the terms lowers these bounds while the factors stay fixed. A factor times a term can overstate the difference without limit (Proposition~\ref{prop:twosided}). No statement says how a change of the memory update changes the terms. & bound only\\[3pt]
 Return to the memory after the policy has changed & The values and the weights have changed (Propositions~\ref{prop:later} and~\ref{prop:cov}); in Example~2 a distinction that cost nothing costs $\tfrac14$ (Proposition~\ref{prop:example}). & exact; example\\[3pt]
 Choose which term to lower first & Not answered. & open\\[3pt]
 Decide when a step stops & Not answered. & open\\
@@ -911,11 +989,13 @@ Decide when a step stops & Not answered. & open\\
 \end{tabular}
 \end{center}
 
-\paragraph{The two splits in these steps.} The split at $A_t$ belongs to the policy step at time $t$: the disagreement made at that time is bounded with the average of $D_t(m,a)$ over the action, which is $D^0_t+\dE_t$ (Proposition~\ref{prop:corrbound} and the paragraph after it). The split says which of the two terms this sum consists of. It does not make this bound smaller, because the two terms get the same factor, and how the disagreement itself divides between them is not determined (Proposition~\ref{prop:id1}). The two terms are separate only while the policy randomizes (Proposition~\ref{prop:signal}(a)): for a policy that does not explore, $\dE_t=0$ and all of the average of $D_t(m,a)$ is $D^0_t$.
+\paragraph{The two splits in these steps.} The split at $A_t$ belongs to evaluating the policy. The error of the state value made at a time $n$ is a part with $D^0_n$ plus a part with $\dE_n$, and the two have different factors (Proposition~\ref{prop:vsplit}). The factor of $\dE_n$ is how much the reward plus the value of the next memory depends on the action once the observation is given; it is zero at the last time and whenever the observation decides the next memory value. These errors of $V^\pi$ at later times are what bootstrapping is off by (Proposition~\ref{prop:bootstrap}), and they enter the loss (Proposition~\ref{prop:choose}(b)) and the correction of a policy step (Proposition~\ref{prop:corrbound}). The two terms are separate only while the policy randomizes (Proposition~\ref{prop:signal}(a)).
 
-The split at $A_{t+1}$ belongs to what is carried back from later times. The difference made at a later time $n$ is a part with $\dP_n$ plus a part with $D^+_n$, and this division is determined (Proposition~\ref{prop:id2}). These differences enter the evaluation error (Proposition~\ref{prop:eval}), which is an average over the memory values and actions that the agent visits, and, through it, the bootstrapped values (Proposition~\ref{prop:bootstrap}(d)), the later part of the correction (Proposition~\ref{prop:corrbound}) and the loss (Proposition~\ref{prop:choose}(b)). The two terms have different factors (Proposition~\ref{prop:bound2}), and they are separate only while the next action varies with the observation (Proposition~\ref{prop:signal}(b)). $\dP_t$ alone is not a quantity to minimize: it is zero for an agent whose next action never varies, and it is zero in Example~2, where the distinction costs $\tfrac14$.
+The state defect at each action, with its split at $A_{t+1}$, belongs to comparing actions. For one action, the difference made at time $t$ is a part with $\dP_t$ plus a part with $D^+_t$, this division is determined, and the two terms have different factors (Propositions~\ref{prop:id2} and~\ref{prop:bound2}). For the difference between two actions and for the correction of a policy step, the split at $A_t$ gains nothing: $D^0_t$ and $\dE_t$ get the same factor there (paragraphs after Propositions~\ref{prop:bound1} and~\ref{prop:corrbound}). $\dP_t$ alone is not a quantity to minimize: it is zero for an agent whose next action never varies, and it is zero in Example~2, where the distinction costs $\tfrac14$.
 
-Averaged over the action, the two splits are splits of one quantity: by Propositions~\ref{prop:split1} and~\ref{prop:split2}, for $t\le T-2$, $D^0_t(m)+\dE_t(m)=\sum_a\pi(a\mid m)\big[\dP_t(m,a)+D^+_t(m,a)\big]$. So the statements do not assign one split to the training of the memory and the other to the training of the policy. Both splits describe the same memory; they differ in which step of the learner they enter and in their factors.
+Averaged over the action, the two splits are splits of one quantity: by Propositions~\ref{prop:split1} and~\ref{prop:split2}, for $t\le T-2$, $D^0_t(m)+\dE_t(m)=\sum_a\pi(a\mid m)\big[\dP_t(m,a)+D^+_t(m,a)\big]$. In Examples~1 and~2 the state value is evaluated exactly, and the whole loss is in comparing actions.
+
+\paragraph{Weights for training the memory.} The factors of the bounds suggest weights on the terms. They are justified from both sides only for $\dP_t$ with two actions and for $D_t$ with two possible observations (Proposition~\ref{prop:twosided}); elsewhere a term can be large where the difference in value is zero. The differences themselves, \eqref{eq:now}, \eqref{eq:viaA}, \eqref{eq:viaO}, \eqref{eq:vzero} and \eqref{eq:vE}, are differences of expected reward plus value between the history and the memory, so a loss on them needs no weight. For a model of the transitions of a Markov decision process this is the value-aware loss of \citet{farahmand2017vaml}, refitted with the current values at every iteration by \citet{farahmand2018itervaml}; \citet{grimm2020value} argue that a model of limited capacity should be exact for the values it is used with and not for the observations. What the four terms add is which prediction a difference is about, and which step of the learner it enters: $D^0_t$ and $\dE_t$ for evaluating the policy, $\dP_t$ and $D^+_t$ for comparing actions. Whether such a loss on a memory works better than a prediction loss on the observation is not answered here.
 
 \paragraph{The loop in Example 2.} Start with the memory that forgets $c$ and the uniform policy; the return is $\tfrac12$.
 \begin{enumerate}
@@ -933,7 +1013,7 @@ In this example the same information about $c$ is worth nothing before the polic
 \item With the memory fixed, improve the policy in small steps.
 \item Go back to step 1.
 \end{enumerate}
-The statements say why the steps of 3 should be small (Proposition~\ref{prop:corr}(c)), why step 1 needs every action to be taken (Assumption~\ref{as:pos}, which Lemma~\ref{lem:onestep} uses, and the factor of Proposition~\ref{prop:bound1}, which grows as an action becomes rare) and why step 4 is needed (Example~2). They do not say that the loop converges, or that this order is better than another.
+The statements say why the steps of 3 should be small (Proposition~\ref{prop:corr}(c)), why step 1 needs every action to be taken (Assumption~\ref{as:pos}, which Lemma~\ref{lem:onestep} uses, and the factor of Proposition~\ref{prop:bound1}, which grows as an action becomes rare) and why step 4 is needed (Example~2). They do not say that the loop converges, or that this order is better than another. The three updates can also run together at different rates. \citet{subramanian2022approximate} do so, with the memory fastest and the policy slowest and a fixed weight between the losses of the memory, and prove convergence under the usual assumptions of stochastic approximation; \citet{konda2000actor} require the critic to be faster than the actor. Of this order our statements support one part, that the policy is slowest (Proposition~\ref{prop:corr}(c)). A learner without phases has no separate time of evaluation, during which an agent that never stops would collect less return; the statements of this note are for a fixed policy and do not count this cost.
 
 \paragraph{A measurement in units of return.} By Proposition~\ref{prop:improve}, the corrections of a policy step add up to the change of the return minus the computed improvement, where the computed improvement is weighted by how often the new policy visits each memory value. This is a quantity of return, not of the interaction between the agent and the environment, and no statement above needs it. It can check a memory after the fact; it is not a step of the loop.
 
@@ -946,7 +1026,7 @@ The statements say why the steps of 3 should be small (Proposition~\ref{prop:cor
 \item Whether the best agent with a memory of the same size ever stops changing its policy.
 \end{itemize}
 
-\begin{thebibliography}{7}
+\begin{thebibliography}{11}
 \bibitem[Abel et~al.(2025)]{abel2025plasticity}
 D.~Abel, M.~Bowling, A.~Barreto, W.~Dabney, S.~Dong, S.~Hansen, A.~Harutyunyan, K.~Khetarpal, C.~Lyle, R.~Pascanu, G.~Piliouras, D.~Precup, J.~Richens, M.~Rowland, T.~Schaul, and S.~Singh.
 \newblock Plasticity as the mirror of empowerment.
@@ -962,10 +1042,30 @@ T.~M. Cover and J.~A. Thomas.
 \newblock \emph{Elements of Information Theory}.
 \newblock Wiley, 2nd edition, 2006.
 
+\bibitem[Farahmand et~al.(2017)]{farahmand2017vaml}
+A.-M. Farahmand, A.~Barreto, and D.~Nikovski.
+\newblock Value-aware loss function for model-based reinforcement learning.
+\newblock In \emph{International Conference on Artificial Intelligence and Statistics (AISTATS)}, 2017.
+
+\bibitem[Farahmand(2018)]{farahmand2018itervaml}
+A.-M. Farahmand.
+\newblock Iterative value-aware model learning.
+\newblock In \emph{Advances in Neural Information Processing Systems (NeurIPS)}, 2018.
+
+\bibitem[Grimm et~al.(2020)]{grimm2020value}
+C.~Grimm, A.~Barreto, S.~Singh, and D.~Silver.
+\newblock The value equivalence principle for model-based reinforcement learning.
+\newblock In \emph{Advances in Neural Information Processing Systems (NeurIPS)}, 2020.
+
 \bibitem[Kakade and Langford(2002)]{kakade2002cpi}
 S.~Kakade and J.~Langford.
 \newblock Approximately optimal approximate reinforcement learning.
 \newblock In \emph{International Conference on Machine Learning (ICML)}, 2002.
+
+\bibitem[Konda and Tsitsiklis(2000)]{konda2000actor}
+V.~R. Konda and J.~N. Tsitsiklis.
+\newblock Actor-critic algorithms.
+\newblock In \emph{Advances in Neural Information Processing Systems 12}, 2000.
 
 \bibitem[Ni et~al.(2024)]{ni2024bridging}
 T.~Ni, B.~Eysenbach, E.~Seyedsalehi, M.~Ma, C.~Gehring, A.~Mahajan, and P.-L. Bacon.
