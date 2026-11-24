@@ -29,7 +29,7 @@
 \maketitle
 
 \begin{abstract}
-An agent with a memory of fixed size gives the same action distribution to all histories that have the same memory value. This note derives, one layer at a time, what this costs in return. It now contains the setting and Layers~1 to~3. Each layer states its question, the assumptions it adds, its derivation line by line, and its conclusion.
+An agent with a memory of fixed size gives the same action distribution to all histories that have the same memory value. This note derives, one layer at a time, what this costs in return. It now contains the setting and Layers~1 to~4. Each layer states its question, the assumptions it adds, its derivation line by line, and its conclusion.
 \end{abstract}
 
 \section{Setting}\label{sec:setting}
@@ -241,12 +241,20 @@ Under Assumptions~\ref{as:env} to~\ref{as:pos}, for every $t<T$ and $m$, let $a^
 \eqref{eq:loss}\;\le\;\frac12\sum_{a\ne a^*}\sum_h\Pr(h\mid m)\,\Big|\big[Q^\pi_t(h,a)-Q^\pi_t(h,a^*)\big]-\big[Q^\pi_t(m,a)-Q^\pi_t(m,a^*)\big]\Big|.
 \]
 
-(b) For every $a\ne a^*$, with $m'=f(m,b,o)$,
+(b) For every $a\ne a^*$, the difference made at time $t$ for the pair of actions is \eqref{eq:now} for $a$ minus \eqref{eq:now} for $a^*$,
+\begin{equation}\label{eq:nowpair}
+\begin{aligned}
+&\sum_o\big[e(o\mid h,a)-\Pr(o\mid m,a)\big]\big[r(o)+\gamma V^\pi_{t+1}(f(m,a,o))\big]\\
+&\qquad-\sum_o\big[e(o\mid h,a^*)-\Pr(o\mid m,a^*)\big]\big[r(o)+\gamma V^\pi_{t+1}(f(m,a^*,o))\big],
+\end{aligned}
+\end{equation}
+and, with $m'=f(m,b,o)$,
 \begin{align*}
 &\sum_h\Pr(h\mid m)\,\Big|\big[Q^\pi_t(h,a)-Q^\pi_t(h,a^*)\big]-\big[Q^\pi_t(m,a)-Q^\pi_t(m,a^*)\big]\Big|\\
-&\qquad\le\sum_{b\in\{a,a^*\}}\Bigg[\sqrt{\sum_h\Pr(h\mid m)\Big(\sum_o\big[e(o\mid h,b)-\Pr(o\mid m,b)\big]\big[r(o)+\gamma V^\pi_{t+1}(m')\big]\Big)^2}\\
-&\qquad\qquad\qquad+\gamma\sqrt{\sum_h\Pr(h\mid m)\sum_oe(o\mid h,b)\big[V^\pi_{t+1}(h,b,o)-V^\pi_{t+1}(m')\big]^2}\;\Bigg].
+&\qquad\le\sqrt{\sum_h\Pr(h\mid m)\,\eqref{eq:nowpair}^2}\\
+&\qquad\quad+\gamma\sum_{b\in\{a,a^*\}}\sqrt{\sum_h\Pr(h\mid m)\sum_oe(o\mid h,b)\big[V^\pi_{t+1}(h,b,o)-V^\pi_{t+1}(m')\big]^2}.
 \end{align*}
+The first root is at most the sum, over $b\in\{a,a^*\}$, of the left side of Proposition~\ref{prop:now} for $(m,b)$.
 \end{proposition}
 
 \begin{proof}
@@ -258,12 +266,13 @@ Under Assumptions~\ref{as:env} to~\ref{as:pos}, for every $t<T$ and $m$, let $a^
 \end{align*}
 For the last line, let $x(h)=Q^\pi_t(h,a)-Q^\pi_t(h,a^*)$ in this proof only. Its average over $h$ is $\bar x=Q^\pi_t(m,a)-Q^\pi_t(m,a^*)\le0$, so $\max\{x(h),0\}\le\max\{x(h)-\bar x,0\}$. Since $x(h)-\bar x$ has average zero, the average of its positive part is half the average of $|x(h)-\bar x|$.
 
-(b) In this proof only, $x_b(h)=Q^\pi_t(h,b)-Q^\pi_t(m,b)$. The left side is the average of $|x_a(h)-x_{a^*}(h)|$.
+(b) In this proof only, $x_b(h)=Q^\pi_t(h,b)-Q^\pi_t(m,b)$, and $u$, $\bar u$ are as in the proof of Proposition~\ref{prop:eval}, at time $t$. The left side is the average of $|x_a(h)-x_{a^*}(h)|$. By \eqref{eq:Qh} and \eqref{eq:Qm}, $x_a(h)-x_{a^*}(h)$ is \eqref{eq:nowpair} plus $\gamma\big[u(h,a)-\bar u(m,a)\big]-\gamma\big[u(h,a^*)-\bar u(m,a^*)\big]$.
 \begin{align*}
-\sum_h\Pr(h\mid m)\,\big|x_a(h)-x_{a^*}(h)\big|&\le\sum_{b\in\{a,a^*\}}\sum_h\Pr(h\mid m)\,|x_b(h)| \why{triangle inequality}\\
-&\le\sum_{b\in\{a,a^*\}}\sqrt{\sum_h\Pr(h\mid m)\,x_b(h)^2} \why{Jensen's inequality}.
+&\sum_h\Pr(h\mid m)\,\big|x_a(h)-x_{a^*}(h)\big|\\
+&\quad\le\sqrt{\sum_h\Pr(h\mid m)\big[x_a(h)-x_{a^*}(h)\big]^2} \why{Jensen's inequality}\\
+&\quad\le\sqrt{\sum_h\Pr(h\mid m)\,\eqref{eq:nowpair}^2}+\gamma\sum_{b\in\{a,a^*\}}\sqrt{\sum_h\Pr(h\mid m)\big[u(h,b)-\bar u(m,b)\big]^2} \why{Minkowski's inequality}.
 \end{align*}
-By \eqref{eq:Qh} and \eqref{eq:Qm}, $x_b(h)$ is \eqref{eq:now} for the action $b$ plus $\gamma$ times the difference of the second parts. Minkowski's inequality and the second and third lines of the proof of Proposition~\ref{prop:eval}, for the pair $(m,b)$ alone, give the two roots of the statement.
+The second and third lines of the proof of Proposition~\ref{prop:eval}, for the pair $(m,b)$ alone, bound each root of the last sum by the root of the statement. The last sentence of (b) is Minkowski's inequality applied to \eqref{eq:nowpair}.
 \end{proof}
 
 \paragraph{Conclusion.} The loss \eqref{eq:loss} is at most half of how much the histories with memory value $m$ disagree about the difference between two actions (Proposition~\ref{prop:choose}a). This disagreement has a part made at time $t$ and a part that comes from the errors of $V^\pi$ at the next time (Proposition~\ref{prop:choose}b, Proposition~\ref{prop:eval}). The part made at time $t$ is at most the range of $r(o)+\gamma V^\pi_{t+1}(m')$ times $\sqrt{D_t(m,a)/2}$ (Proposition~\ref{prop:now}). The quantity in this range is a value, the reward plus the value of the next memory, and not the reward of one step.
@@ -341,7 +350,122 @@ The two right sides are equal.
 
 \paragraph{Known.} Both identities are the chain rule (T1) with Assumptions~\ref{as:mem} and~\ref{as:pol}.
 
-\paragraph{Next.} Layer~4 relates each split to the differences of Layer~2.
+\section{Layer 4: the differences of Layer 2 and the four terms}\label{sec:layer4}
+
+\paragraph{Question.} Layer~2 bounds the difference made at time $t$ with $D_t(m,a)$ as a whole. When $D_t$ is split as in Layer~3, which part of this difference goes with which term?
+
+\paragraph{Assumptions added.} None. Assumptions~\ref{as:env} to~\ref{as:pos} hold and $t\le T-2$.
+
+\begin{definition}[Laws at a history and at a memory value]\label{def:laws}
+For a history $h$ with memory value $m$ at time $t$ and an action $a$, with $m'=f(m,a,o)$,
+\begin{align*}
+\Pr(a'\mid h,a)&=\sum_oe(o\mid h,a)\,\pi(a'\mid m'), &
+\Pr(o\mid h,a,a')&=\frac{e(o\mid h,a)\,\pi(a'\mid m')}{\Pr(a'\mid h,a)},\\
+\Pr(o\mid h)&=\sum_a\pi(a\mid m)\,e(o\mid h,a), &
+\Pr(a\mid h,o)&=\frac{\pi(a\mid m)\,e(o\mid h,a)}{\Pr(o\mid h)}.
+\end{align*}
+The same formulas with $\Pr(o\mid m,a)$ in place of $e(o\mid h,a)$ define $\Pr(a'\mid m,a)$, $\Pr(o\mid m,a,a')$, $\Pr(o\mid m)$ and $\Pr(a\mid m,o)$. By Assumptions~\ref{as:mem} and~\ref{as:pol}, these are the laws of $A_{t+1}$, of $O_{t+1}$ given $A_{t+1}$, of $O_{t+1}$, and of $A_t$ given $O_{t+1}$, at the history and at the memory value.
+\end{definition}
+
+\begin{lemma}[Known: the four terms as averages of divergences]\label{lem:klforms}
+With the laws of Definition~\ref{def:laws},
+\begin{align*}
+\dP_t(m,a)&=\sum_h\Pr(h\mid m)\,\KL\big(\Pr(\cdot\mid h,a)\,\big\|\,\Pr(\cdot\mid m,a)\big),\\
+D^+_t(m,a)&=\sum_h\Pr(h\mid m)\sum_{a'}\Pr(a'\mid h,a)\,\KL\big(\Pr(\cdot\mid h,a,a')\,\big\|\,\Pr(\cdot\mid m,a,a')\big),\\
+D^0_t(m)&=\sum_h\Pr(h\mid m)\,\KL\big(\Pr(\cdot\mid h)\,\big\|\,\Pr(\cdot\mid m)\big),\\
+\dE_t(m)&=\sum_h\Pr(h\mid m)\sum_o\Pr(o\mid h)\,\KL\big(\Pr(\cdot\mid h,o)\,\big\|\,\Pr(\cdot\mid m,o)\big),
+\end{align*}
+where the divergences are between laws of $A_{t+1}$, of $O_{t+1}$, of $O_{t+1}$ and of $A_t$, in this order.
+\end{lemma}
+
+\begin{proof}
+A conditional mutual information $I(X;Y\mid Z)$ is the average, over the values of $X$ and $Z$, of the divergence of the law of $Y$ given both from the law of $Y$ given $Z$ alone \citep[Ch.~2]{cover2006elements}. Take $X=h_t$, and $Y$ and $Z$ as in Definition~\ref{def:four-terms}. The joint weights of $(h,a')$ given $(m,a)$ are $\Pr(h\mid m)\Pr(a'\mid h,a)$, and those of $(h,o)$ given $m$ are $\Pr(h\mid m)\Pr(o\mid h)$.
+\end{proof}
+
+\begin{proposition}[Split at $A_{t+1}$: identity]\label{prop:id2}
+For every history $h$ with memory value $m$ and every action $a$, with $m'=f(m,a,o)$, the difference \eqref{eq:now} equals
+\begin{align}
+&\sum_{a'}\big[\Pr(a'\mid h,a)-\Pr(a'\mid m,a)\big]\sum_o\Pr(o\mid m,a,a')\big[r(o)+\gamma Q^\pi_{t+1}(m',a')\big] \label{eq:viaA}\\
+{}+{}&\sum_{a'}\Pr(a'\mid h,a)\sum_o\big[\Pr(o\mid h,a,a')-\Pr(o\mid m,a,a')\big]\big[r(o)+\gamma Q^\pi_{t+1}(m',a')\big]. \label{eq:viaO}
+\end{align}
+\end{proposition}
+
+\begin{proof}
+\begin{align*}
+\eqref{eq:now}&=\sum_o\big[e(o\mid h,a)-\Pr(o\mid m,a)\big]\sum_{a'}\pi(a'\mid m')\big[r(o)+\gamma Q^\pi_{t+1}(m',a')\big] \why{$V^\pi_{t+1}(m')=\sum_{a'}\pi(a'\mid m')\,Q^\pi_{t+1}(m',a')$}\\
+&=\sum_{o,a'}\big[\Pr(a'\mid h,a)\Pr(o\mid h,a,a')-\Pr(a'\mid m,a)\Pr(o\mid m,a,a')\big]\big[r(o)+\gamma Q^\pi_{t+1}(m',a')\big] \why{Definition~\ref{def:laws}}\\
+&=\eqref{eq:viaA}+\eqref{eq:viaO} \why{add and subtract $\Pr(a'\mid h,a)\Pr(o\mid m,a,a')$}.
+\end{align*}
+\end{proof}
+
+\begin{proposition}[Split at $A_{t+1}$: bound]\label{prop:bound2}
+For every $m$ and $a$, with each maximum and minimum over the values possible after $(m,a)$,
+\begin{align*}
+&\sqrt{\sum_h\Pr(h\mid m)\,\eqref{eq:now}^2}\\
+&\quad\le\Big[\max_{a'}\sum_o\Pr(o\mid m,a,a')\big(r(o)+\gamma Q^\pi_{t+1}(m',a')\big)\\
+&\qquad\qquad-\min_{a'}\sum_o\Pr(o\mid m,a,a')\big(r(o)+\gamma Q^\pi_{t+1}(m',a')\big)\Big]\sqrt{\tfrac12\,\dP_t(m,a)}\\
+&\qquad+\max_{a'}\Big[\max_o\big(r(o)+\gamma Q^\pi_{t+1}(m',a')\big)-\min_o\big(r(o)+\gamma Q^\pi_{t+1}(m',a')\big)\Big]\sqrt{\tfrac12\,D^+_t(m,a)}.
+\end{align*}
+\end{proposition}
+
+\begin{proof}
+In this proof only, $w_1$ and $w_2$ are the first and the second square bracket of the statement.
+\begin{align*}
+\big|\eqref{eq:viaA}\big|&\le w_1\sqrt{\tfrac12\,\KL\big(\Pr(\cdot\mid h,a)\,\big\|\,\Pr(\cdot\mid m,a)\big)} \why{Lemma~\ref{lem:tool}, on the next action}\\
+\big|\eqref{eq:viaO}\big|&\le w_2\sum_{a'}\Pr(a'\mid h,a)\sqrt{\tfrac12\,\KL\big(\Pr(\cdot\mid h,a,a')\,\big\|\,\Pr(\cdot\mid m,a,a')\big)} \why{Lemma~\ref{lem:tool}, on the observation, for each $a'$}\\
+&\le w_2\sqrt{\tfrac12\sum_{a'}\Pr(a'\mid h,a)\,\KL\big(\Pr(\cdot\mid h,a,a')\,\big\|\,\Pr(\cdot\mid m,a,a')\big)} \why{Jensen's inequality}.
+\end{align*}
+By Proposition~\ref{prop:id2} and Minkowski's inequality, the left side of the statement is at most the root of the average of $\eqref{eq:viaA}^2$ plus that of $\eqref{eq:viaO}^2$. Square the two bounds above, average over $h$ with the weights $\Pr(h\mid m)$, and use Lemma~\ref{lem:klforms}.
+\end{proof}
+
+\begin{proposition}[Split at $A_t$: identity for one action]\label{prop:id1}
+For every history $h$ with memory value $m$ and every action $b$, with $m'=f(m,b,o)$,
+\begin{align*}
+&\pi(b\mid m)\sum_o\big[e(o\mid h,b)-\Pr(o\mid m,b)\big]\big[r(o)+\gamma V^\pi_{t+1}(m')\big]\\
+&\quad=\sum_o\big[\Pr(o\mid h)-\Pr(o\mid m)\big]\Pr(b\mid m,o)\big[r(o)+\gamma V^\pi_{t+1}(m')\big]\\
+&\qquad+\sum_o\Pr(o\mid h)\big[\Pr(b\mid h,o)-\Pr(b\mid m,o)\big]\big[r(o)+\gamma V^\pi_{t+1}(m')\big].
+\end{align*}
+The identity also holds when a constant is subtracted from $r(o)+\gamma V^\pi_{t+1}(m')$, because both sides are zero for a constant.
+\end{proposition}
+
+\begin{proof}
+For every $o$,
+\begin{align*}
+&\pi(b\mid m)\big[e(o\mid h,b)-\Pr(o\mid m,b)\big]\\
+&\quad=\Pr(o\mid h)\Pr(b\mid h,o)-\Pr(o\mid m)\Pr(b\mid m,o) \why{Definition~\ref{def:laws}}\\
+&\quad=\big[\Pr(o\mid h)-\Pr(o\mid m)\big]\Pr(b\mid m,o)+\Pr(o\mid h)\big[\Pr(b\mid h,o)-\Pr(b\mid m,o)\big]. \why{add and subtract $\Pr(o\mid h)\Pr(b\mid m,o)$}
+\end{align*}
+Multiply by $r(o)+\gamma V^\pi_{t+1}(m')$ and sum over $o$. For a constant, the left side is zero because both laws sum to one, and the right side is the sum over $o$ of the first line, which is $\pi(b\mid m)-\pi(b\mid m)$.
+\end{proof}
+
+\begin{proposition}[Split at $A_t$: bound for a pair of actions]\label{prop:bound1}
+For every $m$ and every pair of actions $a\ne a^*$, with the maximum and the minimum over the observations $o$ with $\Pr(o\mid m,b)>0$,
+\begin{align*}
+&\sqrt{\sum_h\Pr(h\mid m)\,\eqref{eq:nowpair}^2}\\
+&\quad\le\max_{b\in\{a,a^*\}}\frac{\max_o\big(r(o)+\gamma V^\pi_{t+1}(f(m,b,o))\big)-\min_o\big(r(o)+\gamma V^\pi_{t+1}(f(m,b,o))\big)}{\pi(b\mid m)}\\
+&\qquad\quad\times\Big[\sqrt{\tfrac12\,D^0_t(m)}+\sqrt{\tfrac12\,\dE_t(m)}\Big].
+\end{align*}
+\end{proposition}
+
+\begin{proof}
+In this proof only: $W$ is the factor in front of the square bracket; for $b\in\{a,a^*\}$, $y_b(o)$ is $r(o)+\gamma V^\pi_{t+1}(f(m,b,o))$ minus the midpoint of its range, so that $|y_b(o)|\le\tfrac12W\pi(b\mid m)$; and $g(o,a)=y_a(o)/\pi(a\mid m)$, $g(o,a^*)=-y_{a^*}(o)/\pi(a^*\mid m)$, $g(o,b)=0$ for every other action $b$, so that $|g(o,b)|\le\tfrac12W$. Divide the identity of Proposition~\ref{prop:id1}, with the midpoint subtracted, by $\pi(b\mid m)$, and subtract the identity for $a^*$ from that for $a$:
+\begin{align*}
+\eqref{eq:nowpair}={}&\sum_o\big[\Pr(o\mid h)-\Pr(o\mid m)\big]\sum_b\Pr(b\mid m,o)\,g(o,b)\\
+&+\sum_o\Pr(o\mid h)\sum_b\big[\Pr(b\mid h,o)-\Pr(b\mid m,o)\big]\,g(o,b).
+\end{align*}
+\begin{align*}
+|\text{first sum}|&\le W\sqrt{\tfrac12\,\KL\big(\Pr(\cdot\mid h)\,\big\|\,\Pr(\cdot\mid m)\big)} \why{Lemma~\ref{lem:tool}, on the observation; $|\sum_b\Pr(b\mid m,o)\,g(o,b)|\le\tfrac12W$}\\
+|\text{second sum}|&\le W\sum_o\Pr(o\mid h)\sqrt{\tfrac12\,\KL\big(\Pr(\cdot\mid h,o)\,\big\|\,\Pr(\cdot\mid m,o)\big)} \why{Lemma~\ref{lem:tool}, on the action, for each $o$}\\
+&\le W\sqrt{\tfrac12\sum_o\Pr(o\mid h)\,\KL\big(\Pr(\cdot\mid h,o)\,\big\|\,\Pr(\cdot\mid m,o)\big)} \why{Jensen's inequality}.
+\end{align*}
+Square, average over $h$ with the weights $\Pr(h\mid m)$, and use Minkowski's inequality and Lemma~\ref{lem:klforms}.
+\end{proof}
+
+\paragraph{Conclusion.} At $A_{t+1}$, the difference made at time $t$ is the sum of two parts. In \eqref{eq:viaA} the history and the memory predict the next action differently, and this part is bounded with $\dP_t(m,a)$. In \eqref{eq:viaO} they predict the observation differently once the next action is given, and this part is bounded with $D^+_t(m,a)$. At $A_t$, for each action the difference is the sum of a part in which they predict the observation differently when the action is not given, bounded with $D^0_t(m)$, and a part in which they infer the action from the observation differently, bounded with $\dE_t(m)$; the factor of this bound grows as an action becomes rare. With Proposition~\ref{prop:choose}, Proposition~\ref{prop:bound1} bounds the loss \eqref{eq:loss} by $D^0_t(m)$, $\dE_t(m)$ and the errors of $V^\pi$ at the next time. In each bound a term has its own factor, and a term whose factor is zero does not enter. These bounds need not be smaller than that of Proposition~\ref{prop:now}, since $\sqrt x+\sqrt y\ge\sqrt{x+y}$; they are smaller when one factor is small.
+
+\paragraph{Known.} Lemma~\ref{lem:klforms} is known. The two identities are algebra and Bayes' rule; we did not search the literature for them.
+
+\paragraph{Next.} The layers so far are for a fixed agent. What they say for an agent that learns is not yet derived.
 
 \begin{thebibliography}{3}
 \bibitem[Cover and Thomas(2006)]{cover2006elements}
