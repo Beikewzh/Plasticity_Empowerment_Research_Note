@@ -11,6 +11,7 @@
 \usetikzlibrary{arrows.meta,positioning}
 
 \newtheorem{theorem}{Theorem}
+\newcounter{algo}
 \newtheorem{proposition}{Proposition}[section]
 \newtheorem{lemma}[proposition]{Lemma}
 \theoremstyle{definition}
@@ -33,7 +34,7 @@
 \maketitle
 
 \begin{abstract}
-An agent in a world much larger than itself acts on a memory of its history, and all the histories with the same memory value get the same action distribution. We ask how such an agent should train its memory and its policy. One inequality organizes the answer. A policy step of size $\alpha$ raises the return by at least $\alpha X-\alpha E-\alpha^2Y$, where $X$ is the improvement that the agent computes on its memory, $E$ is the error of its critic, and $Y$ measures how much the histories inside a memory value disagree. Each of the three is tied to the information that the history has about the next observation and the memory lacks. This information splits in two ways into four terms. The split at the action before the observation bounds $E$; the split at the action after it bounds $Y$ and what the memory hides from $X$. A finer memory does not change the return. It raises $X$ by exactly what it stops hiding, and how much that is depends on the current policy. The result is an algorithm that trains the memory twice in a round, once for the critic and once for the next policy step. The algorithm has not been run.
+An agent in a world much larger than itself acts on a memory of its history, and all the histories with the same memory value get the same action distribution. We ask how such an agent should train its memory and its policy. One inequality organizes the answer. A policy step of size $\alpha$ raises the return by at least $\alpha X-\alpha E-\alpha^2Y$, up to a factor that is close to one for a small step. Here $X$ is the improvement that the agent computes on its memory, $E$ is the error of its critic, and $Y$ is the spread of the improvement over the histories, a part of which the memory hides. Each of the three is tied to the information that the history has about the next observation and the memory lacks. This information splits in two ways into four terms. The split at the action before the observation bounds $E$. The split at the action after it, together with the errors at later times, bounds what the memory hides: the hidden part of $Y$, and the improvement that is missing from $X$. A finer memory does not change the return. For a critic that averages returns, it raises the computed improvement by exactly what it stops hiding, and how much that is depends on the current policy. The result is an algorithm that trains the memory twice in a round, once for the critic and once for the next policy step. The algorithm has not been run.
 \end{abstract}
 
 \section{Introduction}
@@ -45,13 +46,13 @@ An agent that lives in a world much larger than itself cannot act on its whole h
 \item What is a change of the memory worth, and when?
 \end{enumerate}
 
-\emph{Question 1.} A step of size $\alpha$ towards a greedy policy raises the return by at least $\alpha X-\alpha E-\alpha^2Y$ (Theorem~\ref{thm:step}). $X$ is the improvement that the agent computes from its critic at its memory values, $E$ is the error of the critic, and $Y$ grows with how much the histories inside one memory value disagree about the actions that the step changes. The agent has $X$. The memory decides $E$ and $Y$, and how much improvement is hidden from $X$.
+\emph{Question 1.} A step of size $\alpha$ towards a greedy policy raises the return by at least $\alpha X-\alpha E-\alpha^2Y$, up to a factor that is close to one for a small step (Theorem~\ref{thm:step}). $X$ is the improvement that the agent computes from its critic at its memory values, and $E$ is the error of the critic. $Y$ is the spread of the improvement over the histories. One part of it varies across memory values, and the agent can compute it; the other part is inside memory values, and the agent cannot. The memory decides $E$, how much of $Y$ is hidden, and how much improvement is missing from $X$.
 
-\emph{Question 2.} The state defect $D_t(m,a)$ is the information that the history has about the next observation, beyond the memory value $m$ and the action $a$. It splits in two ways: at the action before the observation into $D^0_t+\dE_t$, and at the action after it into $\dP_t+D^+_t$. The first split bounds the error of the state value, and so $E$ (Theorem~\ref{thm:critic}). The second bounds the error of the value of each action, and so $Y$ (Theorem~\ref{thm:actions}). In every bound a term is multiplied by a factor, a range of the reward plus the value of the next memory, because the history can know more than the memory where no value depends on it.
+\emph{Question 2.} The state defect $D_t(m,a)$ is the information that the history has about the next observation, beyond the memory value $m$ and the action $a$. It splits in two ways: at the action before the observation into $D^0_t+\dE_t$, and at the action after it into $\dP_t+D^+_t$. The first split bounds the error of the state value, and so $E$ (Theorem~\ref{thm:critic}). The second bounds the error of the value of each action. Together with the errors of the state value at later times, it bounds the hidden part of $Y$ and the improvement that is missing from $X$ (Theorem~\ref{thm:actions}). In every bound a term is multiplied by a factor, a range of the reward plus the value of the next memory, because the history can know more than the memory where no value depends on it.
 
-\emph{Question 3.} A finer memory, with the policy unchanged, does not change the return. It raises $X$ by exactly the improvement that the coarser memory was hiding (Theorem~\ref{thm:fine}), and this amount depends on the current policy. One example runs through the note. The agent sees a bit $c$; if its first action equals $c$ it is shown a second bit $d$; it is paid if its second action equals $d$. Its memory forgets $c$. Keeping $c$ is worth $0$ while the second action is random and $\tfrac14$ of return once the second action copies $d$, and the four terms are the same in both cases.
+\emph{Question 3.} A finer memory, with the policy unchanged, does not change the return. For a critic that averages returns, it raises the improvement that a greedy step computes by exactly what the coarser memory was hiding (Theorem~\ref{thm:fine}), and this amount depends on the current policy. One example runs through the note. The agent sees a bit $c$; if its first action equals $c$ it is shown a second bit $d$; it is paid if its second action equals $d$. Its memory forgets $c$. Keeping $c$ adds $0$ to the computed improvement while the second action is random and $\tfrac14$ once the second action copies $d$, which the next policy step turns into return; the four terms are the same in both cases.
 
-The answers give Algorithm~\ref{alg:round}, which trains the memory twice in a round: on $D^0_t$ and $\dE_t$ for the critic, and on $\dP_t$ and $D^+_t$ after the policy step, each time with factors computed from the agent's current values. The policy step follows conservative policy iteration \citep{kakade2002cpi}, and the bounds are of the kind known for approximate information states \citep{subramanian2022approximate} and value-aware model learning \citep{farahmand2017vaml}. New here are the two splits with what each bounds, the statements for a finer memory, and the algorithm. The horizon is finite, all averages are exact, and the algorithm has not been run (Section~\ref{sec:open}). Section~\ref{sec:setting} has the setting; Sections~\ref{sec:step} to~\ref{sec:mem} answer the three questions; Section~\ref{sec:algo} gives the algorithm. Proofs are in the appendix.
+The answers give Algorithm~\ref{alg:round}, a round of four steps: (1) train the memory for the critic, on $D^0_t$ and $\dE_t$; (2) compute the critic; (3) take a policy step; (4) change the memory for the next step, which concerns $\dP_t$ and $D^+_t$. The factors are computed from the agent's current values in every round. The policy step follows conservative policy iteration \citep{kakade2002cpi}, and the bounds are of the kind known for approximate information states \citep{subramanian2022approximate} and value-aware model learning \citep{farahmand2017vaml}. New here are the two splits with what each bounds, the statements for a finer memory, and the algorithm. The horizon is finite, all averages are exact, and the algorithm has not been run (Section~\ref{sec:open}). Section~\ref{sec:setting} has the setting; Sections~\ref{sec:step} to~\ref{sec:mem} answer the three questions; Section~\ref{sec:algo} gives the algorithm. Proofs are in the appendix.
 
 \section{Setting, and the four terms}\label{sec:setting}
 
@@ -141,20 +142,20 @@ The four terms are two splits of the state defect (Propositions~\ref{prop:split1
 \[
 \sum_a\pi(a\mid m)\,D_t(m,a)=D^0_t(m)+\dE_t(m),\qquad D_t(m,a)=\dP_t(m,a)+D^+_t(m,a).
 \]
-The first holds for the average over the action, the second for every action. $D^0_t$ is what the history adds to predicting the observation when the action is not given, and $\dE_t$ what it adds to inferring the action from the observation. $\dP_t$ is what the history adds to predicting the next action, and $D^+_t$ what it adds to predicting the observation once the next action is given.
+The first holds for the average over the action, the second for every action. The terms $\dP_t$ and $D^+_t$ contain the next action and are defined for $t\le T-2$. $D^0_t$ is what the history adds to predicting the observation when the action is not given, and $\dE_t$ what it adds to inferring the action from the observation. $\dP_t$ is what the history adds to predicting the next action, and $D^+_t$ what it adds to predicting the observation once the next action is given.
 
-\paragraph{In the example.} At time $1$ the memory has one value $m$. Given $A_1=a$, the observation $O_2$ shows a fair bit when $c=a$ and is blank otherwise, so $D_1(m,a)=\tfrac32\ln2-\tfrac12\ln2=\ln2$. When the action is not given, $O_2$ has the same law for both values of $c$, so $D^0_1(m)=0$ and $\dE_1(m)=\ln2$. With the uniform policy the next action does not vary with the observation, so $\dP_1(m,a)=0$ and $D^+_1(m,a)=\ln2$.
+\paragraph{In the example.} At time $1$ the memory has one value $m$. Given $A_1=a$, the observation $O_2$ shows a fair bit when $c=a$ and is blank otherwise, so $D_1(m,a)$, the entropy of $O_2$ given the memory value and the action minus its entropy given the history and the action, is $\tfrac32\ln2-\tfrac12\ln2=\ln2$. When the action is not given, $O_2$ has the same law for both values of $c$, so $D^0_1(m)=0$ and $\dE_1(m)=\ln2$. With the uniform policy the next action does not vary with the observation, so $\dP_1(m,a)=0$ and $D^+_1(m,a)=\ln2$.
 
 \section{A policy step on a memory}\label{sec:step}
 
-This section answers question~1. The agent keeps its memory and changes its policy.
+This section answers question~1. The agent keeps its memory and changes its policy from $\pi$ to $\pi'$; $\Prn$ denotes the law under $\pi'$.
 \begin{assumption}[A new policy on the same memory]\label{as:new}
 $\pi'$ reads the same memory: $\Prn(A_t=a\mid h_t)=\pi'(a\mid M_t)$, with the same $f_1$ and $f$. Both policies may depend on the time $t$; nothing in the earlier sections uses that they do not.
 \end{assumption}
 \begin{assumption}[A mixture step]\label{as:mix}
 $\pi'=(1-\alpha)\pi+\alpha\tilde\pi$ for a policy $\tilde\pi$ that reads the memory and $0<\alpha\le1$. So Assumption~\ref{as:new} holds.
 \end{assumption}
-$\Prn$ is the law under $\pi'$. The critic of the agent gives a value to every memory value and action. A critic that averages returns obtains $Q^\pi_t(m,a)$, by Definition~\ref{def:memvalue}. A critic that bootstraps, as temporal-difference methods do, obtains the following values when its averages are exact.
+The critic of the agent gives a value to every memory value and action. A critic that averages returns obtains $Q^\pi_t(m,a)$, by Definition~\ref{def:memvalue}. A critic that bootstraps, as temporal-difference methods do, obtains the following values when its averages are exact.
 \begin{definition}[Values from the memory's own Bellman equation]\label{def:hat}
 $\hat V^\pi_T(m)=0$ and, for $t=T-1,\dots,1$, with $m'=f(m,a,o)$,
 \begin{align*}
@@ -168,28 +169,28 @@ For a history $h$ with memory value $m$ at time $t$, write
 &\sum_a\big[\tilde\pi(a\mid m)-\pi(a\mid m)\big]\,Q^\pi_t(m,a), \label{eq:adv}\\
 &\sum_a\big[\tilde\pi(a\mid m)-\pi(a\mid m)\big]\big[Q^\pi_t(h,a)-Q^\pi_t(m,a)\big]. \label{eq:dis}
 \end{align}
-The sum \eqref{eq:adv} is the improvement of $\tilde\pi$ over $\pi$ at $m$, computed from the memory values. The sum \eqref{eq:dis} is how much the history $h$ disagrees with it; its average over the histories with memory value $m$ is zero. Let $\kappa$ be the largest value, over the times $t$ and the memory values $m$, of $\sum_a\tilde\pi(a\mid m)^2/\pi(a\mid m)-1$; it is finite by Assumption~\ref{as:pos}.
+The sum \eqref{eq:adv} is the improvement of $\tilde\pi$ over $\pi$ at $m$, computed from the values $Q^\pi_t(m,a)$ on the memory. The sum \eqref{eq:dis} is how much the history $h$ disagrees with it; its average over the histories with memory value $m$ is zero. Let $\kappa$ be the largest value, over the times $t$ and the memory values $m$, of $\sum_a\tilde\pi(a\mid m)^2/\pi(a\mid m)-1$; it is finite by Assumption~\ref{as:pos}.
 
 \begin{theorem}[A policy step]\label{thm:step}
 Under Assumptions~\ref{as:env} to~\ref{as:mix}, let
 \begin{align*}
 X&=\sum_{t=1}^{T-1}\gamma^{t-1}\sum_m\Pr(M_t=m)\sum_a\big[\tilde\pi(a\mid m)-\pi(a\mid m)\big]\,\hat Q^\pi_t(m,a),\\
 E&=\sum_{t=1}^{T-1}\gamma^{t-1}\,\max_{m,a}\frac{|\tilde\pi(a\mid m)-\pi(a\mid m)|}{\pi(a\mid m)}\,\sum_{m,a}\Pr(M_t=m,A_t=a)\,\big|Q^\pi_t(m,a)-\hat Q^\pi_t(m,a)\big|,\\
-Y&=\sum_{t=2}^{T-1}\gamma^{t-1}\sqrt{(t-1)\,\kappa}\;\sqrt{\sum_m\Pr(M_t=m)\,\big[\eqref{eq:adv}-c_t\big]^2+\sum_h\Pr(h_t=h)\,\big[\eqref{eq:dis}\big]^2},
+Y&=\sum_{t=2}^{T-1}\gamma^{t-1}\sqrt{(t-1)\,\kappa}\;\sqrt{\sum_m\Pr(M_t=m)\,\big[\eqref{eq:adv}-b_t\big]^2+\sum_h\Pr(h_t=h)\,\big[\eqref{eq:dis}\big]^2},
 \end{align*}
-where $c_t$ is the average of \eqref{eq:adv} over $M_t$. Then
+where $b_t$ is the average of \eqref{eq:adv} over $M_t$. Then
 \[
 J(\pi')-J(\pi)\ \ge\ \alpha\,X-\alpha\,E-\alpha^2\,(1+\alpha^2\kappa)^{T/2}\,Y.
 \]
 \end{theorem}
 
-All weights in $X$, $E$ and $Y$ are those of the old policy, which the agent has before it takes the step. $X$ is what the agent computes; it is nonnegative when $\tilde\pi$ is greedy for the critic. $E$ is zero for a critic that averages returns. Under the root in $Y$, the first sum is how much the computed improvement varies across the memory values, as in a Markov decision process whose states are the memory values. The second sum is there only because the memory is not the history. Without the factor $(1+\alpha^2\kappa)^{T/2}$ the right side is largest at
+All weights in $X$, $E$ and $Y$ are the visits of the old policy, $\Pr(M_t=m)$ and $\Pr(h_t=h)$, which the agent has before it takes the step. $X$ is what the agent computes; it is nonnegative when $\tilde\pi$ is greedy for the critic, that is, when it takes at every memory value an action with the largest $\hat Q^\pi_t(m,a)$. $E$ is zero for a critic that averages returns. Under the root in $Y$, the first sum is how much the improvement \eqref{eq:adv} varies across the memory values, as in a Markov decision process whose states are the memory values. The second sum is the disagreement inside memory values, which the agent cannot compute from its memory. For fixed $\pi$ and $\tilde\pi$ the two sums add up to the spread of $\sum_a[\tilde\pi(a\mid m)-\pi(a\mid m)]\,Q^\pi_t(h,a)$ over the histories, which does not depend on the memory. A finer memory moves spread from the second sum to the first, where the agent can compute it. Without the factor $(1+\alpha^2\kappa)^{T/2}$ the right side is largest at
 \[
 \alpha=\frac{X-E}{2Y},
 \]
 so the step is smaller where the histories inside a memory value disagree more. \emph{Proof sketch.} The argument of conservative policy iteration with the histories as states: the new policy changes the weights of the histories by a product of ratios of action probabilities, whose variance is of order $\alpha^2$ (Propositions~\ref{prop:round} and~\ref{prop:critic}). \emph{For the algorithm:} step~3 takes a step whose size follows from $X$, $E$ and $Y$.
 
-\paragraph{In the example.} Let $\tilde\pi$ take $A_2=d$ when $d$ is shown and keep the uniform policy otherwise. At the memory values that show $d$, \eqref{eq:adv} is $1-\tfrac12=\tfrac12$, and they are visited with probability $\tfrac12$, so $X=\tfrac14$. The critic is exact, so $E=0$. Here $\kappa=1$, the computed improvement is $\tfrac12$ or $0$ with equal probability, and \eqref{eq:dis} is zero at time $2$, so $Y=\tfrac14$ and the bound favours $\alpha=\tfrac12$. The bound is not tight: the policy at time $1$ does not change, so the weights of the histories do not change, and the return rises by exactly $\alpha X$. A full step, $\alpha=1$, raises it from $\tfrac12$ to $\tfrac34$.
+\paragraph{In the example.} Let $\tilde\pi$ take $A_2=d$ when $d$ is shown and keep the uniform policy otherwise. At the memory values that show $d$, \eqref{eq:adv} is $1-\tfrac12=\tfrac12$, and they are visited with probability $\tfrac12$, so $X=\tfrac14$. The critic is exact, so $E=0$. Here $\kappa=1$, the computed improvement is $\tfrac12$ or $0$ with equal probability, and \eqref{eq:dis} is zero at time $2$, so $Y=\tfrac14$ and the bound favours $\alpha=\tfrac12$. The bound is not tight: the policy at time $1$ does not change, so the weights of the histories do not change, and the return rises by exactly $\alpha X$. A full step, $\alpha=1$, raises it from $\tfrac12$ to $\tfrac34$. After the full step the policy at time $2$ no longer takes every action; the statements used below for the example are at time $1$, where it does.
 
 The rest of the note says what the memory has to do with $E$ (Section~\ref{sec:eval}), with $Y$ (Section~\ref{sec:actions}) and with $X$ (Section~\ref{sec:mem}).
 
@@ -218,13 +219,13 @@ The error of a bootstrapping critic comes from the errors of the state value, $V
 \begin{theorem}[The critic]\label{thm:critic}
 Under Assumptions~\ref{as:env} to~\ref{as:pos}:
 
-(a) The part of $V^\pi_t(h)-V^\pi_t(m)$ made at time $t$ is $\sum_a\pi(a\mid m)$ times \eqref{eq:now}, and
+(a) The part of $V^\pi_t(h)-V^\pi_t(m)$ made at time $t$ is the average of \eqref{eq:now} over the action, with the weights $\pi(a\mid m)$, and
 \begin{align*}
 &\sqrt{\sum_h\Pr(h\mid m)\Big(\sum_a\pi(a\mid m)\,\eqref{eq:now}\Big)^2}\\
 &\qquad\le\ \rng_o\bar y(o)\,\sqrt{\tfrac12\,D^0_t(m)}+\max_o\rng_ay_a(o)\,\sqrt{\tfrac12\,\dE_t(m)}.
 \end{align*}
 
-(b) The error of the state value is at most the discounted sum of the parts made at the later times:
+(b) The error of the state value is at most the discounted sum of the parts made at time $t$ and later:
 \begin{align*}
 &\sqrt{\sum_h\Pr(h_t=h)\big[V^\pi_t(h)-V^\pi_t(m)\big]^2}\\
 &\qquad\le\ \sum_{n=t}^{T-1}\gamma^{n-t}\sqrt{\sum_h\Pr(h_n=h)\Big(\sum_a\pi(a\mid m)\,\eqref{eq:now}\Big)^2},
@@ -238,9 +239,9 @@ with \eqref{eq:now} taken at time $n$ and $m$ the memory value of $h$.
 \end{align*}
 \end{theorem}
 
-\emph{Proof sketch.} Sum the one-step identity over the action with the weights $\pi(a\mid m)$. Bayes' rule turns the sum into a difference of two predictions of the observation plus a difference of two inferences of the action, and Pinsker's inequality bounds each; (b) and (c) unroll the identity over time (Propositions~\ref{prop:vsplit} and~\ref{prop:bootstrap}). So $E$ is bounded with $D^0_n$ and $\dE_n$ at the later times, each with its own factor. \emph{For the algorithm:} step~1 trains the memory on these two terms with these factors as weights, so that the critic of step~2 is right. The factor of $D^0_t$ is how much the target, averaged over the action, changes with the observation. The factor of $\dE_t$ is how much the target still depends on the action once the observation is given; it is zero at the last time, and whenever the observation decides the next memory value.
+\emph{Proof sketch.} Sum the one-step identity over the action with the weights $\pi(a\mid m)$. Bayes' rule turns the sum into a difference of two predictions of the observation plus a difference of two inferences of the action, and Pinsker's inequality bounds each; (b) and (c) unroll the identity over time (Propositions~\ref{prop:vsplit} and~\ref{prop:bootstrap}). So $E$ is bounded with $D^0_n$ and $\dE_n$ at the later times, each with its own factor. \emph{For the algorithm:} step~1 trains the memory on these two terms with these factors as weights, so that the critic of step~2 is right. The factor of $D^0_t$ is how much the target $y_a(o)$, averaged over the action, changes with the observation. The factor of $\dE_t$ is how much the target still depends on the action once the observation is given; it is zero at the last time, and whenever the observation decides the next memory value.
 
-\paragraph{In the example.} At time $1$, $D^0_1(m)=0$, and the next memory value $M_2=O_2$ does not depend on the action, so the factor of $\dE_1(m)$ is zero: both bounds are zero although $\dE_1(m)=\ln2$. The agent evaluates its policy exactly on its memory, before and after the policy step, and still collects less than an agent that keeps $c$. What the memory costs here is all in comparing actions.
+\paragraph{In the example.} At time $1$, $D^0_1(m)=0$, and the next memory value $M_2=O_2$ does not depend on the action, so the factor of $\dE_1(m)$ is zero: both products in (a) are zero although $\dE_1(m)=\ln2$. The agent evaluates its policy exactly on its memory, before and after the policy step, and still collects less than an agent that keeps $c$. What the memory costs here is all in comparing actions.
 
 \section{Comparing actions, and the split at the action after the observation}\label{sec:actions}
 
@@ -267,9 +268,9 @@ where $\Pr(o\mid m,a,a')$ is the law of the observation given the memory value, 
 \end{align*}
 \end{theorem}
 
-\emph{Proof sketch.} (a) is Pinsker's inequality applied to \eqref{eq:now}, after the prediction of the observation is written through the next action. (b) is the one-step identity and Minkowski's inequality (Propositions~\ref{prop:now} and~\ref{prop:bound2}, Lemma~\ref{lem:dis}). So $Y$ is bounded with $\dP_t(m,a)$ and $D^+_t(m,a)$ of the actions whose probabilities change, and with the errors of the state value at the next time, which Theorem~\ref{thm:critic} bounds. \emph{For the algorithm:} these two terms, with these factors, are what step~4 lowers. The factor of $\dP_t$ is how much the value differs between the next actions, as seen from the memory. The factor of $D^+_t$ is how much the reward plus the value of the next action changes with the observation once the next action is given. The same two terms bound the loss \eqref{eq:loss} (Proposition~\ref{prop:choose}).
+\emph{Proof sketch.} (a) is Pinsker's inequality applied to \eqref{eq:now}, after the prediction of the observation is written through the next action. (b) is the one-step identity and Minkowski's inequality (Propositions~\ref{prop:now} and~\ref{prop:bound2}, Lemma~\ref{lem:dis}). So the second sum under the root in $Y$, the part that the agent cannot compute, is bounded with $\dP_t(m,a)$ and $D^+_t(m,a)$ of the actions whose probabilities change, and with the errors of the state value at the next time, which are of the kind that Theorem~\ref{thm:critic} bounds (Lemma~\ref{lem:dis} gives the link). The first sum is not bounded by any term. \emph{For the algorithm:} these two terms, with these factors, are what step~4 lowers, so that less of the improvement and of its spread is hidden. The factor of $\dP_t$ is how much the value differs between the next actions, as seen from the memory. The factor of $D^+_t$ is how much the reward plus the value of the next action changes with the observation once the next action is given. The same two terms, together with the errors of the state value at the next time, bound the loss \eqref{eq:loss} (Proposition~\ref{prop:choose}).
 
-\paragraph{Information needs its factor.} A term can be large where no value depends on it. Let the next observation be $(c,v)$, where $c$ is a bit that the history knows and the memory does not, and $v$ is a fair bit that is the reward: then $D_t(m,a)=\ln2$ and \eqref{eq:now} is zero. Or let the reward be $0$ after one history and $+1$ or $-1$ with equal probability after another: the history knows the spread of the reward and not its mean, and again \eqref{eq:now} is zero. A factor times a term bounds the difference from below only in special cases, for instance for $\dP_t$ when there are two actions (Proposition~\ref{prop:twosided}). The terms say where a difference in value can be, and the values say how large it is.
+\paragraph{Information needs its factor.} A term can be large where no value depends on it. Let the next observation be $(c,v)$, where $c$ is a bit that the history knows and the memory does not, and $v$ is a fair bit that is the reward: then $D_t(m,a)=\ln2$ and \eqref{eq:now} is zero. Or let the reward be $0$ after one history and $+1$ or $-1$ with equal probability after another: the history knows the spread of the reward and not its mean, and again \eqref{eq:now} is zero. A factor times a term bounds a difference from below only in special cases: for $D_t(m,a)$ when only two observations are possible, and, when there are two actions, for the part of \eqref{eq:now} that goes through the next action, with $\dP_t$ (Proposition~\ref{prop:twosided}). The terms say where a difference in value can be, and the values say how large it is.
 
 \paragraph{In the example.} With the uniform policy at time $2$, the value of the next memory is $\tfrac12$ whether $d$ is shown or not. The factor is zero, and \eqref{eq:now} at time $1$ is zero, although $D_1(m,a)=\ln2$. After the policy step, the value of the next memory is $1$ when $d$ is shown and $\tfrac12$ when it is not. The factor is $\tfrac12$, \eqref{eq:now} is $+\tfrac14$ for the history with $c=a$ and $-\tfrac14$ for the other, and the bound of (a) is $\tfrac12\sqrt{\ln2/2}\approx0.29$. The four terms are the same before and after the step.
 
@@ -277,7 +278,7 @@ where $\Pr(o\mid m,a,a')$ is the law of the observation given the memory value, 
 
 This section answers question~3. The memory decides how much improvement the agent can compute. Suppose that the agent makes its memory finer and keeps its policy.
 \begin{assumption}[A finer memory]\label{as:fine}
-A second memory $\tilde M_t$, with values $\tilde m$ and its own maps as in Assumption~\ref{as:mem}, determines the first: $M_t=c(\tilde M_t)$ for a map $c$. The policy still reads the first memory, $\pi(a\mid c(\tilde M_t))$.
+A second memory $\tilde M_t$, with values $\tilde m$ and its own maps as in Assumption~\ref{as:mem}, determines the first: $M_t$ is a function of $\tilde M_t$. The policy still reads the first memory, $\pi(a\mid M_t)$.
 \end{assumption}
 Let $\tilde D_t$, $\tilde Q^\pi_t(\tilde m,a)$ and $\tilde V^\pi_t(\tilde m)$ be the state defect and the memory values of the second memory, and $\Pr(\tilde m\mid m)=\Pr(\tilde M_t=\tilde m\mid M_t=m)$.
 
@@ -286,12 +287,12 @@ Under Assumptions~\ref{as:env} to~\ref{as:pos} and~\ref{as:fine}:
 
 (a) The law of the experience, the return $J(\pi)$ and the values $Q^\pi_t(h,a)$ do not change.
 
-(b) Each of the four terms of the first memory is the same term with the second memory in the role of the history, plus the average of the term of the second memory. For the state defect,
+(b) Each of the four terms of the first memory is the same term with the second memory in the role of the history, plus the average of the term of the second memory ($\dP_t$ and $D^+_t$ for $t\le T-2$). For the state defect,
 \[
 D_t(m,a)=I(\tilde M_t;O_{t+1}\mid M_t=m,A_t=a)+\sum_{\tilde m}\Pr(\tilde m\mid m)\,\tilde D_t(\tilde m,a).
 \]
 
-(c) The improvement that a greedy step computes from the memory values rises by
+(c) With a critic that averages returns, the improvement that a greedy step computes at time $t$ rises by
 \begin{align*}
 &\sum_{\tilde m}\Pr(\tilde M_t=\tilde m)\Big[\max_a\tilde Q^\pi_t(\tilde m,a)-\tilde V^\pi_t(\tilde m)\Big]-\sum_m\Pr(M_t=m)\Big[\max_aQ^\pi_t(m,a)-V^\pi_t(m)\Big]\\
 &\qquad=\sum_m\Pr(M_t=m)\Big[\sum_{\tilde m}\Pr(\tilde m\mid m)\max_a\tilde Q^\pi_t(\tilde m,a)-\max_aQ^\pi_t(m,a)\Big]\ \ge0.
@@ -299,7 +300,7 @@ D_t(m,a)=I(\tilde M_t;O_{t+1}\mid M_t=m,A_t=a)+\sum_{\tilde m}\Pr(\tilde m\mid m
 When the second memory is the history itself, the square bracket on the right is the loss \eqref{eq:loss}.
 \end{theorem}
 
-\emph{Proof sketch.} The policy is the same function of the history, which gives (a). (b) is the chain rule of mutual information, since the second memory is a function of the history. (c) holds because both memories average the same values, and the maximum of an average is at most the average of the maxima (Propositions~\ref{prop:fineterms} and~\ref{prop:finegain}). So the loss at a memory value is the improvement that the memory hides from the agent, and a finer memory gives a part of it back to $X$. The return itself moves only when the policy then takes a step: a memory has no return of its own. The part given back is bounded with the information that the finer memory adds about the consequences of each action, $I(\tilde M_t;O_{t+1}\mid M_t=m,A_t=a)$, times a range of the reward plus the value of the next memory. \emph{For the algorithm:} step~4 changes the memory after the policy step, where this is largest.
+\emph{Proof sketch.} The policy is the same function of the history, which gives (a). (b) is the chain rule of mutual information, since the second memory is a function of the history. (c) holds because both memories average the same values, and the maximum of an average is at most the average of the maxima (Propositions~\ref{prop:fineterms} and~\ref{prop:finegain}). So the loss at a memory value is the improvement that the memory hides from the agent, and a finer memory gives a part of it back to the computed improvement. The return itself moves only when the policy then takes a step: a memory has no return of its own. The part given back is bounded with the information that the finer memory adds about the consequences of each action, $I(\tilde M_t;O_{t+1}\mid M_t=m,A_t=a)$, times a range of the reward plus the value of the next memory, plus $\gamma$ times the errors of the state value at the next time. \emph{For the algorithm:} step~4 changes the memory after the policy step, towards the memory that gives back the most.
 
 A memory of fixed size cannot only become finer. When it is replaced, one identity says what happens to the state defect.
 
@@ -310,34 +311,34 @@ I(h_t;O_{t+1}\mid\tilde M_t,A_t)-I(h_t;O_{t+1}\mid M_t,A_t)=I(M_t;O_{t+1}\mid\ti
 \]
 \end{theorem}
 
-The second term on the left is the average of $D_t(m,a)$. It changes by what only the old memory knew about the next observation minus what only the new one knows. \emph{Proof sketch.} The chain rule, applied to the pair of memories in its two orders (Proposition~\ref{prop:replace}). No separate decision about what to give up is needed: a memory of fixed size that is trained on a loss gives up what the loss counts least.
+The second term on the left is the average of $D_t(m,a)$. It changes by what only the old memory knew about the next observation minus what only the new one knows. \emph{Proof sketch.} The chain rule, applied to the pair of memories in its two orders (Proposition~\ref{prop:replace}). We expect a memory of fixed size that is trained on a loss to give up what the loss counts least; the identity says what the state defect then loses and gains. The expectation itself is not a statement of this note.
 
-\paragraph{In the example.} After the policy step at time $2$ the return is $\tfrac34$. On the memory that forgets $c$, both actions at time $1$ have the memory value $\tfrac34$, so the agent computes no improvement there. Let the memory keep $c$. The return is still $\tfrac34$. Now the action $a=c$ has the value $1$ and the other $\tfrac12$, and the computed improvement at time $1$ is $1-\tfrac34=\tfrac14$, which is the loss \eqref{eq:loss}; all of $D_1(m,a)=\ln2$ is in the first term of (b). A policy step at time $1$ then gives the return $1$. Had the memory kept $c$ before the policy step at time $2$, the computed improvement would have risen by $0$. What a memory should keep depends on the current policy, so the memory is revisited after every policy step.
+\paragraph{In the example.} After the policy step at time $2$ the return is $\tfrac34$. On the memory that forgets $c$, both actions at time $1$ have the value $\tfrac34$, so the agent computes no improvement there. Let the memory keep $c$. The return is still $\tfrac34$. Now the action $a=c$ has the value $1$ and the other $\tfrac12$, and the computed improvement at time $1$ is $1-\tfrac34=\tfrac14$, which is the loss \eqref{eq:loss}; all of $D_1(m,a)=\ln2$ is in the first term of (b). A policy step at time $1$ then gives the return $1$. Had the memory kept $c$ before the policy step at time $2$, the computed improvement would have risen by $0$. What a memory should keep depends on the current policy, so the memory is revisited after every policy step.
 
 \section{The algorithm}\label{sec:algo}
 
 \begin{center}
 \fbox{\begin{minipage}{0.95\linewidth}
-\textbf{Algorithm 1}\phantomsection\label{alg:round}\quad One round of an agent that acts on a memory. \emph{Repeat:}
+\refstepcounter{algo}\label{alg:round}\textbf{Algorithm \thealgo}\quad One round of an agent that acts on a memory. \emph{Repeat:}
 \begin{enumerate}
-\item \emph{Memory, for the critic.} With the policy fixed and every action taken, train the memory to lower $D^0_t$ and $\dE_t$, each weighted by its factor in Theorem~\ref{thm:critic}. \hfill (lowers $E$)
+\item \emph{Memory, for the critic.} With the policy fixed and every action taken, train the memory to lower $D^0_t$ and $\dE_t$, each weighted by its factor in Theorem~\ref{thm:critic}. \hfill (lowers the bound on $E$)
 \item \emph{Critic.} Compute the values $\hat Q^\pi_t(m,a)$ on the memory, and $X$, $E$, $Y$ with the visits of the current policy.
 \item \emph{Policy.} Mix the policy with the greedy policy, with a weight $\alpha$. Theorem~\ref{thm:step} bounds the gain from below, and its bound is largest near $\alpha=(X-E)/(2Y)$.
-\item \emph{Memory, for the next step.} With the policy unchanged, change the memory where the loss \eqref{eq:loss}, measured with the new memory in the role of the history, is largest under the new values. This concerns $\dP_t$ and $D^+_t$, each weighted by its factor in Theorem~\ref{thm:actions}. \hfill (raises $X$, lowers $Y$)
+\item \emph{Memory, for the next step.} With the policy unchanged, move to the memory that gives back the most computed improvement: the one for which the loss \eqref{eq:loss}, with the new memory in the role of the history and the values of the new policy, is largest. This concerns $\dP_t$ and $D^+_t$, each weighted by its factor in Theorem~\ref{thm:actions}. \hfill (raises $X$; less of $Y$ is hidden)
 \end{enumerate}
 \end{minipage}}
 \end{center}
 
 The memory is trained twice in a round because it serves two things. For the critic, the action is averaged, and the split at $A_t$ applies. For the choice between actions, each action is taken in turn, and the split at $A_{t+1}$ applies. The weights of both trainings are factors, computed from the agent's own memory values, and they change with every policy step.
 
-\paragraph{In the example.} Start with the memory that forgets $c$ and the uniform policy; the return is $\tfrac12$. Step~1 has nothing to lower, since the critic is exact. Steps~2 and~3 give the policy step at time $2$ and the return $\tfrac34$. Step~4 makes the memory keep $c$, which was worth nothing before. The next round gives the policy step at time $1$ and the return $1$.
+\paragraph{In the example.} Start with the memory that forgets $c$ and the uniform policy; the return is $\tfrac12$. Step~1 has nothing to lower, since the critic is exact. Steps~2 and~3 give the policy step at time $2$. The bound favours $\alpha=\tfrac12$, which gives the return $\tfrac58$; the full step $\alpha=1$, which the bound does not cover here, gives $\tfrac34$, and we continue with it. Step~4 makes the memory keep $c$, which was worth nothing before. The next round gives the policy step at time $1$ and the return $1$.
 
 \paragraph{From Algorithm 1 to an agent that learns from experience.} Algorithm~\ref{alg:round} is exact: every average is over the law of the histories. An agent with one stream of experience would approximate it as follows. The theorems do not cover these approximations.
 \begin{itemize}
 \item \emph{Values.} The memory values, the factors and $X$ need only the agent's experience at its own memory values, so they are sample averages.
 \item \emph{Terms.} The four terms, $E$ and $Y$ compare the history with the memory. Measuring them needs a second predictor that reads the history, or a longer part of it than the memory does.
 \item \emph{Training the memory.} Lowering a term does not need its value. Training the memory to predict the next observation from $(M_t,A_t)$ lowers $D_t(m,a)$; the four terms are the corresponding predictions with the action or the next action left out or put in.
-\item \emph{Phases.} The steps can run together at different rates. \citet{subramanian2022approximate} do so, with the memory fastest and the policy slowest and a fixed weight between the losses of the memory, and prove convergence under the usual assumptions of stochastic approximation; \citet{konda2000actor} require the critic to be faster than the actor. Theorem~\ref{thm:step} supports one part of this order, that the policy is slowest.
+\item \emph{Phases.} The steps can run together at different rates. \citet{subramanian2022approximate} do so, with the memory fastest and the policy slowest and a fixed weight between the losses of the memory, and prove convergence under the usual assumptions of stochastic approximation; \citet{konda2000actor} require the critic to be faster than the actor. Theorem~\ref{thm:step} is about the size of one exact step and says nothing about rates; it is consistent with a slow policy.
 \item \emph{Ignored by the theory.} The error of estimating averages from samples, and the change of the weights of the histories while the memory is being trained.
 \end{itemize}
 
@@ -646,10 +647,15 @@ Under Assumptions~\ref{as:env} to~\ref{as:mix}, for every memory value $m$ at ti
 &\sqrt{\sum_h\Pr(h\mid m)\,\big[\eqref{eq:dis}\big]^2}\ \le\ \sum_a\big|\tilde\pi(a\mid m)-\pi(a\mid m)\big|\,\bigg[\sqrt{\sum_h\Pr(h\mid m)\,\big[\eqref{eq:now}\big]^2}\\
 &\qquad\qquad+\gamma\sqrt{\sum_h\Pr(h\mid m)\sum_oe(o\mid h,a)\big[V^\pi_{t+1}(h,a,o)-V^\pi_{t+1}(m')\big]^2}\,\bigg].
 \end{align*}
+Moreover, with $S_a$ the sum under the second root,
+\[
+\sum_a\big|\tilde\pi(a\mid m)-\pi(a\mid m)\big|\sqrt{S_a}\ \le\ \sqrt{\kappa}\,\sqrt{\sum_a\pi(a\mid m)\,S_a},
+\]
+and $\sum_a\pi(a\mid m)\,S_a$ is the average of $\big[V^\pi_{t+1}(h_{t+1})-V^\pi_{t+1}(M_{t+1})\big]^2$ given $M_t=m$, the squared error of the state value at the next time.
 \end{lemma}
 
 \begin{proof}
-In this proof only, $u(h,a)=\sum_oe(o\mid h,a)\big[V^\pi_{t+1}(h,a,o)-V^\pi_{t+1}(m')\big]$ and $\bar u(m,a)$ is its average over $h$ with the weights $\Pr(h\mid m)$. By \eqref{eq:Qh} and \eqref{eq:Qm}, $Q^\pi_t(h,a)-Q^\pi_t(m,a)$ is \eqref{eq:now} plus $\gamma\big[u(h,a)-\bar u(m,a)\big]$. Multiply by $\tilde\pi(a\mid m)-\pi(a\mid m)$, sum over $a$ and use Minkowski's inequality. Subtracting the average $\bar u(m,a)$ does not increase the average square of $u(h,a)$, and $u(h,a)^2\le\sum_oe(o\mid h,a)\big[V^\pi_{t+1}(h,a,o)-V^\pi_{t+1}(m')\big]^2$ by Jensen's inequality.
+In this proof only, $u(h,a)=\sum_oe(o\mid h,a)\big[V^\pi_{t+1}(h,a,o)-V^\pi_{t+1}(m')\big]$ and $\bar u(m,a)$ is its average over $h$ with the weights $\Pr(h\mid m)$. By \eqref{eq:Qh} and \eqref{eq:Qm}, $Q^\pi_t(h,a)-Q^\pi_t(m,a)$ is \eqref{eq:now} plus $\gamma\big[u(h,a)-\bar u(m,a)\big]$. Multiply by $\tilde\pi(a\mid m)-\pi(a\mid m)$, sum over $a$ and use Minkowski's inequality. Subtracting the average $\bar u(m,a)$ does not increase the average square of $u(h,a)$, and $u(h,a)^2\le\sum_oe(o\mid h,a)\big[V^\pi_{t+1}(h,a,o)-V^\pi_{t+1}(m')\big]^2$ by Jensen's inequality. For the last claim, write $|\tilde\pi-\pi|$ as $\big(|\tilde\pi-\pi|/\sqrt\pi\big)\sqrt\pi$ and use the Cauchy--Schwarz inequality; $\sum_a\big[\tilde\pi(a\mid m)-\pi(a\mid m)\big]^2/\pi(a\mid m)=\sum_a\tilde\pi(a\mid m)^2/\pi(a\mid m)-1\le\kappa$.
 \end{proof}
 
 \begin{lemma}[Known: performance difference]\label{lem:pdl}
@@ -673,9 +679,9 @@ J(\lambda)-J(\pi)
 Under Assumptions~\ref{as:env} to~\ref{as:pol}, \ref{as:pos} and~\ref{as:mix},
 \begin{align*}
 &\Big|J(\pi')-J(\pi)-\alpha\sum_{t=1}^{T-1}\gamma^{t-1}\sum_m\Pr(M_t=m)\,\eqref{eq:adv}\Big|\\
-&\quad\le\alpha\sum_{t=2}^{T-1}\gamma^{t-1}\sqrt{(1+\alpha^2\kappa)^{t-1}-1}\;\sqrt{\sum_m\Pr(M_t=m)\,\big[\eqref{eq:adv}-c_t\big]^2+\sum_h\Pr(h_t=h)\,\big[\eqref{eq:dis}\big]^2},
+&\quad\le\alpha\sum_{t=2}^{T-1}\gamma^{t-1}\sqrt{(1+\alpha^2\kappa)^{t-1}-1}\;\sqrt{\sum_m\Pr(M_t=m)\,\big[\eqref{eq:adv}-b_t\big]^2+\sum_h\Pr(h_t=h)\,\big[\eqref{eq:dis}\big]^2},
 \end{align*}
-where $c_t=\sum_m\Pr(M_t=m)\,\eqref{eq:adv}$. The first root is at most $\alpha\sqrt{(t-1)\kappa}\,(1+\alpha^2\kappa)^{(t-2)/2}$, so the right side is of second order in $\alpha$.
+where $b_t=\sum_m\Pr(M_t=m)\,\eqref{eq:adv}$. The first root is at most $\alpha\sqrt{(t-1)\kappa}\,(1+\alpha^2\kappa)^{(t-2)/2}$, so the right side is of second order in $\alpha$.
 \end{proposition}
 
 On the left, the improvement is computed with the weights $\Pr(M_t=m)$ of the old policy, which the agent has before it takes the step. Under the second root, the first sum is how much the computed improvement varies across the memory values, and the second is how much the histories with one memory value disagree with it.
@@ -684,10 +690,10 @@ On the left, the improvement is computed with the weights $\Pr(M_t=m)$ of the ol
 In this proof only, $g_t(h)=\sum_a\big[\tilde\pi(a\mid m)-\pi(a\mid m)\big]Q^\pi_t(h,a)$, which is $\eqref{eq:adv}+\eqref{eq:dis}$, and $L_t(h)=\Prn(h_t=h)/\Pr(h_t=h)$.
 \begin{align*}
 J(\pi')-J(\pi)&=\alpha\sum_{t=1}^{T-1}\gamma^{t-1}\sum_h\Prn(h_t=h)\,g_t(h) \why{Lemma~\ref{lem:pdl} with $\lambda=\pi'$; Assumption~\ref{as:mix}}\\
-\sum_h\Pr(h_t=h)\,g_t(h)&=c_t \why{Definition~\ref{def:memvalue}}\\
-\sum_h\big[\Prn(h_t=h)-\Pr(h_t=h)\big]\,g_t(h)&=\sum_h\Pr(h_t=h)\,\big[L_t(h)-1\big]\big[g_t(h)-c_t\big] \why{$\sum_h\Pr(h_t=h)\,[L_t(h)-1]=0$}.
+\sum_h\Pr(h_t=h)\,g_t(h)&=b_t \why{Definition~\ref{def:memvalue}}\\
+\sum_h\big[\Prn(h_t=h)-\Pr(h_t=h)\big]\,g_t(h)&=\sum_h\Pr(h_t=h)\,\big[L_t(h)-1\big]\big[g_t(h)-b_t\big] \why{$\sum_h\Pr(h_t=h)\,[L_t(h)-1]=0$}.
 \end{align*}
-By the Cauchy--Schwarz inequality the last sum is at most $\sqrt{\sum_h\Pr(h_t=h)[L_t(h)-1]^2}\,\sqrt{\sum_h\Pr(h_t=h)[g_t(h)-c_t]^2}$ in absolute value. In the second root, $g_t(h)-c_t=\big[\eqref{eq:adv}-c_t\big]+\eqref{eq:dis}$, and \eqref{eq:dis} has average zero over the histories with one memory value (Definition~\ref{def:memvalue}), so the average of the square is the sum of the two averages of squares. For the first root, $\sum_h\Pr(h_t=h)[L_t(h)-1]^2=\sum_h\Pr(h_t=h)\,L_t(h)^2-1$. Under an agent $\lambda$ the probability of the history $h$ is the probability of $O_1$ times $\prod_{s<t}\lambda(a_s\mid h_s)\,e(o_{s+1}\mid h_s,a_s)$, so $L_t(h)$ is the product over $s<t$ of $\pi'(a_s\mid m_s)/\pi(a_s\mid m_s)$, where $a_s$ and $m_s$ are the action and the memory value at time $s$ of the history $h$. Summing first over the last observation and the last action of $h$,
+By the Cauchy--Schwarz inequality the last sum is at most $\sqrt{\sum_h\Pr(h_t=h)[L_t(h)-1]^2}\,\sqrt{\sum_h\Pr(h_t=h)[g_t(h)-b_t]^2}$ in absolute value. In the second root, $g_t(h)-b_t=\big[\eqref{eq:adv}-b_t\big]+\eqref{eq:dis}$, and \eqref{eq:dis} has average zero over the histories with one memory value (Definition~\ref{def:memvalue}), so the average of the square is the sum of the two averages of squares. For the first root, $\sum_h\Pr(h_t=h)[L_t(h)-1]^2=\sum_h\Pr(h_t=h)\,L_t(h)^2-1$. Under an agent $\lambda$ the probability of the history $h$ is the probability of $O_1$ times $\prod_{s<t}\lambda(a_s\mid h_s)\,e(o_{s+1}\mid h_s,a_s)$, so $L_t(h)$ is the product over $s<t$ of $\pi'(a_s\mid m_s)/\pi(a_s\mid m_s)$, where $a_s$ and $m_s$ are the action and the memory value at time $s$ of the history $h$. Summing first over the last observation and the last action of $h$,
 \[
 \sum_h\Pr(h_t=h)\,L_t(h)^2=\sum_{h}\Pr(h_{t-1}=h)\,L_{t-1}(h)^2\sum_a\frac{\pi'(a\mid m)^2}{\pi(a\mid m)},
 \]
@@ -706,7 +712,7 @@ Under the assumptions of Proposition~\ref{prop:round}, with $\hat Q^\pi$ of Defi
 The sum over $m$ and $a$ at time $t$ is at most the maximum of the statement times $\sum_{m,a}\Pr(M_t=m,A_t=a)\,\big|Q^\pi_t(m,a)-\hat Q^\pi_t(m,a)\big|$. By the proof of Proposition~\ref{prop:bootstrap}(b), this average is at most $\gamma$ times the root of the statement at time $t+1$ plus $\gamma$ times the same average at time $t+1$, and it is zero at $t=T-1$.
 \end{proof}
 
-\paragraph{Proof of Theorem~\ref{thm:step}.} Let $X_Q$ be $X$ with $Q^\pi_t(m,a)$ in place of $\hat Q^\pi_t(m,a)$, which is $\sum_t\gamma^{t-1}c_t$. By Proposition~\ref{prop:round} and the bound on its first root, $\sqrt{(1+\alpha^2\kappa)^{t-1}-1}\le\alpha\sqrt{(t-1)\kappa}\,(1+\alpha^2\kappa)^{T/2}$, we have $J(\pi')-J(\pi)\ge\alpha X_Q-\alpha^2(1+\alpha^2\kappa)^{T/2}\,Y$. By the first step of the proof of Proposition~\ref{prop:critic}, $|X_Q-X|\le E$.
+\paragraph{Proof of Theorem~\ref{thm:step}.} Let $X_Q$ be $X$ with $Q^\pi_t(m,a)$ in place of $\hat Q^\pi_t(m,a)$, which is $\sum_t\gamma^{t-1}b_t$. By Proposition~\ref{prop:round} and the bound on its first root, $\sqrt{(1+\alpha^2\kappa)^{t-1}-1}\le\alpha\sqrt{(t-1)\kappa}\,(1+\alpha^2\kappa)^{T/2}$, we have $J(\pi')-J(\pi)\ge\alpha X_Q-\alpha^2(1+\alpha^2\kappa)^{T/2}\,Y$. By the first step of the proof of Proposition~\ref{prop:critic}, $|X_Q-X|\le E$.
 
 \paragraph{Known.} Lemma~\ref{lem:pdl} is known. Proposition~\ref{prop:round} follows the argument of conservative policy iteration \citep{kakade2002cpi}, with the histories as states; there the second-order term is bounded with the largest advantage, and here with a variance that separates what varies across memory values from what varies inside them. We did not search the literature for Propositions~\ref{prop:id2} and~\ref{prop:bound2}.
 
