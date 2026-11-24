@@ -7,13 +7,14 @@
 \usepackage{amsmath,amssymb,amsthm}
 \usepackage{microtype}
 \usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
 
 \newtheorem{proposition}{Proposition}[section]
 \newtheorem{lemma}[proposition]{Lemma}
 \theoremstyle{definition}
 \newtheorem{definition}[proposition]{Definition}
 \newtheorem{assumption}{Assumption}
-\numberwithin{equation}{section}
 
 \newcommand{\E}{\mathbb{E}}
 \newcommand{\KL}{\mathrm{KL}}
@@ -30,10 +31,71 @@
 \maketitle
 
 \begin{abstract}
-An agent with a memory of fixed size gives the same action distribution to all histories that have the same memory value. This note derives, one layer at a time, what this costs in return. It now contains the setting and Layers~1 to~6. Each layer states its question, the assumptions it adds, its derivation line by line, and its conclusion.
+An agent with a memory of fixed size gives one action distribution to all the histories that have the same memory value. This note derives what this costs in return, which part of the information that the memory lacks is responsible, and what follows for an agent that learns its policy on such a memory. The overview gives the results and one example. Each section then states its question, the assumptions it adds, its derivations line by line, and its conclusion.
 \end{abstract}
 
+\section*{Overview}
+
+\paragraph{Question.} The agent of Figure~\ref{fig:agent} acts on a memory. Histories with the same memory value get the same action distribution, although they may call for different actions. How much return does this cost, which information that the memory lacks is responsible for the cost, and what does the answer say about how the policy and the memory should be learned?
+
+\paragraph{Answer in brief.} Return is lost where histories with the same memory value call for different actions (Layer~1). How much is lost at a memory value is governed by how differently the history and the memory predict the next observation, multiplied by how much the reward and the value of the next memory change with that observation (Layers~2 to~4). For an agent that learns, the same quantities govern the error of evaluating its policy by bootstrapping (Layer~5) and the error of a policy step computed on the memory (Layer~6). The values change when the policy changes, so information that costs nothing under one policy can cost something under the next (Layer~7); this is why the memory and the policy have to be revisited in turn (Section~\ref{sec:algo}). The note does not say which information a memory of fixed size should give up.
+
+\paragraph{The objects, in words.}
+\begin{itemize}
+\item The \emph{value of an action at a memory value} $m$, written $Q^\pi_t(m,a)$, is the average of its value $Q^\pi_t(h,a)$ over the histories $h$ with that memory value (Definition~\ref{def:memvalue}).
+\item The \emph{state defect} $D_t(m,a)$ is the information that the history has about the next observation, beyond the memory value and the action (Definition~\ref{def:D}).
+\item The state defect has \emph{four terms}. Split at the action before the observation, it is $D^0_t$, what the history adds when the action is not given, plus $\dE_t$, what the history adds to inferring the action from the observation. Split at the action after the observation, it is $\dP_t$, what the history adds to predicting the next action, plus $D^+_t$, the rest. $\dE_t$ and $\dP_t$ are the amounts by which the memory misreads one-step forms of the empowerment and the plasticity of \citet{abel2025plasticity} (Proposition~\ref{prop:ep}).
+\item A \emph{factor} is what a term is multiplied by in a bound: a range of values, in some bounds divided by the probability of an action.
+\end{itemize}
+
+\paragraph{Two examples.} \emph{Example~1 (matching pennies).} The first observation is a fair bit $c$. The agent takes one action and is paid $1$ if the action equals $c$. Its memory does not keep $c$, and its policy is uniform. Its return is $\tfrac12$; an agent that keeps $c$ earns $1$. \emph{Example~2 (two steps).} The first observation is a fair bit $c$. If the first action equals $c$, the next observation shows a second fair bit $d$; otherwise it is blank. The agent is paid $1$ if its second action equals $d$. Its memory forgets $c$ and keeps the second observation.
+
+\paragraph{Results, in the order of the argument.}
+\begin{enumerate}
+\item \emph{Where return is lost} (Proposition~\ref{prop:layer1}). The return of any other agent minus ours is a sum, over times and memory values, of two nonnegative differences minus a third. The first is what is lost because all the histories with one memory value take the same action. In Example~1 it is $\tfrac12$, the whole difference in return.
+\item \emph{One step} (Lemma~\ref{lem:onestep}). The value of an action at a history and at its memory value differ by a part made now, in which the history and the memory predict the next observation differently, and by $\gamma$ times the error of the values at the next time. The predictions are weighted by the reward plus the value of the next memory, which is a value and not the reward of one step.
+\item \emph{The state defect and its four terms} (Propositions~\ref{prop:split1}, \ref{prop:split2} and~\ref{prop:ep}). Averaged over the action, $D_t(m,a)$ is $D^0_t+\dE_t$; at every action it is $\dP_t+D^+_t$. In Example~1, $D_1=\dE_1=\ln2$ and $D^0_1=0$.
+\item \emph{Terms and factors} (Propositions~\ref{prop:now}, \ref{prop:id2}, \ref{prop:bound2}, \ref{prop:id1}, \ref{prop:bound1}). The part made now splits as the state defect does, and each part is at most a factor times the root of its term. The state defect depends on the environment, the memory and the weights of the histories; how it splits depends on the policy at the action where it is split; the factors depend on the values.
+\item \emph{When a term can be nonzero} (Proposition~\ref{prop:signal}). $\dE_t$ is at most the entropy of the policy, so it vanishes when the policy stops exploring. $\dP_t$ is at most the entropy of the next action, and it is zero when the next action does not vary with the observation.
+\item \emph{Evaluating} (Proposition~\ref{prop:bootstrap}). Values computed by bootstrapping on the memory differ from the averages of returns by the discounted averages of the errors of $V^\pi$ at later times.
+\item \emph{Improving} (Propositions~\ref{prop:improve}, \ref{prop:corr}, \ref{prop:cov}, \ref{prop:threeparts}). After a policy step on the same memory, the return changes by the improvement that the agent computes from its memory values plus a correction. The correction is the covariance, over the histories with one memory value, of how much the step changes the weight of a history and how much the history disagrees with the memory about the changed actions. It is at most a constant times the square of a small step.
+\item \emph{A later policy} (Propositions~\ref{prop:later} and~\ref{prop:example}). The difference between what the history and the memory predict, and so $D_t(m,a)$, does not depend on the policy used after time $t$; what it costs does. In Example~2 a distinction between histories costs nothing with one later policy and $\tfrac14$ with another.
+\end{enumerate}
+
+\begin{center}
+\small
+\begin{tabular}{p{3.4cm}p{4.5cm}p{4.7cm}}
+\toprule
+What the learner does & What goes wrong on a memory & Which terms bound it\\
+\midrule
+evaluates its policy by bootstrapping (Section~\ref{sec:eval}) & averages of the errors of $V^\pi$ at later times & the terms at the later times, split at the action after the observation\\[3pt]
+improves its policy (Section~\ref{sec:layer5}) & a correction to the improvement it computes & $D^0_t$ and $\dE_t$ at the time of the change, and the errors at later times\\[3pt]
+acts with another policy afterwards (Section~\ref{sec:layer6}) & the values of the next memory change, the predictions do not & what the history knows about the reward and the next memory value, which lies between $\dP_t$ and $D_t$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{For an algorithm} (Section~\ref{sec:algo}). The statements support alternating between the memory and the policy. A policy step on a fixed memory is reliable when it is small, or when the terms at that time and the errors at later times are small. After the policy has changed, the values and the weights of the histories have changed, so what the memory lacks has another cost; Example~2 is worked through this way. The statements do not say which term to lower first, when to stop a step, or that the alternation converges.
+
+\paragraph{Limits.} Layer~1 compares with another agent and weights the histories as that other agent visits them; Layers~2 to~7 weight them as our own agent visits them, and the note does not connect the two. The bounds are not tight. No statement says how to change the memory.
+
+\paragraph{How the sections depend on each other.} Sections~\ref{sec:setting} to~\ref{sec:layer4} are for a fixed agent, each using the one before. Sections~\ref{sec:eval}, \ref{sec:layer5} and~\ref{sec:layer6} are for a learner; each uses Lemma~\ref{lem:onestep}, Section~\ref{sec:layer5} also uses Section~\ref{sec:layer4}, and they do not use each other. Section~\ref{sec:algo} collects them.
+
 \section{Setting}\label{sec:setting}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[>={Stealth[length=2.5mm]}, node distance=10mm and 16mm,
+  box/.style={draw, rounded corners=3pt, minimum height=10mm, minimum width=27mm, align=center, font=\small}]
+\node[box] (world) {environment\\ $e(O_{t+1}\mid h_t, A_t)$};
+\node[box, right=of world] (mem) {memory\\ $M_t = f(M_{t-1}, A_{t-1}, O_t)$};
+\node[box, right=of mem] (pol) {policy\\ $A_t \sim \pi(\cdot \mid M_t)$};
+\draw[->, thick] (world) -- node[above, font=\small] {$O_t$} (mem);
+\draw[->, thick] (mem) -- node[above, font=\small] {$M_t$} (pol);
+\draw[->, thick] (pol.south) -- ++(0,-7mm) -| node[pos=0.25, below, font=\small] {$A_t$} (world.south);
+\end{tikzpicture}
+\caption{The agent. The environment may depend on the whole history; the action depends on the history only through the memory.}\label{fig:agent}
+\end{figure}
 
 The history is $h_t=(O_1,A_1,\dots,A_{t-1},O_t)$, and $h$ denotes a value of $h_t$. An observation $o$ contains a reward $r(o)$, and $R_{t+1}=r(O_{t+1})$. All observation and action sets are finite. A final time $T$ and a discount factor $\gamma\in[0,1]$ are fixed, and actions are taken at $t=1,\dots,T-1$.
 
@@ -54,13 +116,17 @@ An agent is a function $\lambda(a\mid h)$ that gives a distribution over actions
 \end{definition}
 
 \begin{definition}[Return and values]\label{def:value}
-$G_t=R_{t+1}+\gamma\,G_{t+1}$ with $G_T=0$, and $J(\lambda)=\E_\lambda[G_1]$. For every history $h$ and action $a$ at time $t$,
+$G_t=R_{t+1}+\gamma\,G_{t+1}$ with $G_T=0$, and $J(\lambda)=\E_\lambda[G_1]$; $J(\pi)$ is this number for our agent. For every history $h$ and action $a$ at time $t$,
 \begin{align}
 Q^\pi_t(h,a)&=\sum_o e(o\mid h,a)\,\big[r(o)+\gamma\,V^\pi_{t+1}(h,a,o)\big], \label{eq:bellman}\\
-V^\pi_t(h)&=\sum_a\pi(a\mid m)\,Q^\pi_t(h,a),\qquad V^\pi_T(h)=0, \nonumber
+V^\pi_t(h)&=\sum_a\pi(a\mid m)\,Q^\pi_t(h,a),\qquad V^\pi_T(h)=0,\quad Q^\pi_T(h,a)=0, \nonumber
 \end{align}
 where $(h,a,o)$ is the next history and $m$ is the memory value of $h$. So $Q^\pi_t(h,a)$ is the expected return when $a$ is taken after $h$ and our agent acts afterwards. It is defined for every history, whether or not our agent visits it.
 \end{definition}
+
+\paragraph{Example 1 (matching pennies).} $T=2$ and $\gamma=1$. $O_1$ is a fair bit $c$. There is one action $A_1\in\{0,1\}$, and $O_2$ carries the reward $1$ if $A_1=c$ and $0$ otherwise. The memory does not keep $c$: $M_1$ has a single value $m$. The policy is uniform. Then $Q^\pi_1(h,a)=1$ if $a=c$ and $0$ otherwise, $V^\pi_1(h)=\tfrac12$ for both histories, and $J(\pi)=\tfrac12$.
+
+\paragraph{Example 2 (two steps).} $T=3$ and $\gamma=1$, with two actions. $O_1$ is a fair bit $c$. If $A_1=c$, the observation $O_2$ shows a fair bit $d$; otherwise $O_2$ is blank, and $d$ is a fair bit that is not shown. $O_2$ carries no reward. $O_3$ carries the reward $1$ if $A_2=d$ and $0$ otherwise. The memory has a single value $m$ at time $1$, and $M_2=O_2$. The policy is uniform at both times, so $J(\pi)=\tfrac12$.
 
 \section{Layer 1: at which memory values return is lost}\label{sec:layer1}
 
@@ -123,9 +189,9 @@ The three differences are nonnegative for the following reasons.
 Dropping the third difference gives the inequality.
 \end{proof}
 
-\paragraph{Conclusion.} The difference in return is a sum over times and memory values of three differences. The first, $\eqref{eq:own}-\eqref{eq:one}$, is what is lost at $m$ because all the histories with memory value $m$ must take the same action; it is zero when these histories share a best action. The second is what our policy loses at $m$ against the best single action, and the third is what $\lambda$ loses against the best action at each history.
+\paragraph{In Example 1.} Let $\lambda$ take the action $A_1=c$, so that $J(\lambda)-J(\pi)=\tfrac12$. At the memory value $m$ the two histories have weight $\tfrac12$ each; \eqref{eq:own} is $1$, \eqref{eq:one} and \eqref{eq:pi} are $\tfrac12$, and \eqref{eq:lam} is $1$. The first difference is $\tfrac12$ and the other two are $0$.
 
-\paragraph{The agent compared with.} The statement holds for every $\lambda$. In the next layers $\lambda$ is an agent with the largest $J$ among the agents that satisfy Assumptions~\ref{as:mem} and~\ref{as:pol} with as many memory values as ours. The weights $\Prl(M_t=m)$ and $\Prl(h\mid m)$ are then those of the histories that this agent visits, not of our own.
+\paragraph{Conclusion.} The difference in return is a sum, over times and memory values, of the first two differences minus the third. The first, $\eqref{eq:own}-\eqref{eq:one}$, is what is lost at $m$ because all the histories with memory value $m$ must take the same action; it is zero when these histories share a best action. The second is what our policy loses at $m$ against the best single action, and the third is what $\lambda$ loses against the best action at each history. The statement holds for every agent $\lambda$, in particular for one with the largest $J$ among the agents with a memory of the same size; the weights are those of the histories that $\lambda$ visits.
 
 \paragraph{Known.} Lemma~\ref{lem:pdl} is known. The grouping of its sum by our memory value into three differences was not found in a short search.
 
@@ -140,7 +206,7 @@ In this layer $\lambda$ is our own agent: the weights are $\Pr(h\mid m)$ and $\P
 \begin{assumption}[Every action is taken]\label{as:pos}
 $\pi(a\mid m)>0$ for every action $a$ and every memory value $m$ that occurs.
 \end{assumption}
-Logarithms are natural. Assumption~\ref{as:own} leaves open the weights $\Prl$ of Layer~1 for another agent $\lambda$.
+Logarithms are natural, and $I$ denotes mutual information. From here on, a memory value $m$ at time $t$ is one with $\Pr(M_t=m)>0$, and a history with memory value $m$ is one with $\Pr(h\mid m)>0$. Layer~1 allows the weights $\Prl(h\mid m)$ of another agent; the layers that follow use our own weights, and the note does not relate the two (Section~\ref{sec:algo}).
 
 \begin{definition}[Memory values]\label{def:memvalue}
 For a memory value $m$ at time $t$, an action $a$ and an observation $o$,
@@ -214,6 +280,8 @@ In this proof only, $w$ is the square bracket on the right. For every $h$ with $
 \end{align*}
 \end{proof}
 
+\paragraph{In Example 1.} $Q^\pi_1(m,a)=\tfrac12$ for both actions, and the loss \eqref{eq:loss} is $1-\tfrac12=\tfrac12$. There is no later time, so the second parts of Lemma~\ref{lem:onestep} are zero, and \eqref{eq:now} is $Q^\pi_1(h,a)-Q^\pi_1(m,a)$: it is $+\tfrac12$ when $a=c$ and $-\tfrac12$ otherwise. Given the action, the reward tells $c$, so $D_1(m,a)=\ln2$. Proposition~\ref{prop:now} reads $\tfrac12\le1\cdot\sqrt{\ln2/2}\approx0.59$.
+
 \begin{proposition}[Evaluation error over the later times]\label{prop:eval}
 Under Assumptions~\ref{as:env} to~\ref{as:pos}, for every $t<T$, with $m$ the memory value of $h$ and $m'=f(m,a,o)$,
 \begin{align*}
@@ -267,7 +335,7 @@ The first root is at most the sum, over $b\in\{a,a^*\}$, of the left side of Pro
 \end{align*}
 For the last line, let $x(h)=Q^\pi_t(h,a)-Q^\pi_t(h,a^*)$ in this proof only. Its average over $h$ is $\bar x=Q^\pi_t(m,a)-Q^\pi_t(m,a^*)\le0$, so $\max\{x(h),0\}\le\max\{x(h)-\bar x,0\}$. Since $x(h)-\bar x$ has average zero, the average of its positive part is half the average of $|x(h)-\bar x|$.
 
-(b) In this proof only, $x_b(h)=Q^\pi_t(h,b)-Q^\pi_t(m,b)$, and $u$, $\bar u$ are as in the proof of Proposition~\ref{prop:eval}, at time $t$. The left side is the average of $|x_a(h)-x_{a^*}(h)|$. By \eqref{eq:Qh} and \eqref{eq:Qm}, $x_a(h)-x_{a^*}(h)$ is \eqref{eq:nowpair} plus $\gamma\big[u(h,a)-\bar u(m,a)\big]-\gamma\big[u(h,a^*)-\bar u(m,a^*)\big]$.
+(b) In this proof only, $x_b(h)=Q^\pi_t(h,b)-Q^\pi_t(m,b)$, $u(h,b)=\sum_oe(o\mid h,b)\big[V^\pi_{t+1}(h,b,o)-V^\pi_{t+1}(m')\big]$, and $\bar u(m,b)$ is the average of $u(h,b)$ over $h$ with the weights $\Pr(h\mid m)$. The left side is the average of $|x_a(h)-x_{a^*}(h)|$. By \eqref{eq:Qh} and \eqref{eq:Qm}, $x_a(h)-x_{a^*}(h)$ is \eqref{eq:nowpair} plus $\gamma\big[u(h,a)-\bar u(m,a)\big]-\gamma\big[u(h,a^*)-\bar u(m,a^*)\big]$.
 \begin{align*}
 &\sum_h\Pr(h\mid m)\,\big|x_a(h)-x_{a^*}(h)\big|\\
 &\quad\le\sqrt{\sum_h\Pr(h\mid m)\big[x_a(h)-x_{a^*}(h)\big]^2} \why{Jensen's inequality}\\
@@ -284,12 +352,13 @@ The second and third lines of the proof of Proposition~\ref{prop:eval}, for the 
 
 \paragraph{Question.} $D_t(m,a)$ is all that the history knows about the next observation and the memory does not. How does it divide when the action before the observation, $A_t$, or the action after it, $A_{t+1}$, is taken into account?
 
-\paragraph{Assumptions added.} None. As in Layer~2, all laws are those of our own agent, and $t\le T-2$, so that the action $A_{t+1}$ exists.
+\paragraph{Assumptions added.} None. As in Layer~2, all laws are those of our own agent. Every statement that contains $A_{t+1}$ is for $t\le T-2$, so that this action exists, and for actions $a$ with $\pi(a\mid m)>0$.
 
-\paragraph{Tools.} Two standard facts \citep[Ch.~2]{cover2006elements}, for random variables $X,Y,W,Z$.
+\paragraph{Tools.} Three standard facts \citep[Ch.~2]{cover2006elements}, for random variables $X,Y,W,Z$.
 \begin{enumerate}
 \item[(T1)] Chain rule, in its two orders: $I(X;Y,W\mid Z)=I(X;Y\mid Z)+I(X;W\mid Z,Y)=I(X;W\mid Z)+I(X;Y\mid Z,W)$.
 \item[(T2)] $I(X;Y\mid Z)\ge0$, and $I(X;Y\mid Z)=0$ when $X$ and $Y$ are independent given $Z$.
+\item[(T3)] $I(X;Y\mid Z)\le H(Y\mid Z)$, the entropy of $Y$ given $Z$, and $H(Y\mid Z,W)\le H(Y\mid Z)$.
 \end{enumerate}
 A variable in the condition with a value, as in $M_t=m$, is fixed; a variable without a value, as in $A_t$, is averaged over its values given the fixed ones. For example $I(h_t;O_{t+1}\mid M_t=m,A_t)=\sum_a\pi(a\mid m)\,D_t(m,a)$, by Definition~\ref{def:D}.
 
@@ -325,7 +394,7 @@ The two right sides are equal.
 \end{proof}
 
 \begin{proposition}[Split at $A_{t+1}$]\label{prop:split2}
-Under Assumptions~\ref{as:env} to~\ref{as:pol}, for every memory value $m$ at time $t$ and every action $a$,
+Under Assumptions~\ref{as:env} to~\ref{as:pol}, for every memory value $m$ at time $t\le T-2$ and every action $a$ with $\pi(a\mid m)>0$,
 \[
 D_t(m,a)=\dP_t(m,a)+D^+_t(m,a).
 \]
@@ -347,15 +416,63 @@ The second term is zero by (T2): given $M_t=m$, $A_t=a$ and $O_{t+1}=o$, the nex
 The two right sides are equal.
 \end{proof}
 
-\paragraph{Conclusion.} The split at $A_t$ holds for the average of $D_t(m,a)$ over the action, with the weights $\pi(a\mid m)$, because $D^0_t(m)$ is not conditioned on the action. The split at $A_{t+1}$ holds at every action $a$. By (T2) the four terms are nonnegative, so $D^0_t(m)$ and $\dE_t(m)$ are at most $\sum_a\pi(a\mid m)D_t(m,a)$, and $\dP_t(m,a)$ and $D^+_t(m,a)$ are at most $D_t(m,a)$. Averaged over $M_t$, and for the second split also over $A_t$, the two identities are $D_t=D^0_t+\dE_t=\dP_t+D^+_t$.
+\begin{proposition}[The two terms that involve an action, as mismatches of empowerment and plasticity]\label{prop:ep}
+Under Assumptions~\ref{as:env} to~\ref{as:pol}, for every memory value $m$ at time $t$, and in (b) for $t\le T-2$ and every action $a$ with $\pi(a\mid m)>0$:
+\begin{align*}
+\text{(a)}\quad\dE_t(m)&=I(A_t;O_{t+1}\mid h_t,M_t=m)-I(A_t;O_{t+1}\mid M_t=m),\\
+\text{(b)}\quad\dP_t(m,a)&=I(O_{t+1};A_{t+1}\mid M_t=m,A_t=a)-I(O_{t+1};A_{t+1}\mid h_t,M_t=m,A_t=a).
+\end{align*}
+\end{proposition}
+
+\citet{abel2025plasticity} call the information that flows from actions to observations empowerment, and the information that flows from observations to actions plasticity. $I(A_t;O_{t+1}\mid\cdot)$ and $I(O_{t+1};A_{t+1}\mid\cdot)$ are one-step forms of the two, each computed from the history or from the memory. The memory reads less empowerment than the history, by $\dE_t$, and more plasticity, by $\dP_t$. In Example~1 the empowerment is $\ln2$ from the history, because given $c$ the action decides the reward, and $0$ from the memory.
+
+\begin{proof}
+(a) Apply (T1) to $I(O_{t+1};h_t,A_t\mid M_t=m)$ in its two orders:
+\begin{align*}
+I(O_{t+1};h_t,A_t\mid M_t=m)&=I(O_{t+1};h_t\mid M_t=m)+I(O_{t+1};A_t\mid M_t=m,h_t) \why{T1}\\
+&=I(O_{t+1};A_t\mid M_t=m)+I(O_{t+1};h_t\mid M_t=m,A_t) \why{T1}.
+\end{align*}
+The first term of the first line is $D^0_t(m)$ and the last term of the second line is $\sum_a\pi(a\mid m)D_t(m,a)$, which is $D^0_t(m)+\dE_t(m)$ by Proposition~\ref{prop:split1}. Equate the two lines.
+
+(b) Apply (T1) to $I(A_{t+1};h_t,O_{t+1}\mid M_t=m,A_t=a)$ in its two orders:
+\begin{align*}
+&I(A_{t+1};h_t,O_{t+1}\mid M_t=m,A_t=a)\\
+&\quad=I(A_{t+1};h_t\mid M_t=m,A_t=a)+I(A_{t+1};O_{t+1}\mid M_t=m,A_t=a,h_t) \why{T1}\\
+&\quad=I(A_{t+1};O_{t+1}\mid M_t=m,A_t=a)+I(A_{t+1};h_t\mid M_t=m,A_t=a,O_{t+1}) \why{T1}.
+\end{align*}
+The first term of the first line is $\dP_t(m,a)$, and the last term of the second line is zero, as in the proof of Proposition~\ref{prop:split2}. Equate the two lines.
+\end{proof}
+
+\begin{proposition}[When the terms that involve an action can be nonzero]\label{prop:signal}
+Under Assumptions~\ref{as:env} to~\ref{as:pol}, for every memory value $m$ at time $t$, and in (b) for $t\le T-2$ and every action $a$ with $\pi(a\mid m)>0$:
+
+(a) $\dE_t(m)\le H(A_t\mid M_t=m)=-\sum_a\pi(a\mid m)\ln\pi(a\mid m)$. If the policy takes one action $a$ at $m$ with probability one, then $\dE_t(m)=0$ and $D^0_t(m)=D_t(m,a)$.
+
+(b) $\dP_t(m,a)\le H(A_{t+1}\mid M_t=m,A_t=a)$. If the distribution $\pi(\cdot\mid f(m,a,o))$ is the same for every observation $o$ with $\Pr(o\mid m,a)>0$, then $\dP_t(m,a)=0$ and $D^+_t(m,a)=D_t(m,a)$.
+\end{proposition}
+
+\begin{proof}
+(a)
+\begin{align*}
+\dE_t(m)=I(h_t;A_t\mid M_t=m,O_{t+1})&\le H(A_t\mid M_t=m,O_{t+1}) \why{T3}\\
+&\le H(A_t\mid M_t=m) \why{T3}.
+\end{align*}
+If the policy takes one action at $m$, this entropy is zero, and Proposition~\ref{prop:split1} gives $D^0_t(m)=D_t(m,a)$.
+
+(b) $\dP_t(m,a)=I(h_t;A_{t+1}\mid M_t=m,A_t=a)\le H(A_{t+1}\mid M_t=m,A_t=a)$ by (T3). Given $M_t=m$, $A_t=a$ and $O_{t+1}=o$, the law of $A_{t+1}$ is $\pi(\cdot\mid f(m,a,o))$ (Assumptions~\ref{as:mem} and~\ref{as:pol}). If it is the same for every $o$, then given $(m,a)$ the next action is independent of the pair $(h_t,O_{t+1})$, so $\dP_t(m,a)=0$ by (T2), and Proposition~\ref{prop:split2} gives $D^+_t(m,a)=D_t(m,a)$.
+\end{proof}
+
+\paragraph{In the examples.} In Example~1, when the action is not given the reward is a fair bit for both values of $c$, so $D^0_1(m)=0$, and $\dE_1(m)=\ln2$ by Proposition~\ref{prop:split1}: all that the memory lacks is in $\dE_1$. The entropy of the uniform policy is $\ln2$, so the bound of Proposition~\ref{prop:signal}(a) is attained. In Example~2 at time $1$, again $D_1(m,a)=\dE_1(m)=\ln2$ and $D^0_1(m)=0$; the uniform policy at time $2$ does not vary with the observation, so $\dP_1(m,a)=0$ and $D^+_1(m,a)=\ln2$ by Proposition~\ref{prop:signal}(b).
+
+\paragraph{Conclusion.} The split at $A_t$ holds for the average of $D_t(m,a)$ over the action, with the weights $\pi(a\mid m)$, because $D^0_t(m)$ is not conditioned on the action. The split at $A_{t+1}$ holds at every action $a$. By (T2) the four terms are nonnegative, so $D^0_t(m)$ and $\dE_t(m)$ are at most $\sum_a\pi(a\mid m)D_t(m,a)$, and $\dP_t(m,a)$ and $D^+_t(m,a)$ are at most $D_t(m,a)$. Averaged over $M_t$, and for the second split also over $A_t$, the two identities are $D_t=D^0_t+\dE_t=\dP_t+D^+_t$. The split at $A_t$ separates two terms only while the policy randomizes at $m$, and the split at $A_{t+1}$ only while the next action varies with the observation (Proposition~\ref{prop:signal}).
 
 \paragraph{Known.} Both identities are the chain rule (T1) with Assumptions~\ref{as:mem} and~\ref{as:pol}.
 
 \section{Layer 4: the differences of Layer 2 and the four terms}\label{sec:layer4}
 
-\paragraph{Question.} Layer~2 bounds the difference made at time $t$ with $D_t(m,a)$ as a whole. When $D_t$ is split as in Layer~3, which part of this difference goes with which term?
+\paragraph{Question.} Layer~2 bounds the difference made at time $t$ with $D_t(m,a)$ as a whole (Proposition~\ref{prop:now}). When $D_t$ is split as in Layer~3, which part of this difference goes with which term, and with which factor? Section~\ref{sec:algo} uses the answer.
 
-\paragraph{Assumptions added.} None. Assumptions~\ref{as:env} to~\ref{as:pos} hold and $t\le T-2$.
+\paragraph{Assumptions added.} None. Every statement of this layer is under Assumptions~\ref{as:env} to~\ref{as:pos}; those that contain $A_{t+1}$ or $Q^\pi_{t+1}$ are for $t\le T-2$.
 
 \begin{definition}[Laws at a history and at a memory value]\label{def:laws}
 For a history $h$ with memory value $m$ at time $t$ and an action $a$, with $m'=f(m,a,o)$,
@@ -399,6 +516,8 @@ For every history $h$ with memory value $m$ and every action $a$, with $m'=f(m,a
 \end{align*}
 \end{proof}
 
+Neither \eqref{eq:viaA} nor \eqref{eq:viaO} changes when a constant is subtracted from $r(o)+\gamma Q^\pi_{t+1}(m',a')$, because the laws in each bracket have the same total. So this division of \eqref{eq:now} into two parts does not depend on where the zero of the values is put.
+
 \begin{proposition}[Split at $A_{t+1}$: bound]\label{prop:bound2}
 For every $m$ and $a$, with each maximum and minimum over the values possible after $(m,a)$,
 \begin{align*}
@@ -426,7 +545,7 @@ For every history $h$ with memory value $m$ and every action $b$, with $m'=f(m,b
 &\quad=\sum_o\big[\Pr(o\mid h)-\Pr(o\mid m)\big]\Pr(b\mid m,o)\big[r(o)+\gamma V^\pi_{t+1}(m')\big]\\
 &\qquad+\sum_o\Pr(o\mid h)\big[\Pr(b\mid h,o)-\Pr(b\mid m,o)\big]\big[r(o)+\gamma V^\pi_{t+1}(m')\big].
 \end{align*}
-The identity also holds when a constant is subtracted from $r(o)+\gamma V^\pi_{t+1}(m')$, because both sides are zero for a constant.
+The identity also holds when a constant is subtracted from $r(o)+\gamma V^\pi_{t+1}(m')$, because both sides are zero for a constant. The two sums on the right are not separately unchanged: a constant moves an amount from one to the other. So the left side is determined, but how it divides between the two sums depends on the constant.
 \end{proposition}
 
 \begin{proof}
@@ -449,7 +568,7 @@ For every $m$ and every pair of actions $a\ne a^*$, with the maximum and the min
 \end{proposition}
 
 \begin{proof}
-In this proof only: $W$ is the factor in front of the square bracket; for $b\in\{a,a^*\}$, $y_b(o)$ is $r(o)+\gamma V^\pi_{t+1}(f(m,b,o))$ minus the midpoint of its range, so that $|y_b(o)|\le\tfrac12W\pi(b\mid m)$; and $g(o,a)=y_a(o)/\pi(a\mid m)$, $g(o,a^*)=-y_{a^*}(o)/\pi(a^*\mid m)$, $g(o,b)=0$ for every other action $b$, so that $|g(o,b)|\le\tfrac12W$. Divide the identity of Proposition~\ref{prop:id1}, with the midpoint subtracted, by $\pi(b\mid m)$, and subtract the identity for $a^*$ from that for $a$:
+In this proof only: $W$ is the factor in front of the square bracket; for $b\in\{a,a^*\}$, $y_b(o)$ is $r(o)+\gamma V^\pi_{t+1}(f(m,b,o))$ minus the midpoint of its range, so that $|y_b(o)|\le\tfrac12W\pi(b\mid m)$; and $g(o,a)=y_a(o)/\pi(a\mid m)$, $g(o,a^*)=-y_{a^*}(o)/\pi(a^*\mid m)$, with $g(o,b)=0$ for every other action $b$ and wherever $\Pr(o\mid m,b)=0$, so that $|g(o,b)|\le\tfrac12W$. Divide the identity of Proposition~\ref{prop:id1}, with the midpoint subtracted, by $\pi(b\mid m)$, and subtract the identity for $a^*$ from that for $a$:
 \begin{align*}
 \eqref{eq:nowpair}={}&\sum_o\big[\Pr(o\mid h)-\Pr(o\mid m)\big]\sum_b\Pr(b\mid m,o)\,g(o,b)\\
 &+\sum_o\Pr(o\mid h)\sum_b\big[\Pr(b\mid h,o)-\Pr(b\mid m,o)\big]\,g(o,b).
@@ -462,19 +581,89 @@ In this proof only: $W$ is the factor in front of the square bracket; for $b\in\
 Square, average over $h$ with the weights $\Pr(h\mid m)$, and use Minkowski's inequality and Lemma~\ref{lem:klforms}.
 \end{proof}
 
-\paragraph{Conclusion.} At $A_{t+1}$, the difference made at time $t$ is the sum of two parts. In \eqref{eq:viaA} the history and the memory predict the next action differently, and this part is bounded with $\dP_t(m,a)$. In \eqref{eq:viaO} they predict the observation differently once the next action is given, and this part is bounded with $D^+_t(m,a)$. At $A_t$, for each action the difference is the sum of a part in which they predict the observation differently when the action is not given, bounded with $D^0_t(m)$, and a part in which they infer the action from the observation differently, bounded with $\dE_t(m)$; the factor of this bound grows as an action becomes rare. With Proposition~\ref{prop:choose}, Proposition~\ref{prop:bound1} bounds the loss \eqref{eq:loss} by $D^0_t(m)$, $\dE_t(m)$ and the errors of $V^\pi$ at the next time. In each bound a term has its own factor, and a term whose factor is zero does not enter. These bounds need not be smaller than that of Proposition~\ref{prop:now}, since $\sqrt x+\sqrt y\ge\sqrt{x+y}$; they are smaller when one factor is small.
+\paragraph{In Example 1.} For the two actions, the root on the left of Proposition~\ref{prop:bound1} is $1$. The factor is the range $1$ divided by the probability $\tfrac12$, that is $2$, and the right side is $2\big[0+\sqrt{\ln2/2}\big]\approx1.18$.
+
+\paragraph{Conclusion.} At $A_{t+1}$, the difference made at time $t$ is the sum of two parts, and this division does not depend on a constant added to the values. In \eqref{eq:viaA} the history and the memory predict the next action differently, and this part is bounded with $\dP_t(m,a)$. In \eqref{eq:viaO} they predict the observation differently once the next action is given, and this part is bounded with $D^+_t(m,a)$. At $A_t$, for each action the difference is the sum of a part in which they predict the observation differently when the action is not given, and a part in which they infer the action from the observation differently; this division depends on a constant, and with the midpoint of the range the two parts are bounded with $D^0_t(m)$ and $\dE_t(m)$. The factor of this bound grows as an action becomes rare. With Proposition~\ref{prop:choose}, Proposition~\ref{prop:bound1} bounds the loss \eqref{eq:loss} by $D^0_t(m)$, $\dE_t(m)$ and the errors of $V^\pi$ at the next time. In each bound a term has its own factor, and a term whose factor is zero does not enter. These bounds need not be smaller than that of Proposition~\ref{prop:now}, since $\sqrt x+\sqrt y\ge\sqrt{x+y}$; they are smaller when one factor is small.
 
 \paragraph{Known.} Lemma~\ref{lem:klforms} is known. The two identities are algebra and Bayes' rule; we did not search the literature for them.
 
-\section{Layer 5: one step of policy improvement on the memory}\label{sec:layer5}
+\section{Layer 5: evaluating the policy on the memory}\label{sec:eval}
+
+\paragraph{Question.} To improve its policy the agent uses the memory values $Q^\pi_t(m,a)$ of Definition~\ref{def:memvalue}, which are averages of returns. If it computes values by bootstrapping on the values of its next memory, as temporal-difference methods do, does it obtain them?
+
+\paragraph{Assumptions added.} None. Assumptions~\ref{as:env} to~\ref{as:pos} hold.
+
+\begin{definition}[Values from the memory's own Bellman equation]\label{def:hat}
+$\hat V^\pi_T(m)=0$ and, for $t=T-1,\dots,1$, with $m'=f(m,a,o)$,
+\begin{align*}
+\hat Q^\pi_t(m,a)&=\sum_o\Pr(o\mid m,a)\big[r(o)+\gamma\,\hat V^\pi_{t+1}(m')\big],\\
+\hat V^\pi_t(m)&=\sum_a\pi(a\mid m)\,\hat Q^\pi_t(m,a).
+\end{align*}
+These are the values that bootstrapping on the memory gives when all its averages are exact.
+\end{definition}
+
+\begin{proposition}[Bootstrapping on the memory]\label{prop:bootstrap}
+Under Assumptions~\ref{as:env} to~\ref{as:pos}, for every $t<T$, memory value $m$ and action $a$, with $m'=f(m,a,o)$, let
+\begin{equation}\label{eq:B}
+\sum_h\Pr(h\mid m)\sum_oe(o\mid h,a)\big[V^\pi_{t+1}(h,a,o)-V^\pi_{t+1}(m')\big]
+\end{equation}
+be the average, over the histories with memory value $m$, of the error of $V^\pi_{t+1}$ at the next time. It is the second part of \eqref{eq:Qm}.
+
+(a)
+\begin{align*}
+Q^\pi_t(m,a)-\hat Q^\pi_t(m,a)={}&\gamma\,\eqref{eq:B}\\
+&+\gamma\sum_o\Pr(o\mid m,a)\sum_{a'}\pi(a'\mid m')\big[Q^\pi_{t+1}(m',a')-\hat Q^\pi_{t+1}(m',a')\big].
+\end{align*}
+
+(b)
+\[
+\big|\eqref{eq:B}\big|\le\sqrt{\sum_h\Pr(h\mid m)\sum_oe(o\mid h,a)\big[V^\pi_{t+1}(h,a,o)-V^\pi_{t+1}(m')\big]^2}.
+\]
+
+(c) Let $\Pr(M_{t+1}=m'\mid m,a)=\sum_{o:\,f(m,a,o)=m'}\Pr(o\mid m,a)$, and let $\Pr(h'\mid m,a,m')$ be the weight of the next history $h'$ among the next histories with memory value $m'$ that follow $(m,a)$. Then
+\[
+\eqref{eq:B}=\sum_{m'}\Pr(M_{t+1}=m'\mid m,a)\sum_{h'}\big[\Pr(h'\mid m,a,m')-\Pr(h'\mid m')\big]\,V^\pi_{t+1}(h').
+\]
+\end{proposition}
+
+\begin{proof}
+(a)
+\begin{align*}
+Q^\pi_t(m,a)&=\sum_o\Pr(o\mid m,a)\big[r(o)+\gamma V^\pi_{t+1}(m')\big]+\gamma\,\eqref{eq:B} \why{by \eqref{eq:Qm}}\\
+\hat Q^\pi_t(m,a)&=\sum_o\Pr(o\mid m,a)\big[r(o)+\gamma\hat V^\pi_{t+1}(m')\big] \why{Definition~\ref{def:hat}}\\
+Q^\pi_t(m,a)-\hat Q^\pi_t(m,a)&=\gamma\,\eqref{eq:B}+\gamma\sum_o\Pr(o\mid m,a)\big[V^\pi_{t+1}(m')-\hat V^\pi_{t+1}(m')\big] \why{subtract}.
+\end{align*}
+By Definitions~\ref{def:value} and~\ref{def:memvalue}, $V^\pi_{t+1}(m')=\sum_{a'}\pi(a'\mid m')\,Q^\pi_{t+1}(m',a')$, and by Definition~\ref{def:hat} the same holds for $\hat V^\pi_{t+1}$ and $\hat Q^\pi_{t+1}$.
+
+(b) Jensen's inequality.
+
+(c) Given $(m,a)$, the next history $h'=(h,a,o)$ has probability $\Pr(h\mid m)\,e(o\mid h,a)$, and its memory value is $m'=f(m,a,o)$. Grouping the next histories by $m'$,
+\begin{align*}
+&\sum_h\Pr(h\mid m)\sum_oe(o\mid h,a)\,V^\pi_{t+1}(h,a,o)\\
+&\qquad=\sum_{m'}\Pr(M_{t+1}=m'\mid m,a)\sum_{h'}\Pr(h'\mid m,a,m')\,V^\pi_{t+1}(h'),\\
+&\sum_h\Pr(h\mid m)\sum_oe(o\mid h,a)\,V^\pi_{t+1}(m')\\
+&\qquad=\sum_{m'}\Pr(M_{t+1}=m'\mid m,a)\sum_{h'}\Pr(h'\mid m')\,V^\pi_{t+1}(h').
+\end{align*}
+The second equality uses Definition~\ref{def:memvalue} for $V^\pi_{t+1}(m')$. Subtract.
+\end{proof}
+
+By (a), bootstrapping is off by $\gamma$ times \eqref{eq:B} at this time, plus what it is off by at the next memory values. By (c), \eqref{eq:B} is zero when the histories that arrive at a next memory value from $(m,a)$ have the same weights there as all the histories with that memory value, or when $V^\pi_{t+1}$ is the same for all of them.
+
+\paragraph{In Example 2.} At both times \eqref{eq:B} is zero: the reward at time $3$ depends on the history only through $O_2$, which the memory keeps, so $V^\pi_2(h')=V^\pi_2(m')$ for every next history. Bootstrapping on the memory gives the memory values.
+
+\paragraph{Conclusion.} Values computed from returns are the memory values, by Definition~\ref{def:memvalue}. Values computed by bootstrapping on the memory differ from them by the discounted averages of the errors of $V^\pi$ at the later times. The root of (b) is the one that appears in Proposition~\ref{prop:choose}(b). Its square, averaged over $(M_t,A_t)$, is the average squared error of $V^\pi_{t+1}$, which is at most the squared evaluation error at time $t+1$ (last line of the proof of Proposition~\ref{prop:eval}), and Proposition~\ref{prop:eval} bounds that error by the differences made at the later times $n$. At each pair $(m,a)$ such a difference is bounded with $D_n(m,a)$ (Proposition~\ref{prop:now}) and, for $n\le T-2$, with $\dP_n(m,a)$ and $D^+_n(m,a)$ (Proposition~\ref{prop:bound2}).
+
+\paragraph{Known.} The difference between values computed from returns and values computed by bootstrapping on an agent state, under partial observability, is studied as the $\lambda$-discrepancy by \citet{allen2024lambda}.
+
+\section{Layer 6: improving the policy on the memory}\label{sec:layer5}
 
 \paragraph{Question.} The agent keeps its memory and replaces its policy $\pi$ by a policy $\pi'$ that it chooses from its memory values $Q^\pi_t(m,a)$. Does the return increase by what the memory values say?
 
 \paragraph{Assumptions added.}
 \begin{assumption}[A new policy on the same memory]\label{as:new}
-$\pi'$ reads the same memory: $\Prn(A_t=a\mid h_t)=\pi'(a\mid M_t)$, with the same $f_1$ and $f$. Both policies may depend on the time $t$; nothing in Layers~1 to~4 uses that they do not.
+$\pi'$ reads the same memory: $\Prn(A_t=a\mid h_t)=\pi'(a\mid M_t)$, with the same $f_1$ and $f$. Both policies may depend on the time $t$; nothing in the earlier layers uses that they do not.
 \end{assumption}
-Assumption~\ref{as:pos} holds for $\pi$, so every history that $\pi'$ visits is also visited by $\pi$, and $\Pr(h\mid m)$ and $Q^\pi_t(m,a)$ are defined there. $\Prn$ is the law under $\pi'$ (Definition~\ref{def:agent}).
+Assumption~\ref{as:pos} holds for $\pi$, so every history that $\pi'$ visits is also visited by $\pi$, and $\Pr(h\mid m)$ and $Q^\pi_t(m,a)$ are defined there. $\Prn$ is the law under $\pi'$ (Definition~\ref{def:agent}). In this layer a memory value $m$ at time $t$ is one that $\pi'$ visits, $\Prn(M_t=m)>0$, so that the weights $\Prn(h\mid m)$ are defined.
 
 \begin{proposition}[One step of improvement]\label{prop:improve}
 Under Assumptions~\ref{as:env} to~\ref{as:pol}, \ref{as:pos} and~\ref{as:new},
@@ -504,30 +693,17 @@ Under the assumptions of Proposition~\ref{prop:improve}, for every memory value 
 
 (a) \eqref{eq:corr} does not change when a number that depends on $h$ alone is subtracted from $Q^\pi_t(h,a)$ for every $a$. It is zero when the histories with memory value $m$ agree on the differences between actions, that is, $Q^\pi_t(h,a)-Q^\pi_t(h,b)=Q^\pi_t(m,a)-Q^\pi_t(m,b)$ for all $a$, $b$ and $h$.
 
-(b) With the maximum and the minimum over the histories $h$ with $\Pr(h\mid m)>0$,
-\begin{align*}
-\big|\eqref{eq:corr}\big|\le{}&\tfrac12\sum_h\big|\Prn(h\mid m)-\Pr(h\mid m)\big|\\
-&\times\Big[\max_h\sum_a\big[\pi'(a\mid m)-\pi(a\mid m)\big]\big[Q^\pi_t(h,a)-Q^\pi_t(m,a)\big]\\
-&\qquad-\min_h\sum_a\big[\pi'(a\mid m)-\pi(a\mid m)\big]\big[Q^\pi_t(h,a)-Q^\pi_t(m,a)\big]\Big].
-\end{align*}
+(b) \eqref{eq:corr} is zero at $t=1$.
 
-(c) \eqref{eq:corr} is zero at $t=1$.
-
-(d) If $\pi'=(1-\alpha)\pi+\alpha g$ for a policy $g$ that reads the memory and $0<\alpha\le1$, then \eqref{eq:first} is $\alpha\sum_a\big[g(a\mid m)-\pi(a\mid m)\big]Q^\pi_t(m,a)$, and \eqref{eq:corr} divided by $\alpha$ tends to zero as $\alpha\to0$.
+(c) If $\pi'=(1-\alpha)\pi+\alpha g$ for a policy $g$ that reads the memory and $0<\alpha<1$, then \eqref{eq:first} is $\alpha\sum_a\big[g(a\mid m)-\pi(a\mid m)\big]Q^\pi_t(m,a)$, and there are numbers $C$ and $\alpha_0>0$, which do not depend on $\alpha$, such that $\big|\eqref{eq:corr}\big|\le C\alpha^2$ for $0<\alpha\le\alpha_0$.
 \end{proposition}
 
 \begin{proof}
 (a) $\sum_a\big[\pi'(a\mid m)-\pi(a\mid m)\big]=0$, so a number that depends on $h$ alone contributes nothing to the sum over $a$. Under the agreement, subtract $Q^\pi_t(h,b)-Q^\pi_t(m,b)$ for a fixed $b$: what remains of $Q^\pi_t(h,a)$ is $Q^\pi_t(m,a)$, which does not depend on $h$, and $\sum_h\big[\Prn(h\mid m)-\Pr(h\mid m)\big]=0$.
 
-(b) Since $\sum_h\big[\Prn(h\mid m)-\Pr(h\mid m)\big]\,Q^\pi_t(m,a)=0$,
-\[
-\eqref{eq:corr}=\sum_h\big[\Prn(h\mid m)-\Pr(h\mid m)\big]\sum_a\big[\pi'(a\mid m)-\pi(a\mid m)\big]\big[Q^\pi_t(h,a)-Q^\pi_t(m,a)\big].
-\]
-Apply the first line of Lemma~\ref{lem:tool} with $p=\Prn(\cdot\mid m)$ and $q=\Pr(\cdot\mid m)$.
+(b) $h_1=O_1$, and the law of $O_1$ does not depend on the policy (Assumption~\ref{as:env}), so $\Prn(h\mid m)=\Pr(h\mid m)$ at $t=1$.
 
-(c) $h_1=O_1$, and the law of $O_1$ does not depend on the policy (Assumption~\ref{as:env}), so $\Prn(h\mid m)=\Pr(h\mid m)$ at $t=1$.
-
-(d) $\pi'(a\mid m)-\pi(a\mid m)=\alpha\big[g(a\mid m)-\pi(a\mid m)\big]$, which gives \eqref{eq:first} and a factor $\alpha$ in \eqref{eq:corr}. The other factor of \eqref{eq:corr} contains $\Prn(h\mid m)-\Pr(h\mid m)$. The weight $\Prn(h\mid m)$ is a ratio of two polynomials in $\alpha$ whose denominator $\Prn(M_t=m)$ tends to $\Pr(M_t=m)>0$, so it tends to $\Pr(h\mid m)$ as $\alpha\to0$.
+(c) $\pi'(a\mid m)-\pi(a\mid m)=\alpha\big[g(a\mid m)-\pi(a\mid m)\big]$, which gives \eqref{eq:first} and a factor $\alpha$ in \eqref{eq:corr}. The other factor of \eqref{eq:corr} contains $\Prn(h\mid m)-\Pr(h\mid m)$. The weight $\Prn(h\mid m)$ is a ratio of two polynomials in $\alpha$, it equals $\Pr(h\mid m)$ at $\alpha=0$, and its denominator $\Prn(M_t=m)$ equals $\Pr(M_t=m)>0$ at $\alpha=0$. So it has a bounded derivative on an interval $[0,\alpha_0]$, and $\big|\Prn(h\mid m)-\Pr(h\mid m)\big|$ is at most a constant times $\alpha$ there. There are finitely many histories, so this gives a second factor $\alpha$.
 \end{proof}
 
 \begin{proposition}[The correction as a covariance]\label{prop:cov}
@@ -557,7 +733,7 @@ whose average over $h$ with the weights $\Pr(h\mid m)$ is zero,
 \begin{proof}
 (a) Under an agent $\lambda$, the probability of the history $h_t=h$ is the probability of $O_1$ times $\prod_{s<t}\lambda(a_s\mid h_s)\,e(o_{s+1}\mid h_s,a_s)$ (Assumption~\ref{as:env}, Definition~\ref{def:agent}). The factors of the environment are the same for $\pi$ and $\pi'$, so $\Prn(h_t=h)/\Pr(h_t=h)$ is the product of the statement (Assumptions~\ref{as:pol} and~\ref{as:new}). Dividing by $\Prn(M_t=m)/\Pr(M_t=m)$, which does not depend on $h$, gives the ratio of the conditional weights.
 
-(b) The displayed equality is the first equality in the proof of Proposition~\ref{prop:corr}(b), with $\Prn(h\mid m)-\Pr(h\mid m)$ written as $\Pr(h\mid m)$ times the bracket. The average of \eqref{eq:disagree} is zero because $\sum_h\Pr(h\mid m)\,Q^\pi_t(h,a)=Q^\pi_t(m,a)$ (Definition~\ref{def:memvalue}). The bracket also has average zero, so the sum is the covariance of the ratio and \eqref{eq:disagree}.
+(b) Since $\sum_h\big[\Prn(h\mid m)-\Pr(h\mid m)\big]\,Q^\pi_t(m,a)=0$, the sum \eqref{eq:corr} does not change when $Q^\pi_t(m,a)$ is subtracted from $Q^\pi_t(h,a)$, which gives $\eqref{eq:corr}=\sum_h\big[\Prn(h\mid m)-\Pr(h\mid m)\big]\,\eqref{eq:disagree}$; write $\Prn(h\mid m)-\Pr(h\mid m)$ as $\Pr(h\mid m)$ times the bracket. The average of \eqref{eq:disagree} is zero because $\sum_h\Pr(h\mid m)\,Q^\pi_t(h,a)=Q^\pi_t(m,a)$ (Definition~\ref{def:memvalue}). The bracket also has average zero, so the sum is the covariance of the ratio and \eqref{eq:disagree}.
 
 (c) The Cauchy--Schwarz inequality.
 \end{proof}
@@ -581,13 +757,13 @@ and $\gamma$ times
 By \eqref{eq:Qh} and \eqref{eq:Qm}, $Q^\pi_t(h,a)-Q^\pi_t(m,a)$ is \eqref{eq:now} plus $\gamma$ times the difference of the second parts. Multiply by $\pi'(a\mid m)-\pi(a\mid m)$ and sum over $a$: the second parts give $\gamma$ times \eqref{eq:partlater}. For the first parts, Proposition~\ref{prop:id1} gives $\pi(a\mid m)$ times \eqref{eq:now} as two sums; divide by $\pi(a\mid m)$, multiply by $\pi'(a\mid m)-\pi(a\mid m)$ and sum over $a$. The two sums become \eqref{eq:partzero} and \eqref{eq:partE}.
 \end{proof}
 
-In \eqref{eq:partzero} the history and the memory predict the next observation differently when the action is not given, as in $D^0_t(m)$. In \eqref{eq:partE} they infer the action from the observation differently, as in $\dE_t(m)$. In both, an action is weighted by the relative change of its probability.
+In \eqref{eq:partzero} the history and the memory predict the next observation differently when the action is not given, as in $D^0_t(m)$. In \eqref{eq:partE} they infer the action from the observation differently, as in $\dE_t(m)$. In both, an action is weighted by the relative change of its probability. As in Proposition~\ref{prop:id1}, the sum of \eqref{eq:partzero} and \eqref{eq:partE} is determined, and how it divides between the two depends on a constant subtracted from $r(o)+\gamma V^\pi_{t+1}(m')$.
 
 \begin{proposition}[Bound with $D^0_t$ and $\dE_t$]\label{prop:corrbound}
-Under the assumptions of Proposition~\ref{prop:improve}, with the maximum and the minimum over the observations $o$ with $\Pr(o\mid m,a)>0$,
+Under the assumptions of Proposition~\ref{prop:improve}, for every memory value $m$ at time $t$, with $m'=f(m,a,o)$ and the maximum and the minimum over the observations $o$ with $\Pr(o\mid m,a)>0$,
 \begin{align*}
 &\sqrt{\sum_h\Pr(h\mid m)\,\eqref{eq:disagree}^2}\\
-&\quad\le\max_a\Big|\frac{\pi'(a\mid m)}{\pi(a\mid m)}-1\Big|\Big[\max_o\big(r(o)+\gamma V^\pi_{t+1}(m')\big)-\min_o\big(r(o)+\gamma V^\pi_{t+1}(m')\big)\Big]\\
+&\quad\le\max_a\bigg\{\Big|\frac{\pi'(a\mid m)}{\pi(a\mid m)}-1\Big|\Big[\max_o\big(r(o)+\gamma V^\pi_{t+1}(m')\big)-\min_o\big(r(o)+\gamma V^\pi_{t+1}(m')\big)\Big]\bigg\}\\
 &\qquad\quad\times\Big[\sqrt{\tfrac12\,D^0_t(m)}+\sqrt{\tfrac12\,\dE_t(m)}\Big]\\
 &\qquad+\gamma\sum_a\big|\pi'(a\mid m)-\pi(a\mid m)\big|\sqrt{\sum_h\Pr(h\mid m)\sum_oe(o\mid h,a)\big[V^\pi_{t+1}(h,a,o)-V^\pi_{t+1}(m')\big]^2}.
 \end{align*}
@@ -595,24 +771,26 @@ With Proposition~\ref{prop:cov}(c) this bounds $|\eqref{eq:corr}|$.
 \end{proposition}
 
 \begin{proof}
-In this proof only, $W$ is the factor in front of the bracket with $D^0_t(m)$ and $\dE_t(m)$, $y_a(o)$ is $r(o)+\gamma V^\pi_{t+1}(f(m,a,o))$ minus the midpoint of its range, and $g(o,a)=\big[\pi'(a\mid m)/\pi(a\mid m)-1\big]\,y_a(o)$, so that $|g(o,a)|\le\tfrac12W$. By the last sentence of Proposition~\ref{prop:id1}, \eqref{eq:partzero} and \eqref{eq:partE} do not change when the midpoints are subtracted:
+In this proof only, $W$ is the maximum over $a$ in the first line of the bound, $y_a(o)$ is $r(o)+\gamma V^\pi_{t+1}(f(m,a,o))$ minus the midpoint of its range, and $g(o,a)=\big[\pi'(a\mid m)/\pi(a\mid m)-1\big]\,y_a(o)$, with $g(o,a)=0$ where $\Pr(o\mid m,a)=0$, so that $|g(o,a)|\le\tfrac12W$. By Proposition~\ref{prop:id1}, the sum of \eqref{eq:partzero} and \eqref{eq:partE} does not change when the midpoints are subtracted, so it is the sum of
+\begin{align}
+&\sum_o\big[\Pr(o\mid h)-\Pr(o\mid m)\big]\sum_a\Pr(a\mid m,o)\,g(o,a), \label{eq:centzero}\\
+&\sum_o\Pr(o\mid h)\sum_a\big[\Pr(a\mid h,o)-\Pr(a\mid m,o)\big]\,g(o,a). \label{eq:centE}
+\end{align}
 \begin{align*}
-\eqref{eq:partzero}&=\sum_o\big[\Pr(o\mid h)-\Pr(o\mid m)\big]\sum_a\Pr(a\mid m,o)\,g(o,a),\\
-\eqref{eq:partE}&=\sum_o\Pr(o\mid h)\sum_a\big[\Pr(a\mid h,o)-\Pr(a\mid m,o)\big]\,g(o,a).
-\end{align*}
-\begin{align*}
-\big|\eqref{eq:partzero}\big|&\le W\sqrt{\tfrac12\,\KL\big(\Pr(\cdot\mid h)\,\big\|\,\Pr(\cdot\mid m)\big)} \why{Lemma~\ref{lem:tool}, on the observation; $|\sum_a\Pr(a\mid m,o)\,g(o,a)|\le\tfrac12W$}\\
-\big|\eqref{eq:partE}\big|&\le W\sum_o\Pr(o\mid h)\sqrt{\tfrac12\,\KL\big(\Pr(\cdot\mid h,o)\,\big\|\,\Pr(\cdot\mid m,o)\big)} \why{Lemma~\ref{lem:tool}, on the action, for each $o$}\\
+\big|\eqref{eq:centzero}\big|&\le W\sqrt{\tfrac12\,\KL\big(\Pr(\cdot\mid h)\,\big\|\,\Pr(\cdot\mid m)\big)} \why{Lemma~\ref{lem:tool}, on the observation; $|\sum_a\Pr(a\mid m,o)\,g(o,a)|\le\tfrac12W$}\\
+\big|\eqref{eq:centE}\big|&\le W\sum_o\Pr(o\mid h)\sqrt{\tfrac12\,\KL\big(\Pr(\cdot\mid h,o)\,\big\|\,\Pr(\cdot\mid m,o)\big)} \why{Lemma~\ref{lem:tool}, on the action, for each $o$}\\
 &\le W\sqrt{\tfrac12\sum_o\Pr(o\mid h)\,\KL\big(\Pr(\cdot\mid h,o)\,\big\|\,\Pr(\cdot\mid m,o)\big)} \why{Jensen's inequality}.
 \end{align*}
-Square, average over $h$ with the weights $\Pr(h\mid m)$, and use Lemma~\ref{lem:klforms}: the roots of the averages of $\eqref{eq:partzero}^2$ and $\eqref{eq:partE}^2$ are at most $W\sqrt{D^0_t(m)/2}$ and $W\sqrt{\dE_t(m)/2}$. For \eqref{eq:partlater}, Minkowski's inequality over $a$ and the second and third lines of the proof of Proposition~\ref{prop:eval}, for each pair $(m,a)$, give the last line of the statement. By Proposition~\ref{prop:threeparts} and Minkowski's inequality, the left side is at most the sum of the three roots.
+Square, average over $h$ with the weights $\Pr(h\mid m)$, and use Lemma~\ref{lem:klforms}: the roots of the averages of $\eqref{eq:centzero}^2$ and $\eqref{eq:centE}^2$ are at most $W\sqrt{D^0_t(m)/2}$ and $W\sqrt{\dE_t(m)/2}$. For \eqref{eq:partlater}, Minkowski's inequality over $a$ and the second and third lines of the proof of Proposition~\ref{prop:eval}, for each pair $(m,a)$, give the last line of the statement. By Proposition~\ref{prop:threeparts}, \eqref{eq:disagree} is the sum of \eqref{eq:centzero}, \eqref{eq:centE} and $\gamma$ times \eqref{eq:partlater}, and by Minkowski's inequality the left side is at most the sum of the three roots.
 \end{proof}
 
-\paragraph{Conclusion.} At every memory value, the change of the return is the improvement that the agent computes from its memory values plus a correction. The correction is there because the new policy changes the weights of the histories with the same memory value, which the agent does not see. It is the covariance, over these histories, of two numbers: how much the weight of a history changes, which is set by the ratios of the new to the old probabilities of its past actions, and how much the history disagrees with the memory value about the actions whose probabilities change (Proposition~\ref{prop:cov}). So it is zero when these histories took their past actions with the same ratios, whatever the memory lacks, and zero when they agree with the memory value, whatever the weights. It is zero at the first time, and it is small compared with the computed improvement when the step is small. The disagreement has a part that goes with $D^0_t(m)$, a part that goes with $\dE_t(m)$ and a part that comes from the next time (Proposition~\ref{prop:threeparts}), and Proposition~\ref{prop:corrbound} bounds it by these. A part of $Q^\pi_t(h,\cdot)$ that is the same for every action plays no role.
+\paragraph{In Example 2.} Let $\pi'$ keep the uniform policy at time $1$ and take $A_2=d$ when $d$ is shown. At the memory values that show $d$, \eqref{eq:first} is $1-\tfrac12=\tfrac12$, and $\pi'$ visits them with probability $\tfrac12$, so the computed improvement is $\tfrac14$. The policy at time $1$ is unchanged, so the weights of the histories are unchanged and \eqref{eq:corr} is zero. The return goes from $\tfrac12$ to $\tfrac34$.
+
+\paragraph{Conclusion.} At every memory value, the change of the return is the improvement that the agent computes from its memory values plus a correction. The correction is there because the new policy changes the weights of the histories with the same memory value, which the agent does not see. It is the covariance, over these histories, of two numbers: how much the weight of a history changes, which is set by the ratios of the new to the old probabilities of its past actions, and how much the history disagrees with the memory value about the actions whose probabilities change (Proposition~\ref{prop:cov}). So it is zero when these histories took their past actions with the same ratios, whatever the memory lacks, and zero when they agree with the memory value, whatever the weights. It is zero at the first time, and for a small step it is at most a constant times the square of the step, while the computed improvement is proportional to the step (Proposition~\ref{prop:corr}). The disagreement is bounded with $D^0_t(m)$ and $\dE_t(m)$, which get the same factor, and with the errors of $V^\pi$ at the next time (Proposition~\ref{prop:corrbound}). A part of $Q^\pi_t(h,\cdot)$ that is the same for every action plays no role.
 
 \paragraph{Known.} Lemma~\ref{lem:pdl} is known. For policies that read an aggregated state of a Markov decision process, \citet{russo2020approximation} writes the difference in return with a term for the change of the state occupancy, of second order in the change of the policy; the form here keeps only the change of the weights inside a memory value.
 
-\section{Layer 6: a later policy that differs from the one that generated the experience}\label{sec:layer6}
+\section{Layer 7: a later policy that differs from the one that generated the experience}\label{sec:layer6}
 
 \paragraph{Question.} Under the policy $\pi$ the memory lacks some of what the history knows. Does what this costs depend on the policy that is used afterwards?
 
@@ -642,15 +820,15 @@ Under the same assumptions, with $\Pr(M_{t+1}=m'\mid h,a)=\sum_{o:\,f(m,a,o)=m'}
 
 (a) If, for every history $h$ with memory value $m$, the expected reward $\sum_oe(o\mid h,a)\,r(o)$ and the law $\Pr(M_{t+1}=\cdot\mid h,a)$ are those given by the memory value, then \eqref{eq:nowlater} is zero for every later policy.
 
-(b) $\dP_t(m,a)\le I(h_t;M_{t+1}\mid M_t=m,A_t=a)\le D_t(m,a)$, and the middle term is zero exactly when the law $\Pr(M_{t+1}=\cdot\mid h,a)$ is the same for every history $h$ with memory value $m$.
+(b) $I(h_t;M_{t+1}\mid M_t=m,A_t=a)\le D_t(m,a)$, and the left side is zero exactly when the law $\Pr(M_{t+1}=\cdot\mid h,a)$ is the same for every history $h$ with memory value $m$. For $t\le T-2$, $\dP_t(m,a)\le I(h_t;M_{t+1}\mid M_t=m,A_t=a)$, whether the action $A_{t+1}$ in $\dP_t$ is drawn from $\pi$ or from $\pi'$.
 \end{proposition}
 
 \begin{proof}
-\eqref{eq:rewardmemory}: in \eqref{eq:nowlater}, $V^{\pi'}_{t+1}(m')$ depends on $o$ only through $m'=f(m,a,o)$; group the observations by $m'$. (a) follows from \eqref{eq:rewardmemory}. (b) Given $M_t=m$ and $A_t=a$, the next memory value is a function of $O_{t+1}$ (Assumption~\ref{as:mem}), and given the next memory value the law of $A_{t+1}$ does not depend on $h_t$ (Assumption~\ref{as:pol}). The two inequalities are the data processing inequality \citep[Ch.~2]{cover2006elements}. The middle term is an average of divergences of $\Pr(M_{t+1}=\cdot\mid h,a)$ from $\Pr(M_{t+1}=\cdot\mid m,a)$, as in Definition~\ref{def:D}, and it is zero exactly when they are all equal.
+\eqref{eq:rewardmemory}: in \eqref{eq:nowlater}, $V^{\pi'}_{t+1}(m')$ depends on $o$ only through $m'=f(m,a,o)$; group the observations by $m'$. (a) follows from \eqref{eq:rewardmemory}. (b) Given $M_t=m$ and $A_t=a$, the next memory value is a function of $O_{t+1}$ (Assumption~\ref{as:mem}), and given the next memory value the law of $A_{t+1}$ does not depend on $h_t$, for $\pi$ and for $\pi'$ (Assumptions~\ref{as:pol} and~\ref{as:later}). The two inequalities are the data processing inequality \citep[Ch.~2]{cover2006elements}. The information about the next memory value is an average of divergences of $\Pr(M_{t+1}=\cdot\mid h,a)$ from $\Pr(M_{t+1}=\cdot\mid m,a)$, as in Definition~\ref{def:D}, and it is zero exactly when they are all equal.
 \end{proof}
 
 \begin{proposition}[A distinction can cost nothing with one later policy and something with another]\label{prop:example}
-There are an environment, a memory and a generating policy that satisfy Assumptions~\ref{as:env} to~\ref{as:pos}, a memory value $m$ at time $1$ and two later policies such that the loss \eqref{eq:loss} at $m$ is $0$ with the first later policy and $\tfrac14$ with the second, while, for both actions $a$,
+In Example~2, let $m$ be the memory value at time $1$. Let the first later policy be uniform at time $2$, and let the second take $A_2=d$ when $d$ is shown and be uniform otherwise. The loss \eqref{eq:loss} at $m$, computed with the values of the later policy, is $0$ with the first and $\tfrac14$ with the second, while, for both actions $a$,
 \[
 D_1(m,a)=\dE_1(m)=I(h_1;M_2\mid M_1=m,A_1=a)=\ln2,\qquad D^0_1(m)=0,
 \]
@@ -658,20 +836,86 @@ and $\dP_1(m,a)=0$ with each of the two later policies.
 \end{proposition}
 
 \begin{proof}
-Let $T=3$ and $\gamma=1$, with two actions. $O_1$ is a fair bit $c$. If $A_1=c$, the observation $O_2$ shows a fair bit $e$; otherwise $O_2$ is blank, and $e$ is a fair bit that is not shown. $O_3$ carries the reward $1$ if $A_2=e$ and $0$ otherwise. The memory is constant at time $1$ and $M_2=O_2$. The generating policy is uniform at both times. The first later policy is uniform; the second takes $A_2=e$ when $e$ is shown and is uniform otherwise.
-
-With the first later policy, $Q_1(h,a)=\tfrac12$ for both values of $c$ and both actions, so \eqref{eq:loss} is $0$. With the second, $Q_1(h,a)=1$ if $a=c$ and $\tfrac12$ otherwise, so the first term of \eqref{eq:loss} is $1$ and the second is $\max_a\big(\tfrac12\cdot1+\tfrac12\cdot\tfrac12\big)=\tfrac34$.
+With the first later policy, $Q^{\pi'}_1(h,a)=\tfrac12$ for both values of $c$ and both actions, so \eqref{eq:loss} is $0$. With the second, $Q^{\pi'}_1(h,a)=1$ if $a=c$ and $\tfrac12$ otherwise, so the first term of \eqref{eq:loss} is $1$ and the second is $\max_a\big(\tfrac12\cdot1+\tfrac12\cdot\tfrac12\big)=\tfrac34$.
 
 Given $A_1=a$, $O_2$ shows a fair bit when $c=a$ and is blank when $c\ne a$, so $I(h_1;O_2\mid m,a)=H(O_2\mid m,a)-H(O_2\mid c,a)=\tfrac32\ln2-\tfrac12\ln2=\ln2$, and the same holds for $M_2=O_2$. When the action is not given, $O_2$ is blank with probability $\tfrac12$ and shows each bit with probability $\tfrac14$, for both values of $c$, so $D^0_1(m)=0$, and $\dE_1(m)=\ln2$ by Proposition~\ref{prop:split1}. With either later policy $A_2$ is a fair bit for both values of $c$ and both actions, so $\dP_1(m,a)=0$.
 \end{proof}
 
-\paragraph{Conclusion.} The difference between what the history and the memory predict for the next observation does not depend on the later policy. What it costs does, through the values that the later policy gives to the next memory values. A distinction between histories can therefore cost nothing with one later policy and something with another, and this can happen only where the history knows more than the memory about the reward or about the next memory value. In the example $\dP_1$ is zero with both later policies, so $\dP_t$ does not indicate such a distinction, while $\dE_1$ and $I(h_1;M_2\mid M_1=m,A_1=a)$ are both $\ln2$.
+\paragraph{Conclusion.} The difference between what the history and the memory predict for the next observation does not depend on the later policy. What it costs does, through the values that the later policy gives to the next memory values. A distinction between histories can therefore cost nothing with one later policy and something with another. For the part made at time $t$, \eqref{eq:nowlater}, this can happen only where the history knows more than the memory about the reward or about the next memory value. In Example~2, $\dP_1$ is zero with both later policies, so $\dP_t$ does not indicate such a distinction, while $\dE_1$ and $I(h_1;M_2\mid M_1=m,A_1=a)$ are both $\ln2$.
 
 \paragraph{Known.} Part (a) of Proposition~\ref{prop:rewardmemory} is the condition of reward prediction and self-prediction \citep{subramanian2022approximate,ni2024bridging}.
 
-\paragraph{Next.} The memory update $f$ has been fixed in every layer. A change of the memory is not treated yet.
+\section{From the theory to an algorithm}\label{sec:algo}
 
-\begin{thebibliography}{5}
+This section collects what the statements say about an agent that learns, and marks what they do not say.
+
+\paragraph{Terms and factors.} In the bounds of Layers~2, 4 and~6, a term of the state defect is multiplied by a factor. The factor is a range of $r(o)+\gamma V^\pi_{t+1}(m')$ or of $r(o)+\gamma Q^\pi_{t+1}(m',a')$ (Propositions~\ref{prop:now} and~\ref{prop:bound2}); it is divided by the probability of an action in Proposition~\ref{prop:bound1}, and multiplied by the largest relative change of the probability of an action in Proposition~\ref{prop:corrbound}. The state defect $D_t(m,a)$ is computed from the environment, the memory and the weights $\Pr(h\mid m)$. Its split at $A_t$ also uses the policy at time $t$, and its split at $A_{t+1}$ the policy at time $t+1$. The factors are computed from values. A term whose factor is zero does not enter a bound.
+
+\paragraph{What changes when the policy changes.} The values change, and with them the factors; when the weights of the histories are held fixed, this is all that changes in the part made at time $t$ (Proposition~\ref{prop:later}). The weights $\Pr(h\mid m)$ change too, by the ratios of Proposition~\ref{prop:cov}(a), and with them the state defect. No statement of the note treats the two changes together.
+
+\paragraph{What a learner does, and the statement for each step.}
+\begin{center}
+\small
+\begin{tabular}{p{3.3cm}p{7.2cm}p{2.1cm}}
+\toprule
+Step & What the statements say & Status\\
+\midrule
+Evaluate the policy & From returns: the memory values, by Definition~\ref{def:memvalue}. By bootstrapping on the memory: off by the discounted averages of later errors of $V^\pi$ (Proposition~\ref{prop:bootstrap}). & exact\\[3pt]
+Improve the policy, memory fixed & The return changes by the computed improvement plus a correction (Proposition~\ref{prop:improve}). The correction is at most a constant times the square of a small step (Proposition~\ref{prop:corr}), zero when the histories with one memory value took their past actions with the same ratios or agree about the changed actions (Proposition~\ref{prop:cov}), and bounded with $D^0_t$, $\dE_t$ and the later errors (Proposition~\ref{prop:corrbound}). & exact; bound\\[3pt]
+Train the memory, policy fixed & The loss \eqref{eq:loss}, the evaluation error and the correction are bounded by terms times factors, so lowering the terms lowers these bounds. No statement says how a change of the memory update changes the terms. & bound only\\[3pt]
+Return to the memory after the policy has changed & The values and the weights have changed (Propositions~\ref{prop:later} and~\ref{prop:cov}); in Example~2 a distinction that cost nothing costs $\tfrac14$ (Proposition~\ref{prop:example}). & exact; example\\[3pt]
+Choose which term to lower first & Not answered. & open\\[3pt]
+Decide when a step stops & Not answered. & open\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{The two splits in these steps.} The split at $A_t$ belongs to the policy step at time $t$: the disagreement made at that time is bounded with $D^0_t$ and $\dE_t$ (Propositions~\ref{prop:threeparts} and~\ref{prop:corrbound}). How this disagreement divides between a part for $D^0_t$ and a part for $\dE_t$ is not determined (Proposition~\ref{prop:id1}), and the bounds give the two terms the same factor. The two terms are separate only while the policy randomizes (Proposition~\ref{prop:signal}a): for a policy that does not explore, $\dE_t=0$ and all of the average of $D_t(m,a)$ is $D^0_t$.
+
+The split at $A_{t+1}$ belongs to what is carried back from later times. The difference made at a later time $n$ is a part with $\dP_n$ plus a part with $D^+_n$, and this division is determined (Proposition~\ref{prop:id2}). These differences enter the evaluation error (Proposition~\ref{prop:eval}) and, through it, the bootstrapped values (Proposition~\ref{prop:bootstrap}), the later part of the correction (Proposition~\ref{prop:threeparts}) and the loss (Proposition~\ref{prop:choose}). The two terms have different factors (Proposition~\ref{prop:bound2}), and they are separate only while the next action varies with the observation (Proposition~\ref{prop:signal}b). $\dP_t$ alone is not a quantity to minimize: it is zero for an agent whose next action never varies, and it is zero in Example~2, where the distinction costs $\tfrac14$.
+
+Averaged over the action, the two splits are splits of one quantity: by Propositions~\ref{prop:split1} and~\ref{prop:split2}, $D^0_t(m)+\dE_t(m)=\sum_a\pi(a\mid m)\big[\dP_t(m,a)+D^+_t(m,a)\big]$. So the statements do not assign one split to the training of the memory and the other to the training of the policy. Both splits describe the same memory; they differ in which step of the learner they enter and in their factors.
+
+\paragraph{The loop in Example 2.} Start with the memory that forgets $c$ and the uniform policy; the return is $\tfrac12$.
+\begin{enumerate}
+\item \emph{Memory, policy fixed.} At time $1$, $D_1(m,a)=\dE_1(m)=\ln2$. The value of the next memory is $\tfrac12$ whether $d$ is shown or not, so the factor is $0$, the difference made at time $1$ is $0$ and the loss \eqref{eq:loss} is $0$. With this policy, what the memory lacks costs nothing.
+\item \emph{Evaluate.} Bootstrapping on the memory is exact here (Section~\ref{sec:eval}). At time $2$, when $d$ is shown, the action $d$ has value $1$ and the other action $0$.
+\item \emph{Policy, memory fixed.} Take $A_2=d$ when $d$ is shown. The computed improvement is $\tfrac14$, the correction is $0$, and the return is $\tfrac34$ (Section~\ref{sec:layer5}).
+\item \emph{Back to the memory.} The terms at time $1$ have not changed. The value of the next memory is now $1$ when $d$ is shown and $\tfrac12$ when it is not, so the factor is $\tfrac12$, the difference made at time $1$ is $\pm\tfrac14$ and the loss is $\tfrac14$; the bound of Proposition~\ref{prop:now} is $\tfrac12\sqrt{\ln2/2}\approx0.29$. A memory that keeps $c$ now gains $\tfrac14$: with it the agent takes $A_1=c$ and earns $1$.
+\end{enumerate}
+In this example the same information about $c$ is worth nothing before the policy step and $\tfrac14$ after it, and the terms do not show the change; the factor does.
+
+\paragraph{A loop that the statements are consistent with.} The following order is a choice, not a consequence.
+\begin{enumerate}
+\item With the policy fixed and every action taken, train the memory to lower the terms.
+\item Evaluate the policy from returns.
+\item With the memory fixed, improve the policy in small steps.
+\item Go back to step 1.
+\end{enumerate}
+The statements say why the steps of 3 should be small (Proposition~\ref{prop:corr}c), why step 1 needs every action to be taken (Proposition~\ref{prop:signal}a) and why step 4 is needed (Example~2). They do not say that the loop converges, or that this order is better than another.
+
+\paragraph{A measurement in units of return.} By Proposition~\ref{prop:improve}, the corrections of a policy step add up to the change of the return minus the computed improvement, where the computed improvement is weighted by how often the new policy visits each memory value. This is a quantity of return, not of the interaction between the agent and the environment, and no statement above needs it. It can check a memory after the fact; it is not a step of the loop.
+
+\paragraph{Not answered.}
+\begin{itemize}
+\item Which term to lower first when a memory of fixed size cannot lower all of them. The factors are a candidate for the weights, but the bounds are not tight.
+\item When a step of the loop should stop, and whether the loop converges.
+\item What a change of the memory update $f$ does. Proposition~\ref{prop:layer1} compares with any other agent, with any memory; nothing here says how to find a better $f$.
+\item Layer~1 for another agent $\lambda$ uses the weights of the histories that $\lambda$ visits; Layers~2 to~7 use our own (Assumption~\ref{as:own}).
+\item Whether the best agent with a memory of the same size ever stops changing its policy.
+\end{itemize}
+
+\begin{thebibliography}{7}
+\bibitem[Abel et~al.(2025)]{abel2025plasticity}
+D.~Abel, M.~Bowling, A.~Barreto, W.~Dabney, S.~Dong, S.~Hansen, A.~Harutyunyan, K.~Khetarpal, C.~Lyle, R.~Pascanu, G.~Piliouras, D.~Precup, J.~Richens, M.~Rowland, T.~Schaul, and S.~Singh.
+\newblock Plasticity as the mirror of empowerment.
+\newblock arXiv:2505.10361, 2025.
+
+\bibitem[Allen et~al.(2024)]{allen2024lambda}
+C.~Allen, A.~Kirtland, R.~Y. Tao, S.~Lobel, et~al.
+\newblock Mitigating partial observability in sequential decision processes via the lambda discrepancy.
+\newblock arXiv:2407.07333, 2024.
+
 \bibitem[Cover and Thomas(2006)]{cover2006elements}
 T.~M. Cover and J.~A. Thomas.
 \newblock \emph{Elements of Information Theory}.
