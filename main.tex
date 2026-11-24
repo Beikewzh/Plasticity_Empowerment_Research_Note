@@ -530,7 +530,85 @@ Apply the first line of Lemma~\ref{lem:tool} with $p=\Prn(\cdot\mid m)$ and $q=\
 (d) $\pi'(a\mid m)-\pi(a\mid m)=\alpha\big[g(a\mid m)-\pi(a\mid m)\big]$, which gives \eqref{eq:first} and a factor $\alpha$ in \eqref{eq:corr}. The other factor of \eqref{eq:corr} contains $\Prn(h\mid m)-\Pr(h\mid m)$. The weight $\Prn(h\mid m)$ is a ratio of two polynomials in $\alpha$ whose denominator $\Prn(M_t=m)$ tends to $\Pr(M_t=m)>0$, so it tends to $\Pr(h\mid m)$ as $\alpha\to0$.
 \end{proof}
 
-\paragraph{Conclusion.} At every memory value, the change of the return is the improvement that the agent computes from its memory values plus a correction. The correction is there because the new policy changes the weights of the histories with the same memory value, which the agent does not see. It involves only how these histories disagree about the differences between actions, the differences that appear in Proposition~\ref{prop:choose}; a part of $Q^\pi_t(h,\cdot)$ that is the same for every action plays no role. It is zero at the first time, and it is small compared with the computed improvement when the step is small. A bound of the correction by the four terms is not derived here.
+\begin{proposition}[The correction as a covariance]\label{prop:cov}
+Under the assumptions of Proposition~\ref{prop:improve}, for every memory value $m$ at time $t$:
+
+(a) Over the histories $h$ with memory value $m$, the ratio $\Prn(h\mid m)/\Pr(h\mid m)$ is proportional to
+\[
+\prod_{s<t}\frac{\pi'(a_s\mid m_s)}{\pi(a_s\mid m_s)},
+\]
+where $a_s$ and $m_s$ are the action and the memory value at time $s$ of the history $h$.
+
+(b) With
+\begin{equation}\label{eq:disagree}
+\sum_a\big[\pi'(a\mid m)-\pi(a\mid m)\big]\big[Q^\pi_t(h,a)-Q^\pi_t(m,a)\big],
+\end{equation}
+whose average over $h$ with the weights $\Pr(h\mid m)$ is zero,
+\[
+\eqref{eq:corr}=\sum_h\Pr(h\mid m)\Big[\frac{\Prn(h\mid m)}{\Pr(h\mid m)}-1\Big]\,\eqref{eq:disagree}.
+\]
+
+(c)
+\[
+\big|\eqref{eq:corr}\big|\le\sqrt{\sum_h\Pr(h\mid m)\Big[\frac{\Prn(h\mid m)}{\Pr(h\mid m)}-1\Big]^2}\;\sqrt{\sum_h\Pr(h\mid m)\,\eqref{eq:disagree}^2}.
+\]
+\end{proposition}
+
+\begin{proof}
+(a) Under an agent $\lambda$, the probability of the history $h_t=h$ is the probability of $O_1$ times $\prod_{s<t}\lambda(a_s\mid h_s)\,e(o_{s+1}\mid h_s,a_s)$ (Assumption~\ref{as:env}, Definition~\ref{def:agent}). The factors of the environment are the same for $\pi$ and $\pi'$, so $\Prn(h_t=h)/\Pr(h_t=h)$ is the product of the statement (Assumptions~\ref{as:pol} and~\ref{as:new}). Dividing by $\Prn(M_t=m)/\Pr(M_t=m)$, which does not depend on $h$, gives the ratio of the conditional weights.
+
+(b) The displayed equality is the first equality in the proof of Proposition~\ref{prop:corr}(b), with $\Prn(h\mid m)-\Pr(h\mid m)$ written as $\Pr(h\mid m)$ times the bracket. The average of \eqref{eq:disagree} is zero because $\sum_h\Pr(h\mid m)\,Q^\pi_t(h,a)=Q^\pi_t(m,a)$ (Definition~\ref{def:memvalue}). The bracket also has average zero, so the sum is the covariance of the ratio and \eqref{eq:disagree}.
+
+(c) The Cauchy--Schwarz inequality.
+\end{proof}
+
+\begin{proposition}[Three parts of the disagreement]\label{prop:threeparts}
+Under the assumptions of Proposition~\ref{prop:improve}, for every history $h$ with memory value $m$ at time $t$, with the laws of Definition~\ref{def:laws} and $m'=f(m,a,o)$, \eqref{eq:disagree} is the sum of
+\begin{align}
+&\sum_o\big[\Pr(o\mid h)-\Pr(o\mid m)\big]\sum_a\Pr(a\mid m,o)\Big[\frac{\pi'(a\mid m)}{\pi(a\mid m)}-1\Big]\big[r(o)+\gamma V^\pi_{t+1}(m')\big], \label{eq:partzero}\\
+&\sum_o\Pr(o\mid h)\sum_a\big[\Pr(a\mid h,o)-\Pr(a\mid m,o)\big]\Big[\frac{\pi'(a\mid m)}{\pi(a\mid m)}-1\Big]\big[r(o)+\gamma V^\pi_{t+1}(m')\big], \label{eq:partE}
+\end{align}
+and $\gamma$ times
+\begin{equation}\label{eq:partlater}
+\begin{aligned}
+\sum_a\big[\pi'(a\mid m)-\pi(a\mid m)\big]\Big[&\sum_oe(o\mid h,a)\big[V^\pi_{t+1}(h,a,o)-V^\pi_{t+1}(m')\big]\\
+&-\sum_h\Pr(h\mid m)\sum_oe(o\mid h,a)\big[V^\pi_{t+1}(h,a,o)-V^\pi_{t+1}(m')\big]\Big].
+\end{aligned}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+By \eqref{eq:Qh} and \eqref{eq:Qm}, $Q^\pi_t(h,a)-Q^\pi_t(m,a)$ is \eqref{eq:now} plus $\gamma$ times the difference of the second parts. Multiply by $\pi'(a\mid m)-\pi(a\mid m)$ and sum over $a$: the second parts give $\gamma$ times \eqref{eq:partlater}. For the first parts, Proposition~\ref{prop:id1} gives $\pi(a\mid m)$ times \eqref{eq:now} as two sums; divide by $\pi(a\mid m)$, multiply by $\pi'(a\mid m)-\pi(a\mid m)$ and sum over $a$. The two sums become \eqref{eq:partzero} and \eqref{eq:partE}.
+\end{proof}
+
+In \eqref{eq:partzero} the history and the memory predict the next observation differently when the action is not given, as in $D^0_t(m)$. In \eqref{eq:partE} they infer the action from the observation differently, as in $\dE_t(m)$. In both, an action is weighted by the relative change of its probability.
+
+\begin{proposition}[Bound with $D^0_t$ and $\dE_t$]\label{prop:corrbound}
+Under the assumptions of Proposition~\ref{prop:improve}, with the maximum and the minimum over the observations $o$ with $\Pr(o\mid m,a)>0$,
+\begin{align*}
+&\sqrt{\sum_h\Pr(h\mid m)\,\eqref{eq:disagree}^2}\\
+&\quad\le\max_a\Big|\frac{\pi'(a\mid m)}{\pi(a\mid m)}-1\Big|\Big[\max_o\big(r(o)+\gamma V^\pi_{t+1}(m')\big)-\min_o\big(r(o)+\gamma V^\pi_{t+1}(m')\big)\Big]\\
+&\qquad\quad\times\Big[\sqrt{\tfrac12\,D^0_t(m)}+\sqrt{\tfrac12\,\dE_t(m)}\Big]\\
+&\qquad+\gamma\sum_a\big|\pi'(a\mid m)-\pi(a\mid m)\big|\sqrt{\sum_h\Pr(h\mid m)\sum_oe(o\mid h,a)\big[V^\pi_{t+1}(h,a,o)-V^\pi_{t+1}(m')\big]^2}.
+\end{align*}
+With Proposition~\ref{prop:cov}(c) this bounds $|\eqref{eq:corr}|$.
+\end{proposition}
+
+\begin{proof}
+In this proof only, $W$ is the factor in front of the bracket with $D^0_t(m)$ and $\dE_t(m)$, $y_a(o)$ is $r(o)+\gamma V^\pi_{t+1}(f(m,a,o))$ minus the midpoint of its range, and $g(o,a)=\big[\pi'(a\mid m)/\pi(a\mid m)-1\big]\,y_a(o)$, so that $|g(o,a)|\le\tfrac12W$. By the last sentence of Proposition~\ref{prop:id1}, \eqref{eq:partzero} and \eqref{eq:partE} do not change when the midpoints are subtracted:
+\begin{align*}
+\eqref{eq:partzero}&=\sum_o\big[\Pr(o\mid h)-\Pr(o\mid m)\big]\sum_a\Pr(a\mid m,o)\,g(o,a),\\
+\eqref{eq:partE}&=\sum_o\Pr(o\mid h)\sum_a\big[\Pr(a\mid h,o)-\Pr(a\mid m,o)\big]\,g(o,a).
+\end{align*}
+\begin{align*}
+\big|\eqref{eq:partzero}\big|&\le W\sqrt{\tfrac12\,\KL\big(\Pr(\cdot\mid h)\,\big\|\,\Pr(\cdot\mid m)\big)} \why{Lemma~\ref{lem:tool}, on the observation; $|\sum_a\Pr(a\mid m,o)\,g(o,a)|\le\tfrac12W$}\\
+\big|\eqref{eq:partE}\big|&\le W\sum_o\Pr(o\mid h)\sqrt{\tfrac12\,\KL\big(\Pr(\cdot\mid h,o)\,\big\|\,\Pr(\cdot\mid m,o)\big)} \why{Lemma~\ref{lem:tool}, on the action, for each $o$}\\
+&\le W\sqrt{\tfrac12\sum_o\Pr(o\mid h)\,\KL\big(\Pr(\cdot\mid h,o)\,\big\|\,\Pr(\cdot\mid m,o)\big)} \why{Jensen's inequality}.
+\end{align*}
+Square, average over $h$ with the weights $\Pr(h\mid m)$, and use Lemma~\ref{lem:klforms}: the roots of the averages of $\eqref{eq:partzero}^2$ and $\eqref{eq:partE}^2$ are at most $W\sqrt{D^0_t(m)/2}$ and $W\sqrt{\dE_t(m)/2}$. For \eqref{eq:partlater}, Minkowski's inequality over $a$ and the second and third lines of the proof of Proposition~\ref{prop:eval}, for each pair $(m,a)$, give the last line of the statement. By Proposition~\ref{prop:threeparts} and Minkowski's inequality, the left side is at most the sum of the three roots.
+\end{proof}
+
+\paragraph{Conclusion.} At every memory value, the change of the return is the improvement that the agent computes from its memory values plus a correction. The correction is there because the new policy changes the weights of the histories with the same memory value, which the agent does not see. It is the covariance, over these histories, of two numbers: how much the weight of a history changes, which is set by the ratios of the new to the old probabilities of its past actions, and how much the history disagrees with the memory value about the actions whose probabilities change (Proposition~\ref{prop:cov}). So it is zero when these histories took their past actions with the same ratios, whatever the memory lacks, and zero when they agree with the memory value, whatever the weights. It is zero at the first time, and it is small compared with the computed improvement when the step is small. The disagreement has a part that goes with $D^0_t(m)$, a part that goes with $\dE_t(m)$ and a part that comes from the next time (Proposition~\ref{prop:threeparts}), and Proposition~\ref{prop:corrbound} bounds it by these. A part of $Q^\pi_t(h,\cdot)$ that is the same for every action plays no role.
 
 \paragraph{Known.} Lemma~\ref{lem:pdl} is known. For policies that read an aggregated state of a Markov decision process, \citet{russo2020approximation} writes the difference in return with a term for the change of the state occupancy, of second order in the change of the policy; the form here keeps only the change of the weights inside a memory value.
 
