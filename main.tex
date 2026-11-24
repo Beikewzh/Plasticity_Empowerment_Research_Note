@@ -28,16 +28,16 @@
 \begin{document}
 \maketitle
 
-\paragraph{Question.} An agent acts on a memory of its history (Figure~\ref{fig:agent}). Histories with the same memory value get the same action distribution. Which memory should the agent use, and how should it change its policy?
+\paragraph{Question.} An agent has a state-update function $f$ that turns its history into a memory $M_t$, a critic and a policy, and it learns all three (Figure~\ref{fig:agent}). Histories with the same memory value get the same action distribution. How should $f$ be trained, and how should the policy change?
 
 \paragraph{Answer, in four steps.}
 \begin{enumerate}
-\item A small step of the policy towards the best actions on a memory raises the return by the \emph{visible value} of that memory, minus a number that is the same for every memory (Proposition~\ref{prop:step}).
+\item Let $f$ change, by learning, into $\tilde f$. A small step of the policy towards the best actions on the new memory raises the return by the \emph{visible value} of that memory, minus a number that does not depend on $\tilde f$ (Proposition~\ref{prop:step}).
 \item The visible value of a memory is the visible value of the history minus the loss that the memory hides (Proposition~\ref{prop:hide}).
 \item The hidden loss is bounded by the four terms of the state defect, each times a range of values (Proposition~\ref{prop:terms}).
-\item So: train candidate memories on the four terms, pick the one with the largest visible value, move the policy a small step towards it, and repeat (Section~\ref{sec:algo}).
+\item So: train $f$ on the four terms as auxiliary prediction losses, judge a change of $f$ by the visible value that the critic reads on it, and move the policy in small steps (Section~\ref{sec:algo}).
 \end{enumerate}
-Steps 1 and 2 are exact. Step 3 is an upper bound, which is why step 4 compares trained candidates and does not choose a term in advance.
+Steps 1 and 2 are exact. Step 3 is an upper bound, so it does not give the weights of the four losses; step 4 sets them by comparing what $f$ becomes under different weights.
 
 \section{Setting}
 
@@ -61,7 +61,7 @@ The history is $h_t=(O_1,A_1,\dots,A_{t-1},O_t)$, and $h$ denotes a value of $h_
 $O_1$ has a fixed law and $O_{t+1}\sim e(\cdot\mid h_t,A_t)$. The environment may depend on the whole history.
 \end{assumption}
 \begin{assumption}[Memory]\label{as:mem}
-A memory is $M_1=f_1(O_1)$, $M_{t+1}=f(M_t,A_t,O_{t+1})$ for fixed maps; $m$ is a value of $M_t$ and $m'=f(m,a,o)$ the next value.
+$M_1=f_1(O_1)$ and $M_{t+1}=f(M_t,A_t,O_{t+1})$, with one state-update function $f$; $m$ is a value of $M_t$ and $m'=f(m,a,o)$ the next value. The agent learns $f$. Within a statement $f$ is held fixed, and learning appears as the comparison of $f$ with what it becomes.
 \end{assumption}
 \begin{assumption}[Policy]\label{as:pol}
 The agent takes $A_t=a$ after $h_t$ with probability $\pi(a\mid M_t)>0$.
@@ -73,7 +73,7 @@ Q_t(h,a)=\sum_oe(o\mid h,a)\big[r(o)+\gamma V_{t+1}(h,a,o)\big],\qquad V_t(h)=\s
 \end{equation}
 where $(h,a,o)$ is the next history and $m$ the memory value of $h$.
 
-\paragraph{A second memory.} $\tilde M_t$ is any other memory of the same history (Assumption~\ref{as:mem} with its own maps). It need not contain $M_t$, and the policy does not read it. Its values average those of the histories:
+\paragraph{Before and after a change of $f$.} Let $\tilde f$ be what $f$ may become: $f$ after some gradient steps, or $f$ trained with other weights on its losses. $\tilde M_t$ is the memory that $\tilde f$ computes from the same history. At the moment of the comparison the policy still reads $M_t$, and $\tilde M_t$ need not contain $M_t$. The values on $\tilde M$ average those of the histories,
 \[
 \tilde Q_t(\tilde m,a)=\sum_h\Pr(h\mid\tilde m)\,Q_t(h,a),\qquad\tilde V_t(\tilde m)=\sum_h\Pr(h\mid\tilde m)\,V_t(h),
 \]
@@ -81,13 +81,13 @@ and its \emph{visible value} is
 \begin{equation}\label{eq:X}
 X(\tilde M)=\sum_{t=1}^{T-1}\gamma^{t-1}\sum_{\tilde m}\Pr(\tilde M_t=\tilde m)\,\max_a\tilde Q_t(\tilde m,a).
 \end{equation}
-For the memory $M$ that the policy reads we write $Q_t(m,a)$ and $V_t(m)$. The history is itself a memory, and $X(h)$ has $\max_aQ_t(h,a)$ in \eqref{eq:X}. The weights $\Pr(h\mid\tilde m)$ do not depend on the action. So $\tilde Q_t(\tilde m,a)$ is the average return after $a$ at $\tilde m$ when the action is drawn independently of the history, as on a step where the agent explores uniformly. It is not the average return after $a$ under $\pi$ when $\pi$ does not read $\tilde M$.
+For $\tilde f=f$ these are the values $Q_t(m,a)$, $V_t(m)$ that the agent's critic estimates, and $X(M)$ is the average of the critic's largest action value. The history is the memory of an $f$ that forgets nothing, and $X(h)$ has $\max_aQ_t(h,a)$ in \eqref{eq:X}. The weights $\Pr(h\mid\tilde m)$ do not depend on the action. So $\tilde Q_t(\tilde m,a)$ is the average return after $a$ at $\tilde m$ when the action is drawn independently of the history, as on a step where the agent explores uniformly. It is not the average return after $a$ under $\pi$ when $\pi$ does not read $\tilde M$.
 
 \paragraph{Example.} $T=3$, $\gamma=1$, two actions. $O_1$ is a fair bit $c$. If $A_1=c$, then $O_2$ shows a fair bit $d$; otherwise $O_2$ is blank. The reward is $1$ if $A_2=d$ (with probability $\tfrac12$ when $d$ was not shown). The memory $M$ forgets $c$ and keeps $O_2$. The policy is uniform, and $J(\pi)=\tfrac12$.
 
 \section{Step 1: a small policy step towards a memory}
 
-Let $\tilde\pi$ read $\tilde M$ and take an action with the largest $\tilde Q_t(\tilde m,a)$. The agent moves to $\pi'=(1-\alpha)\pi+\alpha\tilde\pi$ with $0<\alpha\le1$. Write
+Let $\tilde\pi$ read the new memory $\tilde M$ and take an action with the largest $\tilde Q_t(\tilde m,a)$. The agent moves to $\pi'=(1-\alpha)\pi+\alpha\tilde\pi$ with $0<\alpha\le1$. Write
 \begin{equation}\label{eq:g}
 g_t(h)=\sum_a\big[\tilde\pi(a\mid\tilde m)-\pi(a\mid m)\big]\,Q_t(h,a),
 \end{equation}
@@ -134,31 +134,31 @@ Summing first over the last action and observation of $h$, and using $\sum_a\pi'
 and $L_1=1$. The last claim is $(1+x)^n-1\le nx(1+x)^{n-1}$.
 \end{proof}
 
-So for a small step the gain is $\alpha$ times the visible value of the memory, up to a number common to all memories and a term of order $\alpha^2$: the memory with the largest visible value gives the largest gain. This is an order for small steps. For $\alpha=1$ the second-order term can reverse it, so the agent moves towards a memory and does not switch to it.
+So for a small step the gain is $\alpha$ times the visible value of the new memory, up to a number that does not depend on $\tilde f$ and a term of order $\alpha^2$. Among several changes of $f$, the one with the largest visible value gives the largest gain. With $\tilde f=f$ this is the usual small policy step on the current memory. The order holds for small steps; for $\alpha=1$ the second-order term can reverse it.
 
-\paragraph{In the example.} Take $\tilde M=M$. At the memory values that show $d$ the greedy action gains $1-\tfrac12$, and they are visited with probability $\tfrac12$, so the left side of (a) is $\tfrac14$. The policy at time $1$ does not change, so the second-order term is zero, and a full step gives $J=\tfrac34$.
+\paragraph{In the example.} Take $\tilde f=f$. At the memory values that show $d$ the greedy action gains $1-\tfrac12$, and they are visited with probability $\tfrac12$, so the left side of (a) is $\tfrac14$. The policy at time $1$ does not change, so the second-order term is zero, and a full step gives $J=\tfrac34$.
 
 \section{Step 2: what a memory hides}
 
-The loss at a value $\tilde m$ of a memory compares every history taking its own best action with all of them taking the one action that is best on average:
+The loss at a memory value $\tilde m$ compares every history taking its own best action with all of them taking the one action that is best on average:
 \begin{equation}\label{eq:loss}
 \sum_h\Pr(h\mid\tilde m)\,\max_aQ_t(h,a)-\max_a\tilde Q_t(\tilde m,a).
 \end{equation}
 
 \begin{proposition}[Visible value and hidden loss]\label{prop:hide}
-$\displaystyle X(h)-X(\tilde M)=\sum_{t=1}^{T-1}\gamma^{t-1}\sum_{\tilde m}\Pr(\tilde M_t=\tilde m)\,\eqref{eq:loss}\ \ge0$. If a memory is a function of another, the finer one has the larger visible value, by the same identity with the finer memory in the role of the history. The return $J(\pi)$ does not depend on which second memory is considered.
+$\displaystyle X(h)-X(\tilde M)=\sum_{t=1}^{T-1}\gamma^{t-1}\sum_{\tilde m}\Pr(\tilde M_t=\tilde m)\,\eqref{eq:loss}\ \ge0$. If one memory is a function of another, the finer one has the larger visible value, by the same identity with the finer memory in the role of the history. A change of $f$ alone, with the policy still reading $M$, does not change the return $J(\pi)$.
 \end{proposition}
 \begin{proof}
 Group the histories by $\tilde m$ in $X(h)$. Each bracket is nonnegative because $\tilde Q_t(\tilde m,a)$ is an average of $Q_t(h,a)$, and the maximum of an average is at most the average of the maxima. A finer memory averages the same $Q_t(h,a)$ over smaller groups.
 \end{proof}
 
-So a memory has no return of its own. It decides how much of the improvement that the history could show is visible to the agent, and the return moves when the policy then takes a step (Step~1).
+So training $f$ does not by itself change the return. It changes how much of the improvement that the history could show is visible to the critic, and the return moves when the policy then takes a step (Step~1).
 
 \paragraph{In the example.} With the uniform policy, $Q_1(h,a)=\tfrac12$ for both values of $c$ and both actions: the loss of $M$ at time $1$ is $0$, and keeping $c$ adds nothing to the visible value. After the step of Step~1, $Q_1(h,a)$ is $1$ if $a=c$ and $\tfrac12$ otherwise, while both actions have the value $\tfrac34$ on $M$: the loss is $1-\tfrac34=\tfrac14$, and a memory that keeps $c$ has a visible value larger by $\tfrac14$. What a memory hides depends on the current policy.
 
 \section{Step 3: the hidden loss and the four terms}
 
-This step is for the memory $M$ that the policy reads. Let $\Pr(o\mid m,a)=\sum_h\Pr(h\mid m)\,e(o\mid h,a)$. The state defect and its four terms are
+This step is for the memory $M$ of the current $f$, which the policy reads. Let $\Pr(o\mid m,a)=\sum_h\Pr(h\mid m)\,e(o\mid h,a)$. The state defect and its four terms are
 \begin{align*}
 D_t(m,a)&=I(h_t;O_{t+1}\mid M_t=m,A_t=a)=\sum_h\Pr(h\mid m)\,\KL\big(e(\cdot\mid h,a)\,\big\|\,\Pr(\cdot\mid m,a)\big),\\
 D^0_t(m)&=I(h_t;O_{t+1}\mid M_t=m),\\
@@ -222,21 +222,21 @@ So the loss that the memory hides has two sources. Histories with the same memor
 
 \begin{center}
 \fbox{\begin{minipage}{0.94\linewidth}
-\textbf{One round.} The agent keeps several candidate memories, each trained to lower one of the four terms.
+\textbf{The agent.} A state-update function $f$, a critic and a policy, trained together as in an actor-critic method.
 \begin{enumerate}
-\item On steps where the action is drawn uniformly, estimate $\tilde Q_t(\tilde m,a)$ and the visible value \eqref{eq:X} of every candidate.
-\item Take the candidate with the largest visible value.
-\item Move the policy a small step towards the best actions on that candidate.
-\item Keep training the candidates under the new policy, and repeat.
+\item \emph{State-update function.} Train $f$ by gradient descent on the four prediction losses, one for each term, with a weight on each. These are its auxiliary losses.
+\item \emph{Critic.} On steps where the action is drawn uniformly, estimate $\tilde Q_t(\tilde m,a)$ and the visible value \eqref{eq:X}, for $f$ and for the $\tilde f$ trained with other weights.
+\item \emph{Weights.} Keep the weights whose $\tilde f$ has the largest visible value.
+\item \emph{Policy.} Move the policy a small step towards the best actions on that memory, and repeat.
 \end{enumerate}
 \end{minipage}}
 \end{center}
 
-Each line rests on one statement. Line 1 uses exploring steps because $\tilde Q_t$ is defined with weights that do not depend on the action. Line 2 is Proposition~\ref{prop:step}(a): the first-order gain differs between candidates only through the visible value. Line 3 is small because of Proposition~\ref{prop:step}(b). The candidates are trained on the four terms because of Propositions~\ref{prop:hide} and~\ref{prop:terms}: what stands between a memory and the visible value of the history is bounded by these terms. Line 4 is needed because the ranges, and with them what a memory hides, change with the policy.
+Each line rests on one statement. Line 1: what stands between the memory and the visible value of the history is bounded by the four terms (Propositions~\ref{prop:hide} and~\ref{prop:terms}). Line 2 uses exploring steps because $\tilde Q_t$ is defined with weights that do not depend on the action. Line 3 is Proposition~\ref{prop:step}(a): the first-order gain depends on $\tilde f$ only through the visible value. Line 4 is small because of Proposition~\ref{prop:step}(b), and the loop repeats because the ranges in Proposition~\ref{prop:terms}, and with them what a memory hides, change with the policy. Comparing several weightings means training a few copies of $f$ side by side. The statements do not need copies, only the comparison of $f$ with $\tilde f$; the copies are how the weights are set while Proposition~\ref{prop:terms} is only an upper bound.
 
-\paragraph{In the example.} Round 1: no candidate has a positive gain at time $1$; the step at time $2$ gives $J=\tfrac34$. Round 2: the candidate that keeps $c$ now has the larger visible value, by $\tfrac14$; a step towards it at time $1$ gives $J=1$.
+\paragraph{In the example.} Round 1: no change of $f$ raises the visible value at time $1$; the policy step at time $2$ gives $J=\tfrac34$. Round 2: an $\tilde f$ that keeps $c$ now has a visible value larger by $\tfrac14$; a policy step towards it at time $1$ gives $J=1$.
 
-\paragraph{Not covered.} A full switch to another memory ($\alpha=1$). Estimation from finitely many steps. Which term matters in a given situation, before the candidates are trained: Proposition~\ref{prop:terms} is an upper bound, and this is why the algorithm pays for several candidates. For a candidate that the policy does not read, only the first bound of Proposition~\ref{prop:terms}(b) is available, with $D$ computed for an action drawn independently of the history.
+\paragraph{Not covered.} A full step of the policy onto a new memory ($\alpha=1$). Estimation from finitely many steps. The weights of the four losses: Proposition~\ref{prop:terms} is an upper bound, and this is why the weights are set by comparison. For an $\tilde f$ that the policy does not read yet, only the first bound of Proposition~\ref{prop:terms}(b) is available, with $D$ computed for an action drawn independently of the history.
 
 \paragraph{Longer version.} Line-by-line proofs of Step~3 and further statements (bootstrapping, a policy step with the visits of the new policy, the comparison with another agent) are in the folder \texttt{archive}, file\\ {\small\texttt{main\_theory\_to\_algorithm\_paper\_style\_2026-11-24.tex}}.
 
