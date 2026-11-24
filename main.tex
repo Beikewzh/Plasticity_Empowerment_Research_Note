@@ -30,7 +30,7 @@
 \maketitle
 
 \begin{abstract}
-An agent with a memory of fixed size gives the same action distribution to all histories that have the same memory value. This note derives, one layer at a time, what this costs in return. It now contains the setting and Layers~1 to~5. Each layer states its question, the assumptions it adds, its derivation line by line, and its conclusion.
+An agent with a memory of fixed size gives the same action distribution to all histories that have the same memory value. This note derives, one layer at a time, what this costs in return. It now contains the setting and Layers~1 to~6. Each layer states its question, the assumptions it adds, its derivation line by line, and its conclusion.
 \end{abstract}
 
 \section{Setting}\label{sec:setting}
@@ -534,9 +534,66 @@ Apply the first line of Lemma~\ref{lem:tool} with $p=\Prn(\cdot\mid m)$ and $q=\
 
 \paragraph{Known.} Lemma~\ref{lem:pdl} is known. For policies that read an aggregated state of a Markov decision process, \citet{russo2020approximation} writes the difference in return with a term for the change of the state occupancy, of second order in the change of the policy; the form here keeps only the change of the weights inside a memory value.
 
-\paragraph{Next.} The memory update $f$ has been fixed. A change of the memory is not treated yet.
+\section{Layer 6: a later policy that differs from the one that generated the experience}\label{sec:layer6}
 
-\begin{thebibliography}{4}
+\paragraph{Question.} Under the policy $\pi$ the memory lacks some of what the history knows. Does what this costs depend on the policy that is used afterwards?
+
+\paragraph{Assumptions added.}
+\begin{assumption}[A later policy]\label{as:later}
+The actions up to time $t$ are drawn from $\pi$, and the actions after time $t$ from a policy $\pi'$ that reads the same memory. All weights $\Pr(h\mid m)$ and $\Pr(o\mid m,a)$ are those of $\pi$. $Q^{\pi'}_t(h,a)$ and $V^{\pi'}_n(h)$ for $n>t$ are given by Definition~\ref{def:value} with $\pi'$ in place of $\pi$, and the memory values $Q^{\pi'}_t(m,a)$ and $V^{\pi'}_{t+1}(m')$ by Definition~\ref{def:memvalue} with these weights.
+\end{assumption}
+
+\begin{proposition}[The later policy enters through the values of the next memory]\label{prop:later}
+Under Assumptions~\ref{as:env} to~\ref{as:pos} and~\ref{as:later}, Lemma~\ref{lem:onestep} holds with $Q^{\pi'}$ and $V^{\pi'}$ in place of $Q^\pi$ and $V^\pi$. Hence, for every history $h$ with memory value $m$ and every action $a$, $Q^{\pi'}_t(h,a)-Q^{\pi'}_t(m,a)$ is the sum of
+\begin{equation}\label{eq:nowlater}
+\sum_o\big[e(o\mid h,a)-\Pr(o\mid m,a)\big]\big[r(o)+\gamma V^{\pi'}_{t+1}(m')\big],\qquad m'=f(m,a,o),
+\end{equation}
+and $\gamma$ times the difference of the second parts. In \eqref{eq:nowlater} the first bracket does not contain $\pi'$.
+\end{proposition}
+
+\begin{proof}
+The proof of Lemma~\ref{lem:onestep} uses \eqref{eq:bellman}, Definition~\ref{def:memvalue} and Assumption~\ref{as:pos}. With Assumption~\ref{as:later} each of them holds for the values of $\pi'$: $Q^{\pi'}_t(h,a)=\sum_oe(o\mid h,a)\big[r(o)+\gamma V^{\pi'}_{t+1}(h,a,o)\big]$, the memory values are averages with the weights of $\pi$, and every next memory value $m'$ occurs under $\pi$. The first bracket of \eqref{eq:nowlater} contains $e$ and the weights of $\pi$ only.
+\end{proof}
+
+\begin{proposition}[Reward and next memory]\label{prop:rewardmemory}
+Under the same assumptions, with $\Pr(M_{t+1}=m'\mid h,a)=\sum_{o:\,f(m,a,o)=m'}e(o\mid h,a)$ and $\Pr(M_{t+1}=m'\mid m,a)$ the same sum with $\Pr(o\mid m,a)$,
+\begin{align}
+\eqref{eq:nowlater}={}&\sum_o\big[e(o\mid h,a)-\Pr(o\mid m,a)\big]\,r(o) \nonumber\\
+&+\gamma\sum_{m'}\big[\Pr(M_{t+1}=m'\mid h,a)-\Pr(M_{t+1}=m'\mid m,a)\big]\,V^{\pi'}_{t+1}(m'). \label{eq:rewardmemory}
+\end{align}
+
+(a) If, for every history $h$ with memory value $m$, the expected reward $\sum_oe(o\mid h,a)\,r(o)$ and the law $\Pr(M_{t+1}=\cdot\mid h,a)$ are those given by the memory value, then \eqref{eq:nowlater} is zero for every later policy.
+
+(b) $\dP_t(m,a)\le I(h_t;M_{t+1}\mid M_t=m,A_t=a)\le D_t(m,a)$, and the middle term is zero exactly when the law $\Pr(M_{t+1}=\cdot\mid h,a)$ is the same for every history $h$ with memory value $m$.
+\end{proposition}
+
+\begin{proof}
+\eqref{eq:rewardmemory}: in \eqref{eq:nowlater}, $V^{\pi'}_{t+1}(m')$ depends on $o$ only through $m'=f(m,a,o)$; group the observations by $m'$. (a) follows from \eqref{eq:rewardmemory}. (b) Given $M_t=m$ and $A_t=a$, the next memory value is a function of $O_{t+1}$ (Assumption~\ref{as:mem}), and given the next memory value the law of $A_{t+1}$ does not depend on $h_t$ (Assumption~\ref{as:pol}). The two inequalities are the data processing inequality \citep[Ch.~2]{cover2006elements}. The middle term is an average of divergences of $\Pr(M_{t+1}=\cdot\mid h,a)$ from $\Pr(M_{t+1}=\cdot\mid m,a)$, as in Definition~\ref{def:D}, and it is zero exactly when they are all equal.
+\end{proof}
+
+\begin{proposition}[A distinction can cost nothing with one later policy and something with another]\label{prop:example}
+There are an environment, a memory and a generating policy that satisfy Assumptions~\ref{as:env} to~\ref{as:pos}, a memory value $m$ at time $1$ and two later policies such that the loss \eqref{eq:loss} at $m$ is $0$ with the first later policy and $\tfrac14$ with the second, while, for both actions $a$,
+\[
+D_1(m,a)=\dE_1(m)=I(h_1;M_2\mid M_1=m,A_1=a)=\ln2,\qquad D^0_1(m)=0,
+\]
+and $\dP_1(m,a)=0$ with each of the two later policies.
+\end{proposition}
+
+\begin{proof}
+Let $T=3$ and $\gamma=1$, with two actions. $O_1$ is a fair bit $c$. If $A_1=c$, the observation $O_2$ shows a fair bit $e$; otherwise $O_2$ is blank, and $e$ is a fair bit that is not shown. $O_3$ carries the reward $1$ if $A_2=e$ and $0$ otherwise. The memory is constant at time $1$ and $M_2=O_2$. The generating policy is uniform at both times. The first later policy is uniform; the second takes $A_2=e$ when $e$ is shown and is uniform otherwise.
+
+With the first later policy, $Q_1(h,a)=\tfrac12$ for both values of $c$ and both actions, so \eqref{eq:loss} is $0$. With the second, $Q_1(h,a)=1$ if $a=c$ and $\tfrac12$ otherwise, so the first term of \eqref{eq:loss} is $1$ and the second is $\max_a\big(\tfrac12\cdot1+\tfrac12\cdot\tfrac12\big)=\tfrac34$.
+
+Given $A_1=a$, $O_2$ shows a fair bit when $c=a$ and is blank when $c\ne a$, so $I(h_1;O_2\mid m,a)=H(O_2\mid m,a)-H(O_2\mid c,a)=\tfrac32\ln2-\tfrac12\ln2=\ln2$, and the same holds for $M_2=O_2$. When the action is not given, $O_2$ is blank with probability $\tfrac12$ and shows each bit with probability $\tfrac14$, for both values of $c$, so $D^0_1(m)=0$, and $\dE_1(m)=\ln2$ by Proposition~\ref{prop:split1}. With either later policy $A_2$ is a fair bit for both values of $c$ and both actions, so $\dP_1(m,a)=0$.
+\end{proof}
+
+\paragraph{Conclusion.} The difference between what the history and the memory predict for the next observation does not depend on the later policy. What it costs does, through the values that the later policy gives to the next memory values. A distinction between histories can therefore cost nothing with one later policy and something with another, and this can happen only where the history knows more than the memory about the reward or about the next memory value. In the example $\dP_1$ is zero with both later policies, so $\dP_t$ does not indicate such a distinction, while $\dE_1$ and $I(h_1;M_2\mid M_1=m,A_1=a)$ are both $\ln2$.
+
+\paragraph{Known.} Part (a) of Proposition~\ref{prop:rewardmemory} is the condition of reward prediction and self-prediction \citep{subramanian2022approximate,ni2024bridging}.
+
+\paragraph{Next.} The memory update $f$ has been fixed in every layer. A change of the memory is not treated yet.
+
+\begin{thebibliography}{5}
 \bibitem[Cover and Thomas(2006)]{cover2006elements}
 T.~M. Cover and J.~A. Thomas.
 \newblock \emph{Elements of Information Theory}.
@@ -546,6 +603,11 @@ T.~M. Cover and J.~A. Thomas.
 S.~Kakade and J.~Langford.
 \newblock Approximately optimal approximate reinforcement learning.
 \newblock In \emph{International Conference on Machine Learning (ICML)}, 2002.
+
+\bibitem[Ni et~al.(2024)]{ni2024bridging}
+T.~Ni, B.~Eysenbach, E.~Seyedsalehi, M.~Ma, C.~Gehring, A.~Mahajan, and P.-L. Bacon.
+\newblock Bridging state and history representations: Understanding self-predictive RL.
+\newblock In \emph{International Conference on Learning Representations (ICLR)}, 2024.
 
 \bibitem[Russo(2020)]{russo2020approximation}
 D.~Russo.
