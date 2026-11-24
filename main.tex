@@ -18,6 +18,7 @@
 \newcommand{\E}{\mathbb{E}}
 \newcommand{\KL}{\mathrm{KL}}
 \newcommand{\Prl}{\Pr\nolimits_{\lambda}}
+\newcommand{\Prn}{\Pr\nolimits_{\pi'}}
 \newcommand{\dE}{\Delta E}
 \newcommand{\dP}{\Delta P}
 \newcommand{\why}[1]{\tag*{\small(#1)}}
@@ -29,7 +30,7 @@
 \maketitle
 
 \begin{abstract}
-An agent with a memory of fixed size gives the same action distribution to all histories that have the same memory value. This note derives, one layer at a time, what this costs in return. It now contains the setting and Layers~1 to~4. Each layer states its question, the assumptions it adds, its derivation line by line, and its conclusion.
+An agent with a memory of fixed size gives the same action distribution to all histories that have the same memory value. This note derives, one layer at a time, what this costs in return. It now contains the setting and Layers~1 to~5. Each layer states its question, the assumptions it adds, its derivation line by line, and its conclusion.
 \end{abstract}
 
 \section{Setting}\label{sec:setting}
@@ -465,9 +466,77 @@ Square, average over $h$ with the weights $\Pr(h\mid m)$, and use Minkowski's in
 
 \paragraph{Known.} Lemma~\ref{lem:klforms} is known. The two identities are algebra and Bayes' rule; we did not search the literature for them.
 
-\paragraph{Next.} The layers so far are for a fixed agent. What they say for an agent that learns is not yet derived.
+\section{Layer 5: one step of policy improvement on the memory}\label{sec:layer5}
 
-\begin{thebibliography}{3}
+\paragraph{Question.} The agent keeps its memory and replaces its policy $\pi$ by a policy $\pi'$ that it chooses from its memory values $Q^\pi_t(m,a)$. Does the return increase by what the memory values say?
+
+\paragraph{Assumptions added.}
+\begin{assumption}[A new policy on the same memory]\label{as:new}
+$\pi'$ reads the same memory: $\Prn(A_t=a\mid h_t)=\pi'(a\mid M_t)$, with the same $f_1$ and $f$. Both policies may depend on the time $t$; nothing in Layers~1 to~4 uses that they do not.
+\end{assumption}
+Assumption~\ref{as:pos} holds for $\pi$, so every history that $\pi'$ visits is also visited by $\pi$, and $\Pr(h\mid m)$ and $Q^\pi_t(m,a)$ are defined there. $\Prn$ is the law under $\pi'$ (Definition~\ref{def:agent}).
+
+\begin{proposition}[One step of improvement]\label{prop:improve}
+Under Assumptions~\ref{as:env} to~\ref{as:pol}, \ref{as:pos} and~\ref{as:new},
+\[
+J(\pi')-J(\pi)=\sum_{t=1}^{T-1}\gamma^{t-1}\sum_m\Prn(M_t=m)\,\big[\eqref{eq:first}+\eqref{eq:corr}\big],
+\]
+where, for a memory value $m$ at time $t$,
+\begin{align}
+&\sum_a\big[\pi'(a\mid m)-\pi(a\mid m)\big]\,Q^\pi_t(m,a), \label{eq:first}\\
+&\sum_a\big[\pi'(a\mid m)-\pi(a\mid m)\big]\sum_h\big[\Prn(h\mid m)-\Pr(h\mid m)\big]\,Q^\pi_t(h,a). \label{eq:corr}
+\end{align}
+\end{proposition}
+
+\begin{proof}
+\begin{align*}
+&J(\pi')-J(\pi)\\
+&=\sum_{t=1}^{T-1}\gamma^{t-1}\sum_h\Prn(h_t=h)\Big[\sum_a\pi'(a\mid m)\,Q^\pi_t(h,a)-V^\pi_t(h)\Big] \why{Lemma~\ref{lem:pdl} with $\lambda=\pi'$; Assumption~\ref{as:new}}\\
+&=\sum_{t=1}^{T-1}\gamma^{t-1}\sum_m\Prn(M_t=m)\sum_a\big[\pi'(a\mid m)-\pi(a\mid m)\big]\sum_h\Prn(h\mid m)\,Q^\pi_t(h,a) \why{Definition~\ref{def:value}; $M_t$ is a function of $h_t$}\\
+&=\sum_{t=1}^{T-1}\gamma^{t-1}\sum_m\Prn(M_t=m)\,\big[\eqref{eq:first}+\eqref{eq:corr}\big] \why{add and subtract $\Pr(h\mid m)$; Definition~\ref{def:memvalue}}.
+\end{align*}
+\end{proof}
+
+The sum \eqref{eq:first} is what the agent computes from its memory values, and it is nonnegative when $\pi'$ is greedy for them. The sum \eqref{eq:corr} is a correction: the new policy changes the weights of the histories with the same memory value.
+
+\begin{proposition}[The correction]\label{prop:corr}
+Under the assumptions of Proposition~\ref{prop:improve}, for every memory value $m$ at time $t$:
+
+(a) \eqref{eq:corr} does not change when a number that depends on $h$ alone is subtracted from $Q^\pi_t(h,a)$ for every $a$. It is zero when the histories with memory value $m$ agree on the differences between actions, that is, $Q^\pi_t(h,a)-Q^\pi_t(h,b)=Q^\pi_t(m,a)-Q^\pi_t(m,b)$ for all $a$, $b$ and $h$.
+
+(b) With the maximum and the minimum over the histories $h$ with $\Pr(h\mid m)>0$,
+\begin{align*}
+\big|\eqref{eq:corr}\big|\le{}&\tfrac12\sum_h\big|\Prn(h\mid m)-\Pr(h\mid m)\big|\\
+&\times\Big[\max_h\sum_a\big[\pi'(a\mid m)-\pi(a\mid m)\big]\big[Q^\pi_t(h,a)-Q^\pi_t(m,a)\big]\\
+&\qquad-\min_h\sum_a\big[\pi'(a\mid m)-\pi(a\mid m)\big]\big[Q^\pi_t(h,a)-Q^\pi_t(m,a)\big]\Big].
+\end{align*}
+
+(c) \eqref{eq:corr} is zero at $t=1$.
+
+(d) If $\pi'=(1-\alpha)\pi+\alpha g$ for a policy $g$ that reads the memory and $0<\alpha\le1$, then \eqref{eq:first} is $\alpha\sum_a\big[g(a\mid m)-\pi(a\mid m)\big]Q^\pi_t(m,a)$, and \eqref{eq:corr} divided by $\alpha$ tends to zero as $\alpha\to0$.
+\end{proposition}
+
+\begin{proof}
+(a) $\sum_a\big[\pi'(a\mid m)-\pi(a\mid m)\big]=0$, so a number that depends on $h$ alone contributes nothing to the sum over $a$. Under the agreement, subtract $Q^\pi_t(h,b)-Q^\pi_t(m,b)$ for a fixed $b$: what remains of $Q^\pi_t(h,a)$ is $Q^\pi_t(m,a)$, which does not depend on $h$, and $\sum_h\big[\Prn(h\mid m)-\Pr(h\mid m)\big]=0$.
+
+(b) Since $\sum_h\big[\Prn(h\mid m)-\Pr(h\mid m)\big]\,Q^\pi_t(m,a)=0$,
+\[
+\eqref{eq:corr}=\sum_h\big[\Prn(h\mid m)-\Pr(h\mid m)\big]\sum_a\big[\pi'(a\mid m)-\pi(a\mid m)\big]\big[Q^\pi_t(h,a)-Q^\pi_t(m,a)\big].
+\]
+Apply the first line of Lemma~\ref{lem:tool} with $p=\Prn(\cdot\mid m)$ and $q=\Pr(\cdot\mid m)$.
+
+(c) $h_1=O_1$, and the law of $O_1$ does not depend on the policy (Assumption~\ref{as:env}), so $\Prn(h\mid m)=\Pr(h\mid m)$ at $t=1$.
+
+(d) $\pi'(a\mid m)-\pi(a\mid m)=\alpha\big[g(a\mid m)-\pi(a\mid m)\big]$, which gives \eqref{eq:first} and a factor $\alpha$ in \eqref{eq:corr}. The other factor of \eqref{eq:corr} contains $\Prn(h\mid m)-\Pr(h\mid m)$. The weight $\Prn(h\mid m)$ is a ratio of two polynomials in $\alpha$ whose denominator $\Prn(M_t=m)$ tends to $\Pr(M_t=m)>0$, so it tends to $\Pr(h\mid m)$ as $\alpha\to0$.
+\end{proof}
+
+\paragraph{Conclusion.} At every memory value, the change of the return is the improvement that the agent computes from its memory values plus a correction. The correction is there because the new policy changes the weights of the histories with the same memory value, which the agent does not see. It involves only how these histories disagree about the differences between actions, the differences that appear in Proposition~\ref{prop:choose}; a part of $Q^\pi_t(h,\cdot)$ that is the same for every action plays no role. It is zero at the first time, and it is small compared with the computed improvement when the step is small. A bound of the correction by the four terms is not derived here.
+
+\paragraph{Known.} Lemma~\ref{lem:pdl} is known. For policies that read an aggregated state of a Markov decision process, \citet{russo2020approximation} writes the difference in return with a term for the change of the state occupancy, of second order in the change of the policy; the form here keeps only the change of the weights inside a memory value.
+
+\paragraph{Next.} The memory update $f$ has been fixed. A change of the memory is not treated yet.
+
+\begin{thebibliography}{4}
 \bibitem[Cover and Thomas(2006)]{cover2006elements}
 T.~M. Cover and J.~A. Thomas.
 \newblock \emph{Elements of Information Theory}.
@@ -477,6 +546,11 @@ T.~M. Cover and J.~A. Thomas.
 S.~Kakade and J.~Langford.
 \newblock Approximately optimal approximate reinforcement learning.
 \newblock In \emph{International Conference on Machine Learning (ICML)}, 2002.
+
+\bibitem[Russo(2020)]{russo2020approximation}
+D.~Russo.
+\newblock Approximation benefits of policy gradient methods with aggregated states.
+\newblock arXiv:2007.11684, 2020.
 
 \bibitem[Subramanian et~al.(2022)]{subramanian2022approximate}
 J.~Subramanian, A.~Sinha, R.~Seraj, and A.~Mahajan.
