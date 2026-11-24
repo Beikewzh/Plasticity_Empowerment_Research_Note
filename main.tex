@@ -17,6 +17,9 @@
 
 \newcommand{\E}{\mathbb{E}}
 \newcommand{\KL}{\mathrm{KL}}
+\newcommand{\Prl}{\Pr\nolimits_{\lambda}}
+\newcommand{\dE}{\Delta E}
+\newcommand{\dP}{\Delta P}
 \newcommand{\why}[1]{\tag*{\small(#1)}}
 
 \title{The Return of an Agent That Acts on a Memory}
@@ -26,7 +29,7 @@
 \maketitle
 
 \begin{abstract}
-An agent with a memory of fixed size gives the same action distribution to all histories that have the same memory value. This note derives, one layer at a time, what this costs in return. It now contains the setting and Layers~1 and~2. Each layer states its question, the assumptions it adds, its derivation line by line, and its conclusion.
+An agent with a memory of fixed size gives the same action distribution to all histories that have the same memory value. This note derives, one layer at a time, what this costs in return. It now contains the setting and Layers~1 to~3. Each layer states its question, the assumptions it adds, its derivation line by line, and its conclusion.
 \end{abstract}
 
 \section{Setting}\label{sec:setting}
@@ -42,11 +45,11 @@ $M_1=f_1(O_1)$ and $M_{t+1}=f(M_t,A_t,O_{t+1})$ for fixed maps $f_1,f$. Hence $M
 \end{assumption}
 
 \begin{assumption}[Policy]\label{as:pol}
-$P(A_t=a\mid h_t)=\pi(a\mid M_t)$: the action depends on the history only through the memory.
+$\Pr(A_t=a\mid h_t)=\pi(a\mid M_t)$: the action depends on the history only through the memory.
 \end{assumption}
 
 \begin{definition}[Agents and laws]\label{def:agent}
-An agent is a function $\lambda(a\mid h)$ that gives a distribution over actions at every history. Our agent is $\lambda(a\mid h)=\pi(a\mid m)$, with $m$ the memory value of $h$. $P_\lambda$ is the law of $(O_1,A_1,O_2,\dots)$ when the actions are drawn from $\lambda$ and the observations from $e$, and $P$ is this law for our agent. Under every $P_\lambda$, $M_t$ is our memory of $h_t$, computed with $f_1$ and $f$. We write $P_\lambda(h\mid m)$ for $P_\lambda(h_t=h\mid M_t=m)$.
+An agent is a function $\lambda(a\mid h)$ that gives a distribution over actions at every history. Our agent is $\lambda(a\mid h)=\pi(a\mid m)$, with $m$ the memory value of $h$. $\Prl$ is the law of $(O_1,A_1,O_2,\dots)$ when the actions are drawn from $\lambda$ and the observations from $e$, and $\Pr$ is this law for our agent. Under every $\Prl$, $M_t$ is our memory of $h_t$, computed with $f_1$ and $f$. We write $\Prl(h\mid m)$ for $\Prl(h_t=h\mid M_t=m)$.
 \end{definition}
 
 \begin{definition}[Return and values]\label{def:value}
@@ -67,7 +70,7 @@ where $(h,a,o)$ is the next history and $m$ is the memory value of $h$. So $Q^\p
 \begin{lemma}[Known: performance difference]\label{lem:pdl}
 Under Assumptions~\ref{as:env} to~\ref{as:pol}, for every agent $\lambda$,
 \[
-J(\lambda)-J(\pi)=\sum_{t=1}^{T-1}\gamma^{t-1}\sum_hP_\lambda(h_t=h)\Big[\sum_a\lambda(a\mid h)\,Q^\pi_t(h,a)-V^\pi_t(h)\Big].
+J(\lambda)-J(\pi)=\sum_{t=1}^{T-1}\gamma^{t-1}\sum_h\Prl (h_t=h)\Big[\sum_a\lambda(a\mid h)\,Q^\pi_t(h,a)-V^\pi_t(h)\Big].
 \]
 \end{lemma}
 
@@ -77,38 +80,38 @@ J(\lambda)-J(\pi)=\sum_{t=1}^{T-1}\gamma^{t-1}\sum_hP_\lambda(h_t=h)\Big[\sum_a\
 J(\lambda)-J(\pi)
 &=\E_\lambda[G_1]-\E_\lambda\big[V^\pi_1(h_1)\big] \why{$h_1=O_1$ has the same law under both agents; $J(\pi)=\E[V^\pi_1(h_1)]$}\\
 &=\E_\lambda\Big[\sum_{t=1}^{T-1}\gamma^{t-1}\big(R_{t+1}+\gamma V^\pi_{t+1}(h_{t+1})-V^\pi_t(h_t)\big)\Big] \why{$G_1=\sum_t\gamma^{t-1}R_{t+1}$; the $V^\pi$ terms sum to $-V^\pi_1(h_1)$, as $V^\pi_T=0$}\\
-&=\sum_{t=1}^{T-1}\gamma^{t-1}\sum_hP_\lambda(h_t=h)\sum_a\lambda(a\mid h)\big[Q^\pi_t(h,a)-V^\pi_t(h)\big] \why{given $h_t=h$, $A_t=a$: \eqref{eq:bellman}; $A_t\sim\lambda(\cdot\mid h)$}.
+&=\sum_{t=1}^{T-1}\gamma^{t-1}\sum_h\Prl (h_t=h)\sum_a\lambda(a\mid h)\big[Q^\pi_t(h,a)-V^\pi_t(h)\big] \why{given $h_t=h$, $A_t=a$: \eqref{eq:bellman}; $A_t\sim\lambda(\cdot\mid h)$}.
 \end{align*}
 \end{proof}
 
 \begin{definition}[Four averages at a memory value]\label{def:four}
-Fix a time $t$, a memory value $m$ and an agent $\lambda$. Over the histories $h$ with memory value $m$, weighted by $P_\lambda(h\mid m)$:
+Fix a time $t$, a memory value $m$ and an agent $\lambda$. Over the histories $h$ with memory value $m$, weighted by $\Prl(h\mid m)$:
 \begin{align}
-&\sum_hP_\lambda(h\mid m)\,\max_aQ^\pi_t(h,a) &&\text{every history takes its own best action,} \label{eq:own}\\
-&\max_a\sum_hP_\lambda(h\mid m)\,Q^\pi_t(h,a) &&\text{all histories take one action, the best on average,} \label{eq:one}\\
-&\sum_a\pi(a\mid m)\sum_hP_\lambda(h\mid m)\,Q^\pi_t(h,a) &&\text{all histories take the action of our policy,} \label{eq:pi}\\
-&\sum_hP_\lambda(h\mid m)\sum_a\lambda(a\mid h)\,Q^\pi_t(h,a) &&\text{every history takes the action of $\lambda$.} \label{eq:lam}
+&\sum_h\Prl (h\mid m)\,\max_aQ^\pi_t(h,a) &&\text{every history takes its own best action,} \label{eq:own}\\
+&\max_a\sum_h\Prl (h\mid m)\,Q^\pi_t(h,a) &&\text{all histories take one action, the best on average,} \label{eq:one}\\
+&\sum_a\pi(a\mid m)\sum_h\Prl (h\mid m)\,Q^\pi_t(h,a) &&\text{all histories take the action of our policy,} \label{eq:pi}\\
+&\sum_h\Prl (h\mid m)\sum_a\lambda(a\mid h)\,Q^\pi_t(h,a) &&\text{every history takes the action of $\lambda$.} \label{eq:lam}
 \end{align}
 \end{definition}
 
 \begin{proposition}[Layer 1]\label{prop:layer1}
 Under Assumptions~\ref{as:env} to~\ref{as:pol}, for every agent $\lambda$,
 \[
-J(\lambda)-J(\pi)=\sum_{t=1}^{T-1}\gamma^{t-1}\sum_mP_\lambda(M_t=m)\Big[\big(\eqref{eq:own}-\eqref{eq:one}\big)+\big(\eqref{eq:one}-\eqref{eq:pi}\big)-\big(\eqref{eq:own}-\eqref{eq:lam}\big)\Big],
+J(\lambda)-J(\pi)=\sum_{t=1}^{T-1}\gamma^{t-1}\sum_m\Prl (M_t=m)\Big[\big(\eqref{eq:own}-\eqref{eq:one}\big)+\big(\eqref{eq:one}-\eqref{eq:pi}\big)-\big(\eqref{eq:own}-\eqref{eq:lam}\big)\Big],
 \]
 and each of the three differences in round brackets is nonnegative. Hence
 \[
-J(\lambda)-J(\pi)\le\sum_{t=1}^{T-1}\gamma^{t-1}\sum_mP_\lambda(M_t=m)\Big[\big(\eqref{eq:own}-\eqref{eq:one}\big)+\big(\eqref{eq:one}-\eqref{eq:pi}\big)\Big].
+J(\lambda)-J(\pi)\le\sum_{t=1}^{T-1}\gamma^{t-1}\sum_m\Prl (M_t=m)\Big[\big(\eqref{eq:own}-\eqref{eq:one}\big)+\big(\eqref{eq:one}-\eqref{eq:pi}\big)\Big].
 \]
 \end{proposition}
 
 \begin{proof}
 Fix $t$. The inner sum of Lemma~\ref{lem:pdl} is
 \begin{align*}
-&\sum_hP_\lambda(h_t=h)\Big[\sum_a\lambda(a\mid h)\,Q^\pi_t(h,a)-V^\pi_t(h)\Big]\\
-&\quad=\sum_mP_\lambda(M_t=m)\sum_hP_\lambda(h\mid m)\Big[\sum_a\lambda(a\mid h)\,Q^\pi_t(h,a)-\sum_a\pi(a\mid m)\,Q^\pi_t(h,a)\Big] \why{$M_t$ is a function of $h_t$; Definition~\ref{def:value}}\\
-&\quad=\sum_mP_\lambda(M_t=m)\big[\eqref{eq:lam}-\eqref{eq:pi}\big] \why{Definition~\ref{def:four}}\\
-&\quad=\sum_mP_\lambda(M_t=m)\Big[\big(\eqref{eq:own}-\eqref{eq:one}\big)+\big(\eqref{eq:one}-\eqref{eq:pi}\big)-\big(\eqref{eq:own}-\eqref{eq:lam}\big)\Big] \why{add and subtract \eqref{eq:own} and \eqref{eq:one}}.
+&\sum_h\Prl (h_t=h)\Big[\sum_a\lambda(a\mid h)\,Q^\pi_t(h,a)-V^\pi_t(h)\Big]\\
+&\quad=\sum_m\Prl (M_t=m)\sum_h\Prl (h\mid m)\Big[\sum_a\lambda(a\mid h)\,Q^\pi_t(h,a)-\sum_a\pi(a\mid m)\,Q^\pi_t(h,a)\Big] \why{$M_t$ is a function of $h_t$; Definition~\ref{def:value}}\\
+&\quad=\sum_m\Prl (M_t=m)\big[\eqref{eq:lam}-\eqref{eq:pi}\big] \why{Definition~\ref{def:four}}\\
+&\quad=\sum_m\Prl (M_t=m)\Big[\big(\eqref{eq:own}-\eqref{eq:one}\big)+\big(\eqref{eq:one}-\eqref{eq:pi}\big)-\big(\eqref{eq:own}-\eqref{eq:lam}\big)\Big] \why{add and subtract \eqref{eq:own} and \eqref{eq:one}}.
 \end{align*}
 The three differences are nonnegative for the following reasons.
 \begin{itemize}
@@ -121,7 +124,7 @@ Dropping the third difference gives the inequality.
 
 \paragraph{Conclusion.} The difference in return is a sum over times and memory values of three differences. The first, $\eqref{eq:own}-\eqref{eq:one}$, is what is lost at $m$ because all the histories with memory value $m$ must take the same action; it is zero when these histories share a best action. The second is what our policy loses at $m$ against the best single action, and the third is what $\lambda$ loses against the best action at each history.
 
-\paragraph{The agent compared with.} The statement holds for every $\lambda$. In the next layers $\lambda$ is an agent with the largest $J$ among the agents that satisfy Assumptions~\ref{as:mem} and~\ref{as:pol} with as many memory values as ours. The weights $P_\lambda(M_t=m)$ and $P_\lambda(h\mid m)$ are then those of the histories that this agent visits, not of our own.
+\paragraph{The agent compared with.} The statement holds for every $\lambda$. In the next layers $\lambda$ is an agent with the largest $J$ among the agents that satisfy Assumptions~\ref{as:mem} and~\ref{as:pol} with as many memory values as ours. The weights $\Prl(M_t=m)$ and $\Prl(h\mid m)$ are then those of the histories that this agent visits, not of our own.
 
 \paragraph{Known.} Lemma~\ref{lem:pdl} is known. The grouping of its sum by our memory value into three differences was not found in a short search.
 
@@ -131,23 +134,23 @@ Dropping the third difference gives the inequality.
 
 \paragraph{Assumptions added.}
 \begin{assumption}[Own histories]\label{as:own}
-In this layer $\lambda$ is our own agent: the weights are $P(h\mid m)$ and $P(M_t=m)$.
+In this layer $\lambda$ is our own agent: the weights are $\Pr(h\mid m)$ and $\Pr(M_t=m)$.
 \end{assumption}
 \begin{assumption}[Every action is taken]\label{as:pos}
 $\pi(a\mid m)>0$ for every action $a$ and every memory value $m$ that occurs.
 \end{assumption}
-Logarithms are natural. Assumption~\ref{as:own} leaves open the weights $P_\lambda$ of Layer~1 for another agent $\lambda$.
+Logarithms are natural. Assumption~\ref{as:own} leaves open the weights $\Prl$ of Layer~1 for another agent $\lambda$.
 
 \begin{definition}[Memory values]\label{def:memvalue}
 For a memory value $m$ at time $t$, an action $a$ and an observation $o$,
 \begin{align*}
-Q^\pi_t(m,a)&=\sum_hP(h\mid m)\,Q^\pi_t(h,a),\\
-V^\pi_t(m)&=\sum_hP(h\mid m)\,V^\pi_t(h),\\
-P(o\mid m,a)&=\sum_hP(h\mid m)\,e(o\mid h,a).
+Q^\pi_t(m,a)&=\sum_h\Pr(h\mid m)\,Q^\pi_t(h,a),\\
+V^\pi_t(m)&=\sum_h\Pr(h\mid m)\,V^\pi_t(h),\\
+\Pr(o\mid m,a)&=\sum_h\Pr(h\mid m)\,e(o\mid h,a).
 \end{align*}
-By Assumption~\ref{as:pol}, given $M_t=m$ the action is independent of $h_t$, so $P(o\mid m,a)=P(O_{t+1}=o\mid M_t=m,A_t=a)$. With Assumption~\ref{as:own}, \eqref{eq:one} is $\max_aQ^\pi_t(m,a)$, \eqref{eq:pi} is $V^\pi_t(m)$, and the first difference of Proposition~\ref{prop:layer1} is
+By Assumption~\ref{as:pol}, given $M_t=m$ the action is independent of $h_t$, so $\Pr(o\mid m,a)=\Pr(O_{t+1}=o\mid M_t=m,A_t=a)$. With Assumption~\ref{as:own}, \eqref{eq:one} is $\max_aQ^\pi_t(m,a)$, \eqref{eq:pi} is $V^\pi_t(m)$, and the first difference of Proposition~\ref{prop:layer1} is
 \begin{equation}\label{eq:loss}
-\sum_hP(h\mid m)\,\max_aQ^\pi_t(h,a)-\max_aQ^\pi_t(m,a).
+\sum_h\Pr(h\mid m)\,\max_aQ^\pi_t(h,a)-\max_aQ^\pi_t(m,a).
 \end{equation}
 \end{definition}
 
@@ -156,8 +159,8 @@ Under Assumptions~\ref{as:env} to~\ref{as:pos}, for every time $t<T$, memory val
 \begin{align}
 Q^\pi_t(h,a)={}&\sum_oe(o\mid h,a)\big[r(o)+\gamma V^\pi_{t+1}(m')\big] \nonumber\\
 &+\gamma\sum_oe(o\mid h,a)\big[V^\pi_{t+1}(h,a,o)-V^\pi_{t+1}(m')\big], \label{eq:Qh}\\
-Q^\pi_t(m,a)={}&\sum_oP(o\mid m,a)\big[r(o)+\gamma V^\pi_{t+1}(m')\big] \nonumber\\
-&+\gamma\sum_hP(h\mid m)\sum_oe(o\mid h,a)\big[V^\pi_{t+1}(h,a,o)-V^\pi_{t+1}(m')\big]. \label{eq:Qm}
+Q^\pi_t(m,a)={}&\sum_o\Pr(o\mid m,a)\big[r(o)+\gamma V^\pi_{t+1}(m')\big] \nonumber\\
+&+\gamma\sum_h\Pr(h\mid m)\sum_oe(o\mid h,a)\big[V^\pi_{t+1}(h,a,o)-V^\pi_{t+1}(m')\big]. \label{eq:Qm}
 \end{align}
 \end{lemma}
 
@@ -166,22 +169,22 @@ By Assumption~\ref{as:pos} the memory value $m'$ occurs, so $V^\pi_{t+1}(m')$ is
 \begin{align*}
 Q^\pi_t(h,a)&=\sum_oe(o\mid h,a)\big[r(o)+\gamma V^\pi_{t+1}(h,a,o)\big] \why{by \eqref{eq:bellman}}\\
 &=\text{right side of \eqref{eq:Qh}} \why{add and subtract $\gamma V^\pi_{t+1}(m')$ in the bracket}\\
-Q^\pi_t(m,a)&=\sum_hP(h\mid m)\,Q^\pi_t(h,a) \why{Definition~\ref{def:memvalue}}\\
-&=\sum_hP(h\mid m)\,\big[\text{right side of \eqref{eq:Qh}}\big] \why{by \eqref{eq:Qh}}\\
+Q^\pi_t(m,a)&=\sum_h\Pr(h\mid m)\,Q^\pi_t(h,a) \why{Definition~\ref{def:memvalue}}\\
+&=\sum_h\Pr(h\mid m)\,\big[\text{right side of \eqref{eq:Qh}}\big] \why{by \eqref{eq:Qh}}\\
 &=\text{right side of \eqref{eq:Qm}} \why{$r(o)$ and $m'$ do not depend on $h$; Definition~\ref{def:memvalue}}.
 \end{align*}
 \end{proof}
 
 Both values have the same two parts. The first averages $r(o)+\gamma V^\pi_{t+1}(m')$, the reward plus the value of the next memory, and the two lines differ in it only by the prediction of the next observation. The second is $\gamma$ times the error of $V^\pi_{t+1}$ at the next time. The difference of the first parts is
 \begin{equation}\label{eq:now}
-\sum_o\big[e(o\mid h,a)-P(o\mid m,a)\big]\big[r(o)+\gamma V^\pi_{t+1}(m')\big].
+\sum_o\big[e(o\mid h,a)-\Pr(o\mid m,a)\big]\big[r(o)+\gamma V^\pi_{t+1}(m')\big].
 \end{equation}
 
 \begin{definition}[State defect at a memory value and an action]\label{def:D}
 \[
-D_t(m,a)=\sum_hP(h\mid m)\,\KL\big(e(\cdot\mid h,a)\,\big\|\,P(\cdot\mid m,a)\big).
+D_t(m,a)=\sum_h\Pr(h\mid m)\,\KL\big(e(\cdot\mid h,a)\,\big\|\,\Pr(\cdot\mid m,a)\big).
 \]
-Given $M_t=m$ and $A_t=a$, the joint law of $h_t$ and $O_{t+1}$ is $P(h\mid m)\,e(o\mid h,a)$ and the law of $O_{t+1}$ is $P(o\mid m,a)$, so $D_t(m,a)=I(h_t;O_{t+1}\mid M_t=m,A_t=a)$, and its average over $(M_t,A_t)$ is the state defect $D_t=I(h_t;O_{t+1}\mid M_t,A_t)$.
+Given $M_t=m$ and $A_t=a$, the joint law of $h_t$ and $O_{t+1}$ is $\Pr(h\mid m)\,e(o\mid h,a)$ and the law of $O_{t+1}$ is $\Pr(o\mid m,a)$, so $D_t(m,a)=I(h_t;O_{t+1}\mid M_t=m,A_t=a)$, and its average over $(M_t,A_t)$ is the state defect $D_t=I(h_t;O_{t+1}\mid M_t,A_t)$.
 \end{definition}
 
 \begin{lemma}[Known]\label{lem:tool}
@@ -194,18 +197,18 @@ Let $p$ and $q$ be distributions on a finite set with $p(x)=0$ wherever $q(x)=0$
 \end{lemma}
 
 \begin{proposition}[The difference made at time $t$]\label{prop:now}
-Under Assumptions~\ref{as:env} to~\ref{as:pos}, for every $t<T$, $m$ and $a$, with the maximum and the minimum over the observations $o$ with $P(o\mid m,a)>0$,
+Under Assumptions~\ref{as:env} to~\ref{as:pos}, for every $t<T$, $m$ and $a$, with the maximum and the minimum over the observations $o$ with $\Pr(o\mid m,a)>0$,
 \begin{align*}
-&\sqrt{\sum_hP(h\mid m)\Big(\sum_o\big[e(o\mid h,a)-P(o\mid m,a)\big]\big[r(o)+\gamma V^\pi_{t+1}(m')\big]\Big)^2}\\
+&\sqrt{\sum_h\Pr(h\mid m)\Big(\sum_o\big[e(o\mid h,a)-\Pr(o\mid m,a)\big]\big[r(o)+\gamma V^\pi_{t+1}(m')\big]\Big)^2}\\
 &\qquad\le\Big[\max_o\big(r(o)+\gamma V^\pi_{t+1}(m')\big)-\min_o\big(r(o)+\gamma V^\pi_{t+1}(m')\big)\Big]\sqrt{\tfrac12\,D_t(m,a)}.
 \end{align*}
 \end{proposition}
 
 \begin{proof}
-In this proof only, $w$ is the square bracket on the right. For every $h$ with $P(h\mid m)>0$,
+In this proof only, $w$ is the square bracket on the right. For every $h$ with $\Pr(h\mid m)>0$,
 \begin{align*}
-\big|\eqref{eq:now}\big|&\le w\,\sqrt{\tfrac12\,\KL\big(e(\cdot\mid h,a)\,\big\|\,P(\cdot\mid m,a)\big)} \why{Lemma~\ref{lem:tool}, $p=e(\cdot\mid h,a)$, $q=P(\cdot\mid m,a)$}\\
-\sum_hP(h\mid m)\,\eqref{eq:now}^2&\le w^2\cdot\tfrac12\sum_hP(h\mid m)\,\KL\big(e(\cdot\mid h,a)\,\big\|\,P(\cdot\mid m,a)\big) \why{square, average over $h$}\\
+\big|\eqref{eq:now}\big|&\le w\,\sqrt{\tfrac12\,\KL\big(e(\cdot\mid h,a)\,\big\|\,\Pr(\cdot\mid m,a)\big)} \why{Lemma~\ref{lem:tool}, $p=e(\cdot\mid h,a)$, $q=\Pr(\cdot\mid m,a)$}\\
+\sum_h\Pr(h\mid m)\,\eqref{eq:now}^2&\le w^2\cdot\tfrac12\sum_h\Pr(h\mid m)\,\KL\big(e(\cdot\mid h,a)\,\big\|\,\Pr(\cdot\mid m,a)\big) \why{square, average over $h$}\\
 &=w^2\cdot\tfrac12\,D_t(m,a) \why{Definition~\ref{def:D}}.
 \end{align*}
 \end{proof}
@@ -213,18 +216,18 @@ In this proof only, $w$ is the square bracket on the right. For every $h$ with $
 \begin{proposition}[Evaluation error over the later times]\label{prop:eval}
 Under Assumptions~\ref{as:env} to~\ref{as:pos}, for every $t<T$, with $m$ the memory value of $h$ and $m'=f(m,a,o)$,
 \begin{align*}
-&\sqrt{\sum_{h,a}P(h_t=h,A_t=a)\big[Q^\pi_t(h,a)-Q^\pi_t(m,a)\big]^2}\\
-&\le\sum_{n=t}^{T-1}\gamma^{n-t}\sqrt{\sum_{h,a}P(h_n=h,A_n=a)\Big(\sum_o\big[e(o\mid h,a)-P(o\mid m,a)\big]\big[r(o)+\gamma V^\pi_{n+1}(m')\big]\Big)^2}.
+&\sqrt{\sum_{h,a}\Pr(h_t=h,A_t=a)\big[Q^\pi_t(h,a)-Q^\pi_t(m,a)\big]^2}\\
+&\le\sum_{n=t}^{T-1}\gamma^{n-t}\sqrt{\sum_{h,a}\Pr(h_n=h,A_n=a)\Big(\sum_o\big[e(o\mid h,a)-\Pr(o\mid m,a)\big]\big[r(o)+\gamma V^\pi_{n+1}(m')\big]\Big)^2}.
 \end{align*}
 \end{proposition}
 
 \begin{proof}
-In this proof only, $\epsilon_n$ is the left side at time $n$, with $\epsilon_T=0$, $b_n$ is the root of index $n$ on the right, $u(h,a)=\sum_oe(o\mid h,a)\big[V^\pi_{n+1}(h,a,o)-V^\pi_{n+1}(m')\big]$, and $\bar u(m,a)$ is the average of $u(h,a)$ over the histories $h$ with memory value $m$, weighted by $P(h\mid m)$. By \eqref{eq:Qh} and \eqref{eq:Qm}, $Q^\pi_n(h,a)-Q^\pi_n(m,a)$ is \eqref{eq:now} at time $n$ plus $\gamma\big[u(h,a)-\bar u(m,a)\big]$. Hence
+In this proof only, $\epsilon_n$ is the left side at time $n$, with $\epsilon_T=0$, $b_n$ is the root of index $n$ on the right, $u(h,a)=\sum_oe(o\mid h,a)\big[V^\pi_{n+1}(h,a,o)-V^\pi_{n+1}(m')\big]$, and $\bar u(m,a)$ is the average of $u(h,a)$ over the histories $h$ with memory value $m$, weighted by $\Pr(h\mid m)$. By \eqref{eq:Qh} and \eqref{eq:Qm}, $Q^\pi_n(h,a)-Q^\pi_n(m,a)$ is \eqref{eq:now} at time $n$ plus $\gamma\big[u(h,a)-\bar u(m,a)\big]$. Hence
 \begin{align*}
-\epsilon_n&\le b_n+\gamma\sqrt{\sum_{h,a}P(h_n=h,A_n=a)\big[u(h,a)-\bar u(m,a)\big]^2} \why{Minkowski's inequality}\\
-&\le b_n+\gamma\sqrt{\sum_{h,a}P(h_n=h,A_n=a)\,u(h,a)^2} \why{subtracting the average over $h$ given $(m,a)$ does not increase the average square}\\
-&\le b_n+\gamma\sqrt{\sum_{h,a}P(h_n=h,A_n=a)\sum_oe(o\mid h,a)\big[V^\pi_{n+1}(h,a,o)-V^\pi_{n+1}(m')\big]^2} \why{Jensen's inequality}\\
-&=b_n+\gamma\sqrt{\sum_{h'}P(h_{n+1}=h')\big[V^\pi_{n+1}(h')-V^\pi_{n+1}(m')\big]^2} \why{$h'=(h,a,o)$ has probability $P(h_n=h,A_n=a)\,e(o\mid h,a)$}\\
+\epsilon_n&\le b_n+\gamma\sqrt{\sum_{h,a}\Pr(h_n=h,A_n=a)\big[u(h,a)-\bar u(m,a)\big]^2} \why{Minkowski's inequality}\\
+&\le b_n+\gamma\sqrt{\sum_{h,a}\Pr(h_n=h,A_n=a)\,u(h,a)^2} \why{subtracting the average over $h$ given $(m,a)$ does not increase the average square}\\
+&\le b_n+\gamma\sqrt{\sum_{h,a}\Pr(h_n=h,A_n=a)\sum_oe(o\mid h,a)\big[V^\pi_{n+1}(h,a,o)-V^\pi_{n+1}(m')\big]^2} \why{Jensen's inequality}\\
+&=b_n+\gamma\sqrt{\sum_{h'}\Pr(h_{n+1}=h')\big[V^\pi_{n+1}(h')-V^\pi_{n+1}(m')\big]^2} \why{$h'=(h,a,o)$ has probability $\Pr(h_n=h,A_n=a)\,e(o\mid h,a)$}\\
 &\le b_n+\gamma\,\epsilon_{n+1} \why{$V^\pi_{n+1}(h')-V^\pi_{n+1}(m')=\sum_{a'}\pi(a'\mid m')\big[Q^\pi_{n+1}(h',a')-Q^\pi_{n+1}(m',a')\big]$; Jensen}.
 \end{align*}
 Apply this for $n=t,\dots,T-1$ and use $\epsilon_T=0$.
@@ -235,30 +238,30 @@ Under Assumptions~\ref{as:env} to~\ref{as:pos}, for every $t<T$ and $m$, let $a^
 
 (a) The loss \eqref{eq:loss} satisfies
 \[
-\eqref{eq:loss}\;\le\;\frac12\sum_{a\ne a^*}\sum_hP(h\mid m)\,\Big|\big[Q^\pi_t(h,a)-Q^\pi_t(h,a^*)\big]-\big[Q^\pi_t(m,a)-Q^\pi_t(m,a^*)\big]\Big|.
+\eqref{eq:loss}\;\le\;\frac12\sum_{a\ne a^*}\sum_h\Pr(h\mid m)\,\Big|\big[Q^\pi_t(h,a)-Q^\pi_t(h,a^*)\big]-\big[Q^\pi_t(m,a)-Q^\pi_t(m,a^*)\big]\Big|.
 \]
 
 (b) For every $a\ne a^*$, with $m'=f(m,b,o)$,
 \begin{align*}
-&\sum_hP(h\mid m)\,\Big|\big[Q^\pi_t(h,a)-Q^\pi_t(h,a^*)\big]-\big[Q^\pi_t(m,a)-Q^\pi_t(m,a^*)\big]\Big|\\
-&\qquad\le\sum_{b\in\{a,a^*\}}\Bigg[\sqrt{\sum_hP(h\mid m)\Big(\sum_o\big[e(o\mid h,b)-P(o\mid m,b)\big]\big[r(o)+\gamma V^\pi_{t+1}(m')\big]\Big)^2}\\
-&\qquad\qquad\qquad+\gamma\sqrt{\sum_hP(h\mid m)\sum_oe(o\mid h,b)\big[V^\pi_{t+1}(h,b,o)-V^\pi_{t+1}(m')\big]^2}\;\Bigg].
+&\sum_h\Pr(h\mid m)\,\Big|\big[Q^\pi_t(h,a)-Q^\pi_t(h,a^*)\big]-\big[Q^\pi_t(m,a)-Q^\pi_t(m,a^*)\big]\Big|\\
+&\qquad\le\sum_{b\in\{a,a^*\}}\Bigg[\sqrt{\sum_h\Pr(h\mid m)\Big(\sum_o\big[e(o\mid h,b)-\Pr(o\mid m,b)\big]\big[r(o)+\gamma V^\pi_{t+1}(m')\big]\Big)^2}\\
+&\qquad\qquad\qquad+\gamma\sqrt{\sum_h\Pr(h\mid m)\sum_oe(o\mid h,b)\big[V^\pi_{t+1}(h,b,o)-V^\pi_{t+1}(m')\big]^2}\;\Bigg].
 \end{align*}
 \end{proposition}
 
 \begin{proof}
 (a)
 \begin{align*}
-\eqref{eq:loss}&=\sum_hP(h\mid m)\big[\max_aQ^\pi_t(h,a)-Q^\pi_t(h,a^*)\big] \why{$\max_aQ^\pi_t(m,a)=Q^\pi_t(m,a^*)=\sum_hP(h\mid m)\,Q^\pi_t(h,a^*)$}\\
-&\le\sum_{a\ne a^*}\sum_hP(h\mid m)\,\max\big\{Q^\pi_t(h,a)-Q^\pi_t(h,a^*),\,0\big\} \why{the maximum over $a$ includes $a^*$, which gives $0$}\\
-&\le\sum_{a\ne a^*}\frac12\sum_hP(h\mid m)\,\Big|\big[Q^\pi_t(h,a)-Q^\pi_t(h,a^*)\big]-\big[Q^\pi_t(m,a)-Q^\pi_t(m,a^*)\big]\Big| \why{see below}.
+\eqref{eq:loss}&=\sum_h\Pr(h\mid m)\big[\max_aQ^\pi_t(h,a)-Q^\pi_t(h,a^*)\big] \why{$\max_aQ^\pi_t(m,a)=Q^\pi_t(m,a^*)=\sum_h\Pr(h\mid m)\,Q^\pi_t(h,a^*)$}\\
+&\le\sum_{a\ne a^*}\sum_h\Pr(h\mid m)\,\max\big\{Q^\pi_t(h,a)-Q^\pi_t(h,a^*),\,0\big\} \why{the maximum over $a$ includes $a^*$, which gives $0$}\\
+&\le\sum_{a\ne a^*}\frac12\sum_h\Pr(h\mid m)\,\Big|\big[Q^\pi_t(h,a)-Q^\pi_t(h,a^*)\big]-\big[Q^\pi_t(m,a)-Q^\pi_t(m,a^*)\big]\Big| \why{see below}.
 \end{align*}
 For the last line, let $x(h)=Q^\pi_t(h,a)-Q^\pi_t(h,a^*)$ in this proof only. Its average over $h$ is $\bar x=Q^\pi_t(m,a)-Q^\pi_t(m,a^*)\le0$, so $\max\{x(h),0\}\le\max\{x(h)-\bar x,0\}$. Since $x(h)-\bar x$ has average zero, the average of its positive part is half the average of $|x(h)-\bar x|$.
 
 (b) In this proof only, $x_b(h)=Q^\pi_t(h,b)-Q^\pi_t(m,b)$. The left side is the average of $|x_a(h)-x_{a^*}(h)|$.
 \begin{align*}
-\sum_hP(h\mid m)\,\big|x_a(h)-x_{a^*}(h)\big|&\le\sum_{b\in\{a,a^*\}}\sum_hP(h\mid m)\,|x_b(h)| \why{triangle inequality}\\
-&\le\sum_{b\in\{a,a^*\}}\sqrt{\sum_hP(h\mid m)\,x_b(h)^2} \why{Jensen's inequality}.
+\sum_h\Pr(h\mid m)\,\big|x_a(h)-x_{a^*}(h)\big|&\le\sum_{b\in\{a,a^*\}}\sum_h\Pr(h\mid m)\,|x_b(h)| \why{triangle inequality}\\
+&\le\sum_{b\in\{a,a^*\}}\sqrt{\sum_h\Pr(h\mid m)\,x_b(h)^2} \why{Jensen's inequality}.
 \end{align*}
 By \eqref{eq:Qh} and \eqref{eq:Qm}, $x_b(h)$ is \eqref{eq:now} for the action $b$ plus $\gamma$ times the difference of the second parts. Minkowski's inequality and the second and third lines of the proof of Proposition~\ref{prop:eval}, for the pair $(m,b)$ alone, give the two roots of the statement.
 \end{proof}
@@ -267,7 +270,78 @@ By \eqref{eq:Qh} and \eqref{eq:Qm}, $x_b(h)$ is \eqref{eq:now} for the action $b
 
 \paragraph{Known.} Lemma~\ref{lem:tool} is known. A bound of the form of Proposition~\ref{prop:eval} with worst-case errors is known for approximate information states \citep{subramanian2022approximate}.
 
-\paragraph{Next.} Layer~3 splits $D_t$ at the action $A_t$ and at the action $A_{t+1}$.
+\section{Layer 3: the two splits of the state defect}\label{sec:layer3}
+
+\paragraph{Question.} $D_t(m,a)$ is all that the history knows about the next observation and the memory does not. How does it divide when the action before the observation, $A_t$, or the action after it, $A_{t+1}$, is taken into account?
+
+\paragraph{Assumptions added.} None. As in Layer~2, all laws are those of our own agent, and $t\le T-2$, so that the action $A_{t+1}$ exists.
+
+\paragraph{Tools.} Two standard facts \citep[Ch.~2]{cover2006elements}, for random variables $X,Y,W,Z$.
+\begin{enumerate}
+\item[(T1)] Chain rule, in its two orders: $I(X;Y,W\mid Z)=I(X;Y\mid Z)+I(X;W\mid Z,Y)=I(X;W\mid Z)+I(X;Y\mid Z,W)$.
+\item[(T2)] $I(X;Y\mid Z)\ge0$, and $I(X;Y\mid Z)=0$ when $X$ and $Y$ are independent given $Z$.
+\end{enumerate}
+A variable in the condition with a value, as in $M_t=m$, is fixed; a variable without a value, as in $A_t$, is averaged over its values given the fixed ones. For example $I(h_t;O_{t+1}\mid M_t=m,A_t)=\sum_a\pi(a\mid m)\,D_t(m,a)$, by Definition~\ref{def:D}.
+
+\begin{definition}[The four terms at a memory value]\label{def:four-terms}
+For a memory value $m$ at time $t$ and an action $a$,
+\begin{align*}
+D^0_t(m)&=I(h_t;O_{t+1}\mid M_t=m),\\
+\dE_t(m)&=I(h_t;A_t\mid M_t=m,O_{t+1}),\\
+\dP_t(m,a)&=I(h_t;A_{t+1}\mid M_t=m,A_t=a),\\
+D^+_t(m,a)&=I(h_t;O_{t+1}\mid M_t=m,A_t=a,A_{t+1}).
+\end{align*}
+\end{definition}
+
+\begin{proposition}[Split at $A_t$]\label{prop:split1}
+Under Assumptions~\ref{as:env} to~\ref{as:pol}, for every memory value $m$ at time $t$,
+\[
+\sum_a\pi(a\mid m)\,D_t(m,a)=D^0_t(m)+\dE_t(m).
+\]
+\end{proposition}
+
+\begin{proof}
+Apply (T1) to $I(h_t;A_t,O_{t+1}\mid M_t=m)$ in its two orders. With $A_t$ first,
+\begin{align*}
+I(h_t;A_t,O_{t+1}\mid M_t=m)&=I(h_t;A_t\mid M_t=m)+I(h_t;O_{t+1}\mid M_t=m,A_t) \why{T1}\\
+&=0+\sum_a\pi(a\mid m)\,D_t(m,a) \why{Assumption~\ref{as:pol} and T2; Definition~\ref{def:D}}.
+\end{align*}
+With $O_{t+1}$ first,
+\begin{align*}
+I(h_t;A_t,O_{t+1}\mid M_t=m)&=I(h_t;O_{t+1}\mid M_t=m)+I(h_t;A_t\mid M_t=m,O_{t+1}) \why{T1}\\
+&=D^0_t(m)+\dE_t(m) \why{Definition~\ref{def:four-terms}}.
+\end{align*}
+The two right sides are equal.
+\end{proof}
+
+\begin{proposition}[Split at $A_{t+1}$]\label{prop:split2}
+Under Assumptions~\ref{as:env} to~\ref{as:pol}, for every memory value $m$ at time $t$ and every action $a$,
+\[
+D_t(m,a)=\dP_t(m,a)+D^+_t(m,a).
+\]
+\end{proposition}
+
+\begin{proof}
+Apply (T1) to $I(h_t;O_{t+1},A_{t+1}\mid M_t=m,A_t=a)$ in its two orders. With $O_{t+1}$ first,
+\begin{align*}
+&I(h_t;O_{t+1},A_{t+1}\mid M_t=m,A_t=a)\\
+&\quad=I(h_t;O_{t+1}\mid M_t=m,A_t=a)+I(h_t;A_{t+1}\mid M_t=m,A_t=a,O_{t+1}) \why{T1}\\
+&\quad=D_t(m,a)+0 \why{Definition~\ref{def:D}; see below}.
+\end{align*}
+The second term is zero by (T2): given $M_t=m$, $A_t=a$ and $O_{t+1}=o$, the next memory value is $f(m,a,o)$ by Assumption~\ref{as:mem}, and by Assumption~\ref{as:pol} the law of $A_{t+1}$ given the history $h_{t+1}=(h_t,a,o)$ is $\pi(\cdot\mid f(m,a,o))$, the same for every $h_t$ with memory value $m$. With $A_{t+1}$ first,
+\begin{align*}
+&I(h_t;O_{t+1},A_{t+1}\mid M_t=m,A_t=a)\\
+&\quad=I(h_t;A_{t+1}\mid M_t=m,A_t=a)+I(h_t;O_{t+1}\mid M_t=m,A_t=a,A_{t+1}) \why{T1}\\
+&\quad=\dP_t(m,a)+D^+_t(m,a) \why{Definition~\ref{def:four-terms}}.
+\end{align*}
+The two right sides are equal.
+\end{proof}
+
+\paragraph{Conclusion.} The split at $A_t$ holds for the average of $D_t(m,a)$ over the action, with the weights $\pi(a\mid m)$, because $D^0_t(m)$ is not conditioned on the action. The split at $A_{t+1}$ holds at every action $a$. By (T2) the four terms are nonnegative, so $D^0_t(m)$ and $\dE_t(m)$ are at most $\sum_a\pi(a\mid m)D_t(m,a)$, and $\dP_t(m,a)$ and $D^+_t(m,a)$ are at most $D_t(m,a)$. Averaged over $M_t$, and for the second split also over $A_t$, the two identities are $D_t=D^0_t+\dE_t=\dP_t+D^+_t$.
+
+\paragraph{Known.} Both identities are the chain rule (T1) with Assumptions~\ref{as:mem} and~\ref{as:pol}.
+
+\paragraph{Next.} Layer~4 relates each split to the differences of Layer~2.
 
 \begin{thebibliography}{3}
 \bibitem[Cover and Thomas(2006)]{cover2006elements}
