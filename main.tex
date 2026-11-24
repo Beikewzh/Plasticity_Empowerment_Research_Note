@@ -76,9 +76,9 @@ acts with another policy afterwards (Section~\ref{sec:layer6}) & the values of t
 \end{tabular}
 \end{center}
 
-\paragraph{For an algorithm} (Sections~\ref{sec:round} and~\ref{sec:algo}). A round has three steps. The memory is trained so that the critic is right, which concerns $D^0_n$ and $\dE_n$. The policy takes a small step, whose gain has an explicit lower bound. The memory is then made finer where the new values make it worth distinguishing between actions, which concerns $\dP_t$ and $D^+_t$. Example~2 is worked through this way. The statements do not say that the rounds converge, and they do not cover a memory of fixed size that must give up one distinction to keep another.
+\paragraph{For an algorithm} (Sections~\ref{sec:round} and~\ref{sec:algo}). A round has three steps. The memory is trained so that the critic is right, which concerns $D^0_n$ and $\dE_n$. The policy takes a small step, whose gain has an explicit lower bound. The memory is then made finer where the new values make it worth distinguishing between actions, which concerns $\dP_t$ and $D^+_t$. Example~2 is worked through this way. The environment may depend on the whole history, so a world that changes over time is covered. The statements do not say that the rounds converge; for a memory that is replaced and not made finer they give only the change of the averaged state defect (Proposition~\ref{prop:replace}); and all averages are exact.
 
-\paragraph{Limits.} Layer~1 compares with another agent and weights the histories as that other agent visits them; Layers~2 to~8 weight them as our own agent visits them, and the note does not connect the two. The bounds are not tight. In the bounds for the difference between two actions and for the correction of a policy step, separating $D^0_t$ from $\dE_t$ gains nothing over their sum; separating $\dP_t$ from $D^+_t$ can. For the error of the state value they get different factors. The only change of the memory that is covered is a refinement.
+\paragraph{Limits.} Layer~1 compares with another agent and weights the histories as that other agent visits them; Layers~2 to~8 weight them as our own agent visits them, and the note does not connect the two. The bounds are not tight. In the bounds for the difference between two actions and for the correction of a policy step, separating $D^0_t$ from $\dE_t$ gains nothing over their sum; separating $\dP_t$ from $D^+_t$ can. For the error of the state value they get different factors. For the return and the computed improvement, the only change of the memory that is covered is a refinement.
 
 \paragraph{How the sections depend on each other.} Section~$k$ is Layer~$k$, and Section~\ref{sec:setting} is the setting. Sections~\ref{sec:setting} to~\ref{sec:layer4} are for a fixed agent, each using the ones before. Sections~\ref{sec:eval}, \ref{sec:layer5} and~\ref{sec:layer6} are for a learner. Each uses Lemma~\ref{lem:onestep} and the bounds of Sections~\ref{sec:layer2} and~\ref{sec:layer4}, and Section~\ref{sec:layer5} also uses Lemma~\ref{lem:pdl}; they do not use each other, except that Section~\ref{sec:layer5} writes one expression of Section~\ref{sec:eval}. Section~\ref{sec:round} uses Sections~\ref{sec:layer4}, \ref{sec:eval} and~\ref{sec:layer5}. Section~\ref{sec:algo} collects them.
 
@@ -1075,11 +1075,25 @@ The square bracket on the right is the loss \eqref{eq:loss} with the second memo
 $Q^\pi_t(m,a)=\sum_{\tilde m}\Pr(\tilde m\mid m)\,\tilde Q^\pi_t(\tilde m,a)$ and $\sum_{\tilde m}\Pr(\tilde M_t=\tilde m)\,\tilde V^\pi_t(\tilde m)=\sum_m\Pr(M_t=m)\,V^\pi_t(m)$, since both memories average the same $Q^\pi_t(h,a)$ and $V^\pi_t(h)$ (Proposition~\ref{prop:fineterms}(a)). This gives the equality, and the maximum of an average is at most the average of the maxima. (a) is the proof of Proposition~\ref{prop:choose}(a) with $\tilde m$ in place of $h$ and the weights $\Pr(\tilde m\mid m)$. (b) Average Lemma~\ref{lem:onestep} over the histories with the value $\tilde m$ of the second memory, with $\Pr(o\mid\tilde m,a)=\sum_h\Pr(h\mid\tilde m)\,e(o\mid h,a)$; then apply Lemma~\ref{lem:tool} to $\Pr(\cdot\mid\tilde m,a)$ and $\Pr(\cdot\mid m,a)$, square and average over $\tilde m$.
 \end{proof}
 
+\begin{proposition}[Replacing a memory]\label{prop:replace}
+Let $\tilde M_t$ be any second memory of the history, with its own maps as in Assumption~\ref{as:mem}; it need not determine $M_t$. Under Assumptions~\ref{as:env} to~\ref{as:pol}, with all laws those of the agent whose policy reads $M_t$,
+\[
+I(h_t;O_{t+1}\mid\tilde M_t,A_t)-I(h_t;O_{t+1}\mid M_t,A_t)=I(M_t;O_{t+1}\mid\tilde M_t,A_t)-I(\tilde M_t;O_{t+1}\mid M_t,A_t).
+\]
+The second term on the left is the average of $D_t(m,a)$ over the memory values and the actions. The same identity holds without $A_t$.
+\end{proposition}
+
+\begin{proof}
+The pair $(M_t,\tilde M_t)$ is a function of $h_t$, so by (T1) $I(h_t;O_{t+1}\mid\tilde M_t,A_t)=I(M_t;O_{t+1}\mid\tilde M_t,A_t)+I(h_t;O_{t+1}\mid M_t,\tilde M_t,A_t)$, and the same with the two memories exchanged. Subtract.
+\end{proof}
+
+So when one memory replaces another of the same size, the averaged state defect changes by what only the old memory knew about the next observation minus what only the new one knows. No separate decision about what to give up is needed: a memory of fixed size that is trained on a loss gives up what the loss counts least. What is given up is judged with the current values, so it may have to be learned again after a later policy step, as $c$ in Example~2.
+
 \paragraph{In Example 2.} After the policy step of Section~\ref{sec:layer5}, the agent takes $A_2=d$ when $d$ is shown and its return is $\tfrac34$. On the first memory, both actions at time $1$ have the memory value $\tfrac34$, so the improvement that the agent computes there is $0$. Let the second memory keep $c$. The policy is unchanged, so the return is still $\tfrac34$. Now $\tilde Q^\pi_1(c,a)$ is $1$ if $a=c$ and $\tfrac12$ otherwise, and the computed improvement at time $1$ is $1-\tfrac34=\tfrac14$, which is the loss \eqref{eq:loss}. The state defect $D_1(m,a)=\ln2$ is all in the first term of Proposition~\ref{prop:fineterms}(b), and $\tilde D_1=0$. A policy step at time $1$ on the second memory then gives the return $1$. With the uniform policy at time $2$, the same finer memory raises the computed improvement by $0$: keeping $c$ pays only after the policy step at time $2$.
 
 \paragraph{Conclusion.} A policy step raises the return by the improvement computed from the critic, minus the error of the critic, minus a term of second order in the step. The error of the critic is an error of the state value at later times and goes with $D^0_n$ and $\dE_n$. The term of second order grows with the disagreement of the histories inside a memory value about the actions that the step changes, which goes with $\dP_t$ and $D^+_t$ of these actions. A finer memory with the policy unchanged does not change the return. It lowers every term by the same term with the finer memory in the role of the history, and it raises the improvement that the next policy step can compute by the loss \eqref{eq:loss} with the finer memory in that role. So a round is: make the critic right on the memory (the split at $A_t$), step the policy, then add to the memory what the new values make worth distinguishing between actions (the split at $A_{t+1}$).
 
-\paragraph{Known.} Proposition~\ref{prop:round} follows the argument of conservative policy iteration \citep{kakade2002cpi}, with the histories as states; there the second-order term is bounded with the largest advantage, and here with a variance that separates what varies across memory values from what varies inside them. Propositions~\ref{prop:fineterms} and~\ref{prop:finegain} are the chain rule and the tower property; we did not search the literature for these forms.
+\paragraph{Known.} Proposition~\ref{prop:round} follows the argument of conservative policy iteration \citep{kakade2002cpi}, with the histories as states; there the second-order term is bounded with the largest advantage, and here with a variance that separates what varies across memory values from what varies inside them. Propositions~\ref{prop:fineterms}, \ref{prop:finegain} and~\ref{prop:replace} are the chain rule and the tower property; we did not search the literature for these forms.
 
 \section{From the theory to an algorithm}\label{sec:algo}
 
@@ -1140,8 +1154,9 @@ The statements do not say that the loop converges, or that this order is better 
 \begin{itemize}
 \item Which term to lower first when a memory of fixed size cannot lower all of them. The factors are a candidate for the weights, but the bounds are not tight.
 \item Whether the loop converges, and what the error of estimating the averages from samples does to Layer~8.
-\item A change of the memory that is not a refinement. A memory of fixed size has to give up one distinction to keep another, and Proposition~\ref{prop:fineterms} covers only the case in which nothing is given up.
-\item An environment that changes. Every statement is for a fixed $e$.
+\item What a replacement of the memory that is not a refinement does to the return and to the improvement that the agent computes, once the policy reads the new memory. Proposition~\ref{prop:replace} gives only the change of the averaged state defect.
+\item Whether adding one distinction at a time can stall, when two distinctions are worth something only together.
+\item One life without restarts. The environment may depend on the whole history (Assumption~\ref{as:env}), so a world that changes with time or with what the agent did is covered; but every average here is over the law of the histories, and an agent with a single stream of experience has to estimate it.
 \item Layer~1 for another agent $\lambda$ uses the weights of the histories that $\lambda$ visits; Layers~2 to~7 use our own (Assumption~\ref{as:own}).
 \item Whether the best agent with a memory of the same size ever stops changing its policy.
 \end{itemize}
