@@ -110,11 +110,11 @@ Fix $t$. The inner sum of Lemma~\ref{lem:pdl} is
 &\quad=\sum_mP_\lambda(M_t=m)\Big[\big(\eqref{eq:own}-\eqref{eq:one}\big)+\big(\eqref{eq:one}-\eqref{eq:pi}\big)-\big(\eqref{eq:own}-\eqref{eq:lam}\big)\Big] \why{add and subtract \eqref{eq:own} and \eqref{eq:one}}.
 \end{align*}
 The three differences are nonnegative for the following reasons.
-\begin{align*}
-\eqref{eq:own}-\eqref{eq:one}&\ge0 &&\text{for every $a$ and $h$, $\max_bQ^\pi_t(h,b)\ge Q^\pi_t(h,a)$; average over $h$, then take the best $a$;}\\
-\eqref{eq:one}-\eqref{eq:pi}&\ge0 &&\text{a maximum over $a$ is at least the average over $a$ with weights $\pi(a\mid m)$;}\\
-\eqref{eq:own}-\eqref{eq:lam}&\ge0 &&\text{at each $h$, a maximum over $a$ is at least the average with weights $\lambda(a\mid h)$.}
-\end{align*}
+\begin{itemize}
+\item $\eqref{eq:own}-\eqref{eq:one}\ge0$: for every $a$ and $h$, $\max_bQ^\pi_t(h,b)\ge Q^\pi_t(h,a)$; average over $h$, then take the best $a$.
+\item $\eqref{eq:one}-\eqref{eq:pi}\ge0$: a maximum over $a$ is at least the average over $a$ with weights $\pi(a\mid m)$.
+\item $\eqref{eq:own}-\eqref{eq:lam}\ge0$: at each $h$, a maximum over $a$ is at least the average with weights $\lambda(a\mid h)$.
+\end{itemize}
 Dropping the third difference gives the inequality.
 \end{proof}
 
