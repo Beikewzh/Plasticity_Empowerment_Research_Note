@@ -7,7 +7,7 @@
 \usepackage{microtype}
 \usepackage{xcolor}
 \usepackage{tikz}
-\usetikzlibrary{arrows.meta,positioning}
+\usetikzlibrary{arrows.meta,positioning,calc}
 
 \newtheorem{proposition}{Proposition}
 \newtheorem{lemma}{Lemma}
@@ -28,11 +28,11 @@
 \begin{document}
 \maketitle
 
-\paragraph{Question.} An agent has a state-update function $f$ that turns its history into a memory $M_t$, a critic and a policy, and it learns all three (Figure~\ref{fig:agent}). Histories with the same memory value get the same action distribution. How should $f$ be trained, and how should the policy change?
+\paragraph{Question.} An agent has a state-update function $f$ that turns its history into a memory $M_t$, a critic and a policy, and it learns all three (Figure~\ref{fig:agent}). Learning proceeds in rounds: during a round $f$ and the policy are fixed, and between two rounds both change. Histories with the same memory value get the same action distribution. How should $f$ be trained, and how should the policy change, from one round to the next?
 
 \paragraph{Answer, in four steps.}
 \begin{enumerate}
-\item Let $f$ change, by learning, into $\tilde f$. A step of size $\alpha$ of the policy towards the best actions on the new memory changes the return by $\alpha$ times the \emph{visible value} of that memory minus a number that does not depend on $\tilde f$, up to a term of order $\alpha^2$ (Proposition~\ref{prop:step}).
+\item Let learning propose $\tilde f$ in place of $f$ for the next round. A step of size $\alpha$ of the policy towards the best actions on the new memory changes the return by $\alpha$ times the \emph{visible value} of that memory minus a number that does not depend on $\tilde f$, up to a term of order $\alpha^2$ (Proposition~\ref{prop:step}).
 \item The visible value of a memory is the visible value of the history minus the loss that the memory hides (Proposition~\ref{prop:hide}).
 \item The hidden loss is bounded by the four terms of the state defect, each times a range of values; for two of the terms the bound is on average over the memory values (Proposition~\ref{prop:terms}).
 \item So: train $f$ on the four terms as auxiliary prediction losses, judge a change of $f$ by the visible value that the critic reads on it, and move the policy in small steps (Section~\ref{sec:algo}).
@@ -46,14 +46,35 @@ Step 2 is exact, and step 1 is exact to first order in $\alpha$. Step 3 is an up
 \begin{tikzpicture}[>={Stealth[length=2.5mm]}, node distance=10mm and 16mm,
   box/.style={draw, rounded corners=3pt, minimum height=10mm, minimum width=27mm, align=center, font=\small}]
 \node[box] (world) {environment\\ $e(O_{t+1}\mid h_t, A_t)$};
-\node[box, right=of world] (mem) {memory\\ $M_t = f(M_{t-1}, A_{t-1}, O_t)$};
-\node[box, right=of mem] (pol) {policy\\ $A_t \sim \pi(\cdot \mid M_t)$};
+\node[box, right=of world] (mem) {memory\\ $M_t = f_k(M_{t-1}, A_{t-1}, O_t)$};
+\node[box, right=of mem] (pol) {policy\\ $A_t \sim \pi_k(\cdot \mid M_t)$};
 \draw[->, thick] (world) -- node[above, font=\small] {$O_t$} (mem);
 \draw[->, thick] (mem) -- node[above, font=\small] {$M_t$} (pol);
 \draw[->, thick] (pol.south) -- ++(0,-7mm) -| node[pos=0.25, below, font=\small] {$A_t$} (world.south);
+\node[box, dashed, minimum width=84mm, above=9mm of $(mem.north)!0.5!(pol.north)$] (learn) {learning, between round $k$ and round $k+1$\\ $(f_k,\pi_k)\ \longrightarrow\ (f_{k+1},\pi_{k+1})$};
+\draw[->, dashed] (learn.south -| mem.north) -- (mem.north);
+\draw[->, dashed] (learn.south -| pol.north) -- (pol.north);
 \end{tikzpicture}
-\caption{The agent. The environment may depend on the whole history; the action depends on the history only through the memory.}\label{fig:agent}
+\caption{The agent. Solid: round $k$, in which the state-update function $f_k$ and the policy $\pi_k$ are fixed and only the memory $M_t$ changes with time. Dashed: between two rounds, learning changes $f$ and $\pi$, from the experience of the round. The environment may depend on the whole history; the action depends on the history only through the memory.}\label{fig:agent}
 \end{figure}
+
+\paragraph{What is fixed and what is learned.} Learning proceeds in rounds $k=1,2,\dots$ In round $k$ the agent acts with a state-update function $f_k$ and a policy $\pi_k$, and neither changes during the round. Between two rounds learning changes both.
+\begin{center}
+\small
+\begin{tabular}{lll}
+\hline
+ & during round $k$ & between round $k$ and round $k+1$\\
+\hline
+memory $M_t$ & updated at every time $t$ by $f_k$ & \\
+state-update function & fixed, $f_k$ & learned: gradient steps on its losses (Step~4)\\
+critic & estimates the values of $(f_k,\pi_k)$ & estimated again for the new agent\\
+policy & fixed, $\pi_k$ & learned: a small step (Step~1)\\
+\hline
+\end{tabular}
+\end{center}
+For fixed $(f_k,\pi_k)$ this is a bounded agent as defined by Abel et al.\ (2023a), with $f_k$ in the place of their state-update function. Their agent state contains everything that the agent keeps, parameters included; here $M_t$ is the memory alone, and the parameters of $f_k$ and $\pi_k$ change only between rounds. In the words of Abel et al.\ (2023b), each pair $(f,\pi)$ is a base agent, and learning selects the base agent of the next round.
+
+Every statement below is about one round and the next. In it $f$ and $\pi$ stand for $f_k$ and $\pi_k$, all probabilities and values are those of this fixed agent, and $\tilde f$ and $\pi'$ are what learning proposes for round $k+1$.
 
 The history is $h_t=(O_1,A_1,\dots,A_{t-1},O_t)$, and $h$ denotes a value of $h_t$. An observation $o$ contains a reward $r(o)$. All sets are finite, actions are taken at $t=1,\dots,T-1$, and $\gamma\in[0,1]$.
 
@@ -61,10 +82,10 @@ The history is $h_t=(O_1,A_1,\dots,A_{t-1},O_t)$, and $h$ denotes a value of $h_
 $O_1$ has a fixed law and $O_{t+1}\sim e(\cdot\mid h_t,A_t)$. The environment may depend on the whole history.
 \end{assumption}
 \begin{assumption}[Memory]\label{as:mem}
-$M_1=f_1(O_1)$ and $M_{t+1}=f(M_t,A_t,O_{t+1})$, with one state-update function $f$; $m$ is a value of $M_t$ and $m'=f(m,a,o)$ the next value. The agent learns $f$. Within a statement $f$ is held fixed, and learning appears as the comparison of $f$ with what it becomes.
+$M_1=f_1(O_1)$ and $M_{t+1}=f(M_t,A_t,O_{t+1})$, with the state-update function $f$ of the round; $m$ is a value of $M_t$ and $m'=f(m,a,o)$ the next value.
 \end{assumption}
 \begin{assumption}[Policy]\label{as:pol}
-The agent takes $A_t=a$ after $h_t$ with probability $\pi(a\mid M_t)>0$.
+The agent takes $A_t=a$ after $h_t$ with probability $\pi(a\mid M_t)>0$, with the policy $\pi$ of the round.
 \end{assumption}
 
 $\Pr$ is the law of the experience under $\pi$, and $J(\pi)$ is the expectation of $\sum_{t=1}^{T-1}\gamma^{t-1}r(O_{t+1})$. For every history and action,
@@ -73,7 +94,7 @@ Q_t(h,a)=\sum_oe(o\mid h,a)\big[r(o)+\gamma V_{t+1}(h,a,o)\big],\qquad V_t(h)=\s
 \end{equation}
 where $(h,a,o)$ is the next history and $m$ the memory value of $h$.
 
-\paragraph{Before and after a change of $f$.} Let $\tilde f$ be what $f$ may become: $f$ after some gradient steps, or $f$ trained with other weights on its losses. $\tilde M_t$ is the memory that $\tilde f$ computes from the same history. At the moment of the comparison the policy still reads $M_t$, and $\tilde M_t$ need not contain $M_t$. The values on $\tilde M$ average those of the histories,
+\paragraph{Before and after a change of $f$.} Let $\tilde f$ be what learning proposes for the next round: $f$ after some gradient steps, or $f$ trained with other weights on its losses. $\tilde M_t$ is the memory that $\tilde f$ computes from the same history. At the moment of the comparison the policy still reads $M_t$, and $\tilde M_t$ need not contain $M_t$. The values on $\tilde M$ average those of the histories,
 \[
 \tilde Q_t(\tilde m,a)=\sum_h\Pr(h\mid\tilde m)\,Q_t(h,a),\qquad\tilde V_t(\tilde m)=\sum_h\Pr(h\mid\tilde m)\,V_t(h),
 \]
@@ -87,7 +108,7 @@ For $\tilde f=f$ these are the values $Q_t(m,a)$, $V_t(m)$ that the agent's crit
 
 \section{Step 1: a small policy step towards a memory}
 
-Let $\tilde\pi$ read the new memory $\tilde M$ and, at each time $t$, take an action with the largest $\tilde Q_t(\tilde m,a)$; when several actions are largest, $\tilde\pi$ keeps the proportions that $\pi$ gives them. The agent moves to $\pi'=(1-\alpha)\pi+\alpha\tilde\pi$ with $0<\alpha\le1$, a policy that reads both memories; the pair $(M_t,\tilde M_t)$ is the memory of the next round. Write
+This step is the learning of the policy, from $\pi=\pi_k$ to $\pi'=\pi_{k+1}$, given a proposal $\tilde f$. Let $\tilde\pi$ read the new memory $\tilde M$ and, at each time $t$, take an action with the largest $\tilde Q_t(\tilde m,a)$; when several actions are largest, $\tilde\pi$ keeps the proportions that $\pi$ gives them. The agent moves to $\pi'=(1-\alpha)\pi+\alpha\tilde\pi$ with $0<\alpha\le1$, a policy that reads both memories. So in the next round the policy is $\pi_{k+1}=\pi'$, and $f_{k+1}$ computes the pair $(M_t,\tilde M_t)$; for $\alpha=1$ it is $\tilde f$ alone. Write
 \begin{equation}\label{eq:g}
 g_t(h)=\sum_a\big[\tilde\pi(a\mid\tilde m)-\pi(a\mid m)\big]\,Q_t(h,a),
 \end{equation}
@@ -137,7 +158,7 @@ So for a small step the return changes by $\alpha$ times the visible value of th
 
 \section{Step 2: what a memory hides}
 
-The loss at a memory value $\tilde m$ compares every history taking its own best action with all of them taking the one action that is best on average:
+In this step the policy is fixed and nothing is learned: it compares what two state-update functions show of the values of the same agent. The loss at a memory value $\tilde m$ compares every history taking its own best action with all of them taking the one action that is best on average:
 \begin{equation}\label{eq:loss}
 \sum_h\Pr(h\mid\tilde m)\,\max_aQ_t(h,a)-\max_a\tilde Q_t(\tilde m,a).
 \end{equation}
@@ -155,7 +176,7 @@ So training $f$ does not by itself change the return. It changes how much of the
 
 \section{Step 3: the hidden loss and the four terms}
 
-This step is for the memory $M$ of the current $f$, which the policy reads. Conditional laws such as $\Pr(o\mid m,b,a')$ or $\Pr(a\mid m,o)$ are those of the experience under $\pi$ given the stated values. Let $\Pr(o\mid m,a)=\sum_h\Pr(h\mid m)\,e(o\mid h,a)$. The state defect and its four terms are
+This step is for the memory $M$ of the current $f=f_k$, which the policy reads; again nothing is learned inside it. Conditional laws such as $\Pr(o\mid m,b,a')$ or $\Pr(a\mid m,o)$ are those of the experience under $\pi$ given the stated values. Let $\Pr(o\mid m,a)=\sum_h\Pr(h\mid m)\,e(o\mid h,a)$. The state defect and its four terms are
 \begin{align*}
 D_t(m,a)&=I(h_t;O_{t+1}\mid M_t=m,A_t=a)=\sum_h\Pr(h\mid m)\,\KL\big(e(\cdot\mid h,a)\,\big\|\,\Pr(\cdot\mid m,a)\big),\\
 D^0_t(m)&=I(h_t;O_{t+1}\mid M_t=m),\\
@@ -219,12 +240,12 @@ So the loss that the memory hides has two sources. Histories with the same memor
 
 \begin{center}
 \fbox{\begin{minipage}{0.94\linewidth}
-\textbf{The agent.} A state-update function $f$, a critic and a policy, trained together as in an actor-critic method.
+\textbf{The agent in round $k$.} It acts with $f_k$ and $\pi_k$, both fixed, and on some steps it draws the action uniformly. Then, from the experience of the round, as in an actor-critic method:
 \begin{enumerate}
-\item \emph{State-update function.} Train $f$ by gradient descent on the four prediction losses, one for each term, with a weight on each. These are its auxiliary losses.
-\item \emph{Critic.} On steps where the action is drawn uniformly, estimate $\tilde Q_t(\tilde m,a)$ and the visible value \eqref{eq:X}, for $f$ and for the $\tilde f$ trained with other weights.
-\item \emph{Weights.} Keep the weights whose $\tilde f$ has the largest visible value.
-\item \emph{Policy.} If that visible value exceeds the average value of the current policy, move the policy a small step towards the best actions on that memory. Repeat.
+\item \emph{State-update function.} From $f_k$, take gradient steps on the four prediction losses, one for each term, with a weight on each. These are its auxiliary losses. Each setting of the weights gives one proposal $\tilde f$.
+\item \emph{Critic.} On the steps where the action was drawn uniformly, estimate $\tilde Q_t(\tilde m,a)$ and the visible value \eqref{eq:X}, for $f_k$ and for each proposal.
+\item \emph{Weights.} Keep the proposal $\tilde f$ with the largest visible value, and its weights.
+\item \emph{Policy.} If that visible value exceeds the average value of $\pi_k$, set $\pi_{k+1}=(1-\alpha)\pi_k+\alpha\tilde\pi$ with a small $\alpha$, where $\tilde\pi$ takes the best actions on the memory of $\tilde f$; then $f_{k+1}$ computes the memories of both $f_k$ and $\tilde f$. Otherwise the agent is unchanged, $\pi_{k+1}=\pi_k$ and $f_{k+1}=f_k$, and the proposals keep training. Go to round $k+1$.
 \end{enumerate}
 \end{minipage}}
 \end{center}
@@ -233,11 +254,21 @@ Each line rests on one statement. Line 1: for the memory that the policy reads, 
 
 \paragraph{In the example.} Round 1 is the step of Step~1 ($J=\tfrac34$). Round 2 is a step at time $1$ towards the $\tilde f$ of Step~2 ($J=1$).
 
-\paragraph{Not covered.} Whether the order of several changes of $f$ survives a large step: the bound of Proposition~\ref{prop:step}(b) grows like $\alpha^2$. Estimation from finitely many steps. The weights of the four losses. The four terms of an $\tilde f$ that the policy does not read yet: Proposition~\ref{prop:terms} and the two splits are for the memory that the policy reads.
+\paragraph{Not covered.} Dropping the memory of $f_k$ after a step with $\alpha<1$, as an agent with one network for $f$ does: Proposition~\ref{prop:step} is for a policy that reads both memories. Whether the order of several changes of $f$ survives a large step: the bound of Proposition~\ref{prop:step}(b) grows like $\alpha^2$. Estimation from finitely many steps. The weights of the four losses. The four terms of an $\tilde f$ that the policy does not read yet: Proposition~\ref{prop:terms} and the two splits are for the memory that the policy reads.
 
 \paragraph{Longer version.} Line-by-line proofs of Step~3 and further statements (bootstrapping, a policy step with the visits of the new policy, the comparison with another agent) are in the folder \texttt{archive}, file\\ {\small\texttt{main\_theory\_to\_algorithm\_paper\_style\_2026-11-24.tex}}.
 
-\begin{thebibliography}{2}
+\begin{thebibliography}{4}
+\bibitem[Abel et~al.(2023a)]{abel2023bounded}
+D.~Abel, A.~Barreto, H.~van Hasselt, B.~Van~Roy, D.~Precup, and S.~Singh.
+\newblock On the convergence of bounded agents.
+\newblock arXiv:2307.11044, 2023.
+
+\bibitem[Abel et~al.(2023b)]{abel2023definition}
+D.~Abel, A.~Barreto, B.~Van~Roy, D.~Precup, H.~van Hasselt, and S.~Singh.
+\newblock A definition of continual reinforcement learning.
+\newblock arXiv:2307.11046, 2023.
+
 \bibitem[Cover and Thomas(2006)]{cover2006elements}
 T.~M. Cover and J.~A. Thomas.
 \newblock \emph{Elements of Information Theory}.
