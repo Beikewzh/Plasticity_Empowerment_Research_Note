@@ -137,7 +137,26 @@ For every memory value $m$ at time $t$,
 \]
 \end{proposition}
 \begin{proof}
-Since $\max_aQ_t(h,a)\le\max_aQ_t(m,a)+\max_a\big[Q_t(h,a)-Q_t(m,a)\big]$, the hidden loss is at most the mean over $h$ of $\max_a\big[Q_t(h,a)-Q_t(m,a)\big]$. A maximum is at most the sum of the positive parts. Each difference has mean zero over $h$, so the mean of its positive part is half the mean of its absolute value, which is at most its root mean square.
+All averages over $h$ below use the weights $\Pr(h\mid m)$.
+
+\emph{Step 1.} For every history $h$ and every action $a$, $Q_t(h,a)=Q_t(m,a)+\big[Q_t(h,a)-Q_t(m,a)\big]\le\max_bQ_t(m,b)+\max_b\big[Q_t(h,b)-Q_t(m,b)\big]$. The right side does not depend on $a$, so
+\[
+\max_aQ_t(h,a)\le\max_aQ_t(m,a)+\max_a\big[Q_t(h,a)-Q_t(m,a)\big].
+\]
+
+\emph{Step 2.} Average over $h$; the weights sum to one, so
+\[
+\sum_h\Pr(h\mid m)\max_aQ_t(h,a)-\max_aQ_t(m,a)\le\sum_h\Pr(h\mid m)\max_a\big[Q_t(h,a)-Q_t(m,a)\big].
+\]
+
+\emph{Step 3.} For any numbers $u_a$, $\max_au_a\le\max_a\max\{u_a,0\}\le\sum_a\max\{u_a,0\}$. So the right side of Step 2 is at most $\sum_a\sum_h\Pr(h\mid m)\max\big\{Q_t(h,a)-Q_t(m,a),0\big\}$.
+
+\emph{Step 4.} Fix $a$. By the definition of $Q_t(m,a)$, $\sum_h\Pr(h\mid m)\big[Q_t(h,a)-Q_t(m,a)\big]=0$. Every number $u$ satisfies $u=\max\{u,0\}-\max\{-u,0\}$ and $|u|=\max\{u,0\}+\max\{-u,0\}$, so the averages of the positive and of the negative part are equal, and each is half the average of the absolute value:
+\[
+\sum_h\Pr(h\mid m)\max\big\{Q_t(h,a)-Q_t(m,a),0\big\}=\frac12\sum_h\Pr(h\mid m)\big|Q_t(h,a)-Q_t(m,a)\big|.
+\]
+
+\emph{Step 5.} An average of absolute values is at most the square root of the average of the squares (Jensen's inequality for $u\mapsto u^2$). Steps 2 to 5 give the proposition.
 \end{proof}
 
 The root on the right is the error of the action value at $(m,a)$: how far the value of $a$ on the memory is from its value on the histories that the memory merges. The next proposition bounds it.
@@ -158,7 +177,49 @@ The two lines with $\dP_t$ and $D^+_t$ can be replaced by
 and at $t=T-1$ they are replaced by it.
 \end{proposition}
 \begin{proof}
-By Lemma~\ref{lem:onestep} and Minkowski's inequality, the root mean square of $Q_t(h,a)-Q_t(m,a)$ is at most that of \eqref{eq:now} plus that of the other two lines. For the other two lines, subtracting from a variable its mean does not increase its mean square, and by Jensen's inequality the mean square of the sum \eqref{eq:carried} is at most $\gamma^2$ times the sum under the last root. For \eqref{eq:now} we use Pinsker's inequality (Cover and Thomas, 2006): for two laws $p$, $q$ on a finite set and a function $w$, $\big|\sum_x[p(x)-q(x)]w(x)\big|\le\big[\max_xw(x)-\min_xw(x)\big]\sqrt{\tfrac12\KL(p\,\|\,q)}$, with the maximum and the minimum over the $x$ with $q(x)>0$. With $p=\Pr(\cdot\mid h,a)$ and $q=\Pr(\cdot\mid m,a)$, squaring and averaging over $h$ gives the bound with $D_t$. For the split write $V_{t+1}(m')=\sum_{a'}\pi_k(a'\mid m')Q_{t+1}(m',a')$, so that \eqref{eq:now} is a difference of two joint laws of $(A_{t+1},O_{t+1})$. Adding and subtracting the law of $A_{t+1}$ from the history times the law of $O_{t+1}$ given $A_{t+1}$ from the memory splits it into a part with the two laws of $A_{t+1}$ and a part with the two laws of $O_{t+1}$ given $A_{t+1}$. Apply Pinsker's inequality to each, then Minkowski's and Jensen's inequalities; the averages of the divergences are $\dP_t$ and $D^+_t$.
+All averages over $h$ below use the weights $\Pr(h\mid m)$, and a root mean square is the square root of such an average of squares.
+
+\emph{Step 1.} By Lemma~\ref{lem:onestep}, $Q_t(h,a)-Q_t(m,a)$ is \eqref{eq:now} plus $\gamma$ times the sum \eqref{eq:carried} minus its average over $h$. The root mean square of a sum is at most the sum of the root mean squares (Minkowski's inequality), so the left side is at most the root mean square of \eqref{eq:now} plus $\gamma$ times that of \eqref{eq:carried} minus its average.
+
+\emph{Step 2.} The carried part. Subtracting its average does not increase an average of squares, since $\sum_h\Pr(h\mid m)\big[u(h)-\bar u\big]^2=\sum_h\Pr(h\mid m)u(h)^2-\bar u^2$ with $\bar u$ the average of $u(h)$. And the square of an average over $o$ is at most the average of the squares (Jensen):
+\[
+\Big(\sum_o\Pr(o\mid h,a)\big[V_{t+1}(h,a,o)-V_{t+1}(m')\big]\Big)^2\le\sum_o\Pr(o\mid h,a)\big[V_{t+1}(h,a,o)-V_{t+1}(m')\big]^2.
+\]
+Averaging over $h$ and taking the square root gives the last line of the proposition.
+
+\emph{Step 3.} The tool. Let $p$, $q$ be two laws on a finite set, with $p(x)=0$ wherever $q(x)=0$, and $w$ a function. Since $\sum_x[p(x)-q(x)]=0$, any constant can be subtracted from $w$; take $c=\tfrac12[\max w+\min w]$, the maximum and minimum over the $x$ with $q(x)>0$. Then $|w(x)-c|\le\tfrac12[\max w-\min w]$, and by Pinsker's inequality $\tfrac12\sum_x|p(x)-q(x)|\le\sqrt{\tfrac12\KL(p\,\|\,q)}$ (Cover and Thomas, 2006),
+\[
+\Big|\sum_x[p(x)-q(x)]\,w(x)\Big|=\Big|\sum_x[p(x)-q(x)]\big(w(x)-c\big)\Big|\le\big[\max w-\min w\big]\sqrt{\tfrac12\KL(p\,\|\,q)} .
+\]
+With $p=\Pr(\cdot\mid h,a)$, $q=\Pr(\cdot\mid m,a)$ and $w(o)=r(o)+\gamma V_{t+1}(m')$, squaring and averaging over $h$ gives the version with $D_t(m,a)$.
+
+\emph{Step 4.} Write \eqref{eq:now} with the next action. Since $V_{t+1}(m')=\sum_{a'}\pi_k(a'\mid m')Q_{t+1}(m',a')$,
+\[
+\eqref{eq:now}=\sum_{o,a'}\big[\Pr(o,a'\mid h,a)-\Pr(o,a'\mid m,a)\big]\big[r(o)+\gamma Q_{t+1}(m',a')\big],
+\]
+with $\Pr(o,a'\mid h,a)=\Pr(o\mid h,a)\,\pi_k(a'\mid m')$ and the same with $m$. Write each joint law as the law of the next action times the law of the observation given it, and add and subtract $\Pr(a'\mid h,a)\Pr(o\mid m,a,a')$:
+\begin{align*}
+&\Pr(a'\mid h,a)\Pr(o\mid h,a,a')-\Pr(a'\mid m,a)\Pr(o\mid m,a,a')\\
+&\quad=\big[\Pr(a'\mid h,a)-\Pr(a'\mid m,a)\big]\Pr(o\mid m,a,a')+\Pr(a'\mid h,a)\big[\Pr(o\mid h,a,a')-\Pr(o\mid m,a,a')\big].
+\end{align*}
+So \eqref{eq:now} is the sum of
+\begin{align}
+&\sum_{a'}\big[\Pr(a'\mid h,a)-\Pr(a'\mid m,a)\big]\sum_o\Pr(o\mid m,a,a')\big[r(o)+\gamma Q_{t+1}(m',a')\big], \label{eq:viaA}\\
+&\sum_{a'}\Pr(a'\mid h,a)\sum_o\big[\Pr(o\mid h,a,a')-\Pr(o\mid m,a,a')\big]\big[r(o)+\gamma Q_{t+1}(m',a')\big]. \label{eq:viaO}
+\end{align}
+
+\emph{Step 5.} Apply Step 3 to \eqref{eq:viaA}, with the two laws of the next action and $w(a')=\sum_o\Pr(o\mid m,a,a')\big[r(o)+\gamma Q_{t+1}(m',a')\big]$. Apply Step 3 to \eqref{eq:viaO} for each $a'$, with the two laws of the observation given $a'$; bound each range by the largest one over $a'$, and use that the square root is concave (Jensen):
+\[
+\big|\eqref{eq:viaO}\big|\le\max_{a'}\Big[\max_o-\min_o\Big]\sqrt{\tfrac12\sum_{a'}\Pr(a'\mid h,a)\,\KL\big(\Pr(\cdot\mid h,a,a')\,\big\|\,\Pr(\cdot\mid m,a,a')\big)},
+\]
+where $\max_o-\min_o$ is taken of $r(o)+\gamma Q_{t+1}(m',a')$.
+
+\emph{Step 6.} Square the two bounds of Step 5, average over $h$, and take square roots. The averages of the divergences are the two terms:
+\begin{align*}
+\sum_h\Pr(h\mid m)\,\KL\big(\Pr(\cdot\mid h,a)\,\big\|\,\Pr(\cdot\mid m,a)\big)&=\dP_t(m,a)\qquad(\text{laws of }A_{t+1}),\\
+\sum_h\Pr(h\mid m)\sum_{a'}\Pr(a'\mid h,a)\,\KL\big(\Pr(\cdot\mid h,a,a')\,\big\|\,\Pr(\cdot\mid m,a,a')\big)&=D^+_t(m,a).
+\end{align*}
+By Minkowski's inequality the root mean square of \eqref{eq:now} is at most that of \eqref{eq:viaA} plus that of \eqref{eq:viaO}. With Steps 1 and 2 this is the proposition.
 \end{proof}
 
 Each term stands under a square root and is multiplied by a largest minus a smallest value: for $\dP_t$, how much the value differs between the next actions; for $D^+_t$, how much it differs between the next observations once the next action is fixed.
@@ -186,6 +247,8 @@ Average Lemma~\ref{lem:onestep} over the action with $\pi_k(a\mid m)$: this give
 Here the factor of $D^0_t$ is how much the value differs between the next observations, and the factor of $\dE_t$ is how much the value of the next memory depends on the action once the observation is fixed. The last root is again an error of the state value at time $t+1$: with the weights $\Pr(M_t=m)$ the average of its square is the same mean squared error as above, and at time $T$ this error is zero. So Proposition~\ref{prop:v} can be applied again at the times $t+1,t+2,\dots$
 
 Together: the hidden loss at time $t$ is bounded with $\dP_t$ and $D^+_t$ of every action, plus the error of the state value at time $t+1$, which is bounded with $D^0$ and $\dE$ at the later times.
+
+\paragraph{The factors.} Each factor in front of a square root is the largest minus the smallest value of the reward plus the discounted value of the next memory value $m'=f_k(m,a,o)$, taken over the variable that its term is about: for $\dP_t$ over the next action $a'$, of $\sum_o\Pr(o\mid m,a,a')\big[r(o)+\gamma Q_{t+1}(m',a')\big]$; for $D^+_t$ over the next observation, for each next action, of $r(o)+\gamma Q_{t+1}(m',a')$; for $D^0_t$ over the next observation, of $r(o)+\gamma\sum_a\Pr(a\mid m,o)V_{t+1}(m')$; for $\dE_t$ over the action, for each next observation, of $\gamma V_{t+1}(m')$. A factor is zero when the value does not change with that variable, and then its term adds nothing. The factors use only rewards, the values $Q_{t+1}(m',a')$ and $V_{t+1}(m')$ on the memory, and the memory's own predictions $\Pr(o\mid m,a,a')$ and $\Pr(a\mid m,o)$, so the agent can estimate them from its data. It cannot compute the four terms: each is the prediction loss from the memory minus the prediction loss from the whole history, and it does not have the second.
 
 These are upper bounds. The terms are about observations and actions, not about the reward that they carry: when the values do not differ between the next observations or actions, the factor is zero and so is the hidden loss, however large the term is. So the four terms say what $f$ can be trained to predict, and the greedy advantage says whether a change of $f$ helped.
 
