@@ -7,8 +7,6 @@
 \usepackage{microtype}
 \usepackage{xcolor}
 \usepackage{tikz}
-\usepackage{algorithm}
-\usepackage{algpseudocode}
 \usetikzlibrary{arrows.meta,positioning,calc}
 
 \newtheorem{proposition}{Proposition}
@@ -21,7 +19,7 @@
 \newcommand{\dP}{\Delta P}
 \newcommand{\why}[1]{\tag*{\small(#1)}}
 
-\title{The Return of an Agent That Acts on a Memory:\\ from the four terms to an algorithm, in four steps}
+\title{The Return of an Agent That Acts on a Memory:\\ what a memory hides, and the four terms}
 \author{}
 \date{Research note, 24 November 2026}
 
@@ -35,8 +33,8 @@
 \item (Known.) How much a small policy step can gain on a memory is the \emph{greedy advantage} of that memory: the average of $\max_aQ-V$ over its values. A critic on that memory shows it.
 \item (Known.) A memory that merges histories with different best actions has a smaller greedy advantage than the whole history. The difference is its \emph{hidden loss}.
 \item (This note.) The hidden loss of the memory that the policy reads is bounded with the four terms of the state defect, each under a square root and times a range of values (Propositions~\ref{prop:terms} to~\ref{prop:v}). The four terms measure what the history tells, beyond the memory, about the next observation ($D^0$), about the action just taken once the next observation is seen ($\dE$), about the next action ($\dP$), and about the next observation once the next action is known ($D^+$).
-\item (This note.) So the agent is a recurrent actor-critic agent with four auxiliary prediction losses on $f$, one for each term. The bound does not give the weights of the four losses, so they are tuned online: in every round the agent keeps the setting for which its critic shows the largest greedy advantage. They are tuned again in every round because what a memory hides changes with the policy (Section~\ref{sec:algo}).
 \end{enumerate}
+Steps 1 and 2 are known and are only recalled. Step 3 is an upper bound. An algorithm is open: the bound does not say which of the four predictions to train the memory on, nor with which weights.
 
 \section{Setting}
 
@@ -191,70 +189,9 @@ Together: the hidden loss at time $t$ is bounded with $\dP_t$ and $D^+_t$ of eve
 
 These are upper bounds. The terms are about observations and actions, not about the reward that they carry: when the values do not differ between the next observations or actions, the factor is zero and so is the hidden loss, however large the term is. So the four terms say what $f$ can be trained to predict, and the greedy advantage says whether a change of $f$ helped.
 
-\section{Step 4: the algorithm}\label{sec:algo}
+\paragraph{Open.} The three steps do not give an algorithm. The bounds hold for all four terms at once, so they do not say which of the four predictions a memory should be trained on, nor with which weights. They are upper bounds, for the memory that the policy reads, and the agent cannot evaluate them: a term is the prediction loss from the memory minus the same loss from the whole history, and the second is unknown to the agent.
 
-The agent is a recurrent actor-critic agent: a state-update function $f$, for instance a recurrent network, a policy $\pi$ and a critic $Q$. On $f$ it has four auxiliary prediction losses, one for each term. The only part that is not standard is how the weights of these four losses are set.
-
-\paragraph{The four auxiliary losses.} Each is the average log-loss of a predictor that reads the memory $M_t$:
-\begin{center}
-\small
-\begin{tabular}{llll}
-\hline
-loss & term & predict & from\\
-\hline
-$\ell_{D^0}$ & $D^0$ & $O_{t+1}$ & $M_t$\\
-$\ell_{\dE}$ & $\dE$ & $A_t$ & $M_t$ and $O_{t+1}$\\
-$\ell_{\dP}$ & $\dP$ & $A_{t+1}$ & $M_t$ and $A_t$\\
-$\ell_{D^+}$ & $D^+$ & $O_{t+1}$ & $M_t$, $A_t$ and $A_{t+1}$\\
-\hline
-\end{tabular}
-\end{center}
-The smallest value of each loss is the average of its term plus a number that does not depend on $f$, because the smallest average log-loss of predicting a variable $Y$ from the memory is $H(Y\mid M_t)=I(h_t;Y\mid M_t)+H(Y\mid h_t)$, and the same holds with the other inputs of the predictor added to every condition. So lowering a loss lowers its term. The auxiliary loss of $f$ is the weighted sum
-\[
-w_1\,\ell_{D^0}+w_2\,\ell_{\dE}+w_3\,\ell_{\dP}+w_4\,\ell_{D^+} .
-\]
-
-\paragraph{The weights are tuned online.} The four weights are hyperparameters, and Step~3 does not give them. The usual way to set a hyperparameter is to run the agent with several values and keep the one with the highest return. The agent does the same inside one run, with a number that its critic already has. In every round it trains $f$ for a short while under each of a few settings of the weights, and it keeps the result for which the value that the critic gives to its best action, averaged over the data, is the highest. By Steps~1 and~2 this average is, up to a number that is the same for all settings, the greedy advantage: what the next policy step gains to first order.
-
-\begin{algorithm}[h]
-\caption{Recurrent actor-critic with four auxiliary losses whose weights are tuned online}\label{alg:round}
-\begin{algorithmic}[1]
-\Require a state-update function $f$, a policy $\pi$, a step size $\alpha$, a short list of settings $w$ of the four weights
-\Loop \Comment{one pass is one round}
-  \State run a batch of episodes with $f$ and $\pi$, and store them
-  \For{each setting $w$ in the list}
-    \State $f^w\gets f$ after a few gradient steps on $w_1\ell_{D^0}+w_2\ell_{\dE}+w_3\ell_{\dP}+w_4\ell_{D^+}$
-    \State $Q^w\gets$ a critic on the memory of $f^w$, fitted to the returns in the stored episodes
-    \State score of $w\gets$ the average, over the stored steps, of $\max_aQ^w$
-  \EndFor
-  \State $w^*\gets$ the setting with the highest score
-  \State $f\gets f^{w^*}$ and $Q\gets Q^{w^*}$
-  \State $\pi\gets$ with probability $1-\alpha$ the action of the old $\pi$, with probability $\alpha$ the best action of $Q$
-\EndLoop
-\end{algorithmic}
-\end{algorithm}
-
-The list contains the setting with all weights zero, which leaves $f$ as it is; it wins ties. In round $k$ the $f$ and $\pi$ at the start of the pass are the $f_k$ and $\pi_k$ of the earlier sections. Three lines need a word.
-\begin{itemize}\setlength{\itemsep}{0pt}
-\item Line 5. The stored episodes were collected by a policy that reads the memory of $f$, not that of $f^w$. So the regression of the critic on the returns weights each step by $1/\pi(A_t\mid M_t)$: $Q^w$ minimises the sum over the stored steps of $\big[G_t-Q^w\big(f^w(h_t),A_t\big)\big]^2\big/\pi(A_t\mid M_t)$, where $G_t$ is the return from time $t$ on. Without the weight, an action that $\pi$ takes more often after some histories would look better or worse on the new memory for that reason alone. With it the critic learns the $Q_t(n,a)$ of Section~1, since the average over the steps with $f^w(h_t)=n$ of $G_t$ times $\mathbf 1\{A_t=a\}/\pi(a\mid M_t)$ is $\sum_h\Pr(h\mid n)\,\pi(a\mid m)\,Q_t(h,a)/\pi(a\mid m)=Q_t(n,a)$. For this $\pi$ has to give every action a positive probability.
-\item Line 6. The score is the sum over the stored steps of $\gamma^{t-1}\max_aQ^w\big(f^w(h_t),a\big)$, divided by the number of episodes.
-\item Line 10. This is the policy step of Step~1. The old policy still reads the memory of the old $f$, so the agent keeps that memory next to the new one, unless the new memory determines the old one.
-\end{itemize}
-
-Lines 5 to 10 are Steps~1 and~2: to first order the policy step changes the return by $\alpha$ times the greedy advantage of the chosen memory. Line 4 takes from Step~3 which four losses to use. The weights are tuned again in every round because what a memory hides changes with the policy.
-
-\paragraph{Why the weights are tuned and not derived.} Steps 1 to 3 give a lower bound on what the policy step gains: $\alpha$ times the greedy advantage of the history minus the bound of Step~3, up to order $\alpha^2$. One could turn this bound into the training objective of $f$, in the way a policy-improvement bound is turned into an objective for the policy: minimise the bound, that is, the four terms with the factors of Propositions~\ref{prop:q} and~\ref{prop:v} computed from the current critic as weights. We do not do this, for two reasons. First, the agent cannot evaluate the bound. A term is the prediction loss from the memory minus the same loss from the whole history; the second loss is unknown to the agent, and since the term stands under a square root it cannot be dropped as a constant. Second, each factor is one largest minus smallest value for a whole term, so it does not say which part of the observation carries the value, and a memory that lowers the bound need not lower the hidden loss. So line 4 takes only the four losses from the bound, and lines 5 to 8 tune their weights with the criterion of Steps~1 and~2, which is exact. One direction for the weights is known. When a part of the observation is not influenced by the actions and pays no reward, a memory that keeps that part does not lower its $\dE$ or $\dP$ by it, while it can lower its $D^0$ and $D^+$; so a small memory that is trained on the two observation terms can spend itself on that part. For $\dE$ in a world that is observed in full this is a result of Efroni et al.\ (2021).
-
-\paragraph{Not covered.}
-\begin{itemize}\setlength{\itemsep}{0pt}
-\item A bound on the hidden loss of an $f^w$, which the policy does not read yet. Propositions~\ref{prop:q} and~\ref{prop:v} and the two splits are for the memory that the policy reads.
-\item Numbers for the weights of the four losses. No statement gives them; the direction above holds only when a part of the observation is outside the interaction and pays no reward.
-\item The size of the step, and a policy step other than the mixture of line 10.
-\item Dropping the memory of $f_k$ after the step, as an agent with one network for $f$ does; with line 10 as written the memory grows by one component per round.
-\item Estimation from finitely many runs, a critic that bootstraps, and an agent that changes $f$ and the policy at every time step.
-\end{itemize}
-
-\begin{thebibliography}{6}
+\begin{thebibliography}{5}
 \bibitem[Abel et~al.(2023a)]{abel2023bounded}
 D.~Abel, A.~Barreto, H.~van Hasselt, B.~Van~Roy, D.~Precup, and S.~Singh.
 \newblock On the convergence of bounded agents.
@@ -264,11 +201,6 @@ D.~Abel, A.~Barreto, H.~van Hasselt, B.~Van~Roy, D.~Precup, and S.~Singh.
 D.~Abel, A.~Barreto, B.~Van~Roy, D.~Precup, H.~van Hasselt, and S.~Singh.
 \newblock A definition of continual reinforcement learning.
 \newblock arXiv:2307.11046, 2023.
-
-\bibitem[Efroni et~al.(2021)]{efroni2021provable}
-Y.~Efroni, D.~Misra, A.~Krishnamurthy, A.~Agarwal, and J.~Langford.
-\newblock Provable RL with exogenous distractors via multistep inverse dynamics.
-\newblock arXiv:2110.08847, 2021.
 
 \bibitem[Cover and Thomas(2006)]{cover2006elements}
 T.~M. Cover and J.~A. Thomas.
