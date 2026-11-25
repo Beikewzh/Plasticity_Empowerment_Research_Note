@@ -209,28 +209,33 @@ $D^+$ & $O_{t+1}$ & $f_{k+1}(h_t)$, $A_t$ and $A_{t+1}$\\
 \end{center}
 For a variable $Y$ and a memory $N$ that is a function of the history, the smallest average log-loss of predicting $Y$ from $N$ is $H(Y\mid N)=I(h_t;Y\mid N)+H(Y\mid h_t)$, and the last entropy does not depend on the candidate; the same holds with the other variables that the predictor reads added to every condition. So the smallest value of each loss is the average of its term, computed with the memory of the candidate, plus a number that does not depend on the candidate. We write $\ell_{D^0}$, $\ell_{\dE}$, $\ell_{\dP}$, $\ell_{D^+}$ for the four losses.
 
+The right weights of the four losses are not known. So the agent is given a short list of settings to try, for example each loss alone and all four with equal weight, and in every round it picks among them.
+
 \begin{algorithm}[h]
 \caption{One round of the agent}\label{alg:round}
 \begin{algorithmic}[1]
-\Require the state-update function $f_k$; the policy $\pi_k$, which gives every action a positive probability; a step size $\alpha$; $J$ settings $w^1,\dots,w^J$ of four weights
-\Statex \textbf{Collect data.}
-\State Run $N$ episodes with $f_k$ and $\pi_k$. At every time $t$ store the history $h_t$, the action $A_t$, the probability $\pi_k(A_t\mid M_t)$ with which it was taken, the next observation $O_{t+1}$, and the return from $t$ on, $G_t=\sum_{s\ge t}\gamma^{s-t}r(O_{s+1})$.
-\Statex \textbf{Make $J+1$ candidates for the next state-update function and evaluate each.}
-\For{$j=0,1,\dots,J$}
-  \State $f^j\gets f_k$. If $j\ge1$, take gradient steps on $f^j$ to lower $w^j_1\ell_{D^0}+w^j_2\ell_{\dE}+w^j_3\ell_{\dP}+w^j_4\ell_{D^+}$ on the stored data. \Comment{$j=0$ is $f_k$ unchanged}
-  \State Learn action values on the memory of $f^j$: choose $Q^j$ to minimise the sum, over the stored steps, of $\big[G_t-Q^j\big(f^j(h_t),A_t\big)\big]^2\big/\pi_k(A_t\mid M_t)$.
-  \State Score this candidate: $g^j\gets$ the sum, over the stored steps, of $\gamma^{t-1}\max_aQ^j\big(f^j(h_t),a\big)$, divided by $N$.
+\Require the state-update function $f_k$ and the policy $\pi_k$; a step size $\alpha$; a short list of settings $w$ of the four weights
+\State data $\gets$ a batch of episodes run with $f_k$ and $\pi_k$
+\For{each setting $w$ in the list}
+  \State $f^w\gets$ a copy of $f_k$, trained on the data with the four prediction losses weighted by $w$
+  \State $Q^w\gets$ action values on the memory of $f^w$, learned from the returns in the data
+  \State score of $w$ $\gets$ the value that $Q^w$ gives to its best action, averaged over the data
 \EndFor
-\Statex \textbf{Keep the best candidate and move the policy a small step.}
-\State $j^*\gets$ the candidate with the largest score $g^j$ (if several are largest, $j^*=0$).
-\State $f_{k+1}\gets f^{j^*}$.
-\State New policy: with probability $1-\alpha$ act as $\pi_k$ does; with probability $\alpha$ take the action $a$ with the largest $Q^{j^*}\big(f^{j^*}(h_t),a\big)$.
+\State score $f_k$ itself in the same way
+\State keep the one with the highest score: it is $f_{k+1}$, and $Q$ is its action values
+\State $\pi_{k+1}\gets$ with probability $1-\alpha$ act as $\pi_k$ does, with probability $\alpha$ take the best action of $Q$
 \end{algorithmic}
 \end{algorithm}
 
-Line 3 uses the four losses of the table above; each is the log-loss of a predictor that reads the memory of $f^j$. Line 4 is the usual regression of a critic on returns, except for the division by $\pi_k(A_t\mid M_t)$. It is there because $\pi_k$ chooses its action from the memory of $f_k$, not from that of $f^j$: without it, an action that $\pi_k$ takes more often after some histories would look better or worse on the memory of $f^j$ for that reason alone. With it the critic learns $Q_t(n,a)$, since the average over the steps with $f^j(h_t)=n$ of $G_t$ times $\mathbf 1\{A_t=a\}/\pi_k(a\mid M_t)$ is $\sum_h\Pr(h\mid n)\,\pi_k(a\mid m)\,Q_t(h,a)/\pi_k(a\mid m)=Q_t(n,a)$. For $j=0$ the division changes nothing. In line 9 the new policy still uses the action of $\pi_k$, so the agent keeps the memory of $f_k$ next to the new one, unless the new memory determines the old one.
+The lines written out, with the data of line 1 holding, for every time $t$ of every episode, the history $h_t$, the action $A_t$, its probability $\pi_k(A_t\mid M_t)$, the next observation, and the return from $t$ on, $G_t=\sum_{s\ge t}\gamma^{s-t}r(O_{s+1})$.
+\begin{itemize}\setlength{\itemsep}{0pt}
+\item Line 3: gradient steps on $w_1\ell_{D^0}+w_2\ell_{\dE}+w_3\ell_{\dP}+w_4\ell_{D^+}$, the four losses of the table above, each the log-loss of a predictor that reads the memory of $f^w$.
+\item Line 4: $Q^w$ minimises the sum over the data of $\big[G_t-Q^w\big(f^w(h_t),A_t\big)\big]^2\big/\pi_k(A_t\mid M_t)$. This is the usual regression of a critic on returns, except for the division. It is there because $\pi_k$ chooses its action from the memory of $f_k$, not from that of $f^w$: without it, an action that $\pi_k$ takes more often after some histories would look better or worse on the memory of $f^w$ for that reason alone. With it the critic learns $Q_t(n,a)$, since the average over the steps with $f^w(h_t)=n$ of $G_t$ times $\mathbf 1\{A_t=a\}/\pi_k(a\mid M_t)$ is $\sum_h\Pr(h\mid n)\,\pi_k(a\mid m)\,Q_t(h,a)/\pi_k(a\mid m)=Q_t(n,a)$. So $\pi_k$ has to give every action a positive probability.
+\item Line 5: the sum over the data of $\gamma^{t-1}\max_aQ^w\big(f^w(h_t),a\big)$, divided by the number of episodes. It is the greedy advantage of the memory of $f^w$ up to the average of $V_t$, which is the same for every $f^w$.
+\item Line 9: the new policy still uses the action of $\pi_k$, so the agent keeps the memory of $f_k$ next to the new one, unless the new memory determines the old one.
+\end{itemize}
 
-The score $g^j$ is the greedy advantage of the memory of $f^j$ up to the average of $V_t$, which is the same for all candidates. Lines 4 to 9 are Steps~1 and~2: to first order the policy step changes the return by $\alpha$ times the greedy advantage of the chosen memory. Line 3 takes from Step~3 which four losses to use, and the loop over rounds repeats because what a memory hides changes with the policy.
+Lines 4 to 9 are Steps~1 and~2: to first order the policy step changes the return by $\alpha$ times the greedy advantage of the chosen memory. Line 3 takes from Step~3 which four losses to use, and the loop over rounds repeats because what a memory hides changes with the policy.
 
 \paragraph{Why the weights are chosen and not derived.} Steps 1 to 3 give a lower bound on what the policy step gains: $\alpha$ times the greedy advantage of the history minus the bound of Step~3, up to order $\alpha^2$. One could turn this bound into the training objective of $f$, in the way a policy-improvement bound is turned into an objective for the policy: minimise the bound, that is, the four terms with the factors of Propositions~\ref{prop:q} and~\ref{prop:v} computed from the current critic as weights. We do not do this, for two reasons. First, the agent cannot evaluate the bound. A term is the prediction loss from the memory minus the same loss from the whole history; the second loss is unknown to the agent, and since the term stands under a square root it cannot be dropped as a constant. Second, each factor is one largest minus smallest value for a whole term, so it does not say which part of the observation carries the value, and a memory that lowers the bound need not lower the hidden loss. So line 3 takes only the four losses from the bound, and lines 4 to 7 choose between weightings with the criterion of Steps~1 and~2, which is exact. One direction for the weights is known. When a part of the observation is not influenced by the actions and pays no reward, keeping that part never lowers $\dE$ or $\dP$ of a candidate, while it can lower $D^0$ and $D^+$; so a small memory that is trained on the two observation terms can spend itself on that part. For $\dE$ in a world that is observed in full this is a result of Efroni et al.\ (2021).
 
