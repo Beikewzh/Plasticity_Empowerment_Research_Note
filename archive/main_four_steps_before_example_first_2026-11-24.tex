@@ -1,0 +1,249 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[colorlinks=true,linkcolor=black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc}
+
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{definition}
+\newtheorem{assumption}{Assumption}
+
+\newcommand{\KL}{\mathrm{KL}}
+\newcommand{\dE}{\Delta E}
+\newcommand{\dP}{\Delta P}
+\newcommand{\rng}{\operatorname{rng}}
+\newcommand{\why}[1]{\tag*{\small(#1)}}
+
+\title{The Return of an Agent That Acts on a Memory:\\ from the four terms to an algorithm, in four steps}
+\author{}
+\date{Research note, 24 November 2026}
+
+\begin{document}
+\maketitle
+
+\paragraph{Question.} An agent has a state-update function $f$ that turns its history into a memory $M_t$, a critic, and a policy that reads only the memory. It learns all three (Figure~\ref{fig:agent}). Learning proceeds in rounds: during a round $f$ and the policy are fixed while the agent collects experience, and between two rounds both change. How should $f$ be trained, and how should the policy change, from one round to the next?
+
+\paragraph{Answer, in four steps.}
+\begin{enumerate}
+\item (Known.) A small policy step towards the greedy actions on a memory changes the return, to first order, by the size of the step times the \emph{greedy advantage} of that memory, the average of $\max_aQ-V$ on it \eqref{eq:greedy}.
+\item (Known.) The greedy advantage of a memory is that of the whole history minus its \emph{hidden loss}: what is lost when all histories with the same memory value have to take the same action \eqref{eq:loss}.
+\item For the memory that the policy reads, the hidden loss is bounded with the four terms of the state defect, each under a square root and times a range of values (Proposition~\ref{prop:terms}). The four terms measure what the history tells, beyond the memory, about the next observation ($D^0$), about the action just taken once the next observation is seen ($\dE$), about the next action ($\dP$), and about the next observation once the next action is known ($D^+$).
+\item So: train candidates for the next $f$ on the four terms as auxiliary prediction losses, keep the candidate with the largest greedy advantage as estimated by a critic, and move the policy a small step towards the greedy actions on it (Section~\ref{sec:algo}).
+\end{enumerate}
+Steps 1 and 2 are known and are only recalled. Step 3 is an upper bound, so the theory does not give the weights of the four losses; step 4 tries a few settings of the weights and lets the greedy advantage choose.
+
+\section{Setting}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[>={Stealth[length=2.5mm]}, node distance=10mm and 16mm,
+  box/.style={draw, rounded corners=3pt, minimum height=10mm, minimum width=27mm, align=center, font=\small}]
+\node[box] (world) {environment\\ $e(O_{t+1}\mid h_t, A_t)$};
+\node[box, right=of world] (mem) {memory\\ $M_t = f_k(M_{t-1}, A_{t-1}, O_t)$};
+\node[box, right=of mem] (pol) {policy\\ $A_t \sim \pi_k(\cdot \mid M_t)$};
+\draw[->, thick] (world) -- node[above, font=\small] {$O_t$} (mem);
+\draw[->, thick] (mem) -- node[above, font=\small] {$M_t$} (pol);
+\draw[->, thick] (pol.south) -- ++(0,-7mm) -| node[pos=0.25, below, font=\small] {$A_t$} (world.south);
+\node[box, dashed, minimum width=84mm, above=9mm of $(mem.north)!0.5!(pol.north)$] (learn) {learning, between round $k$ and round $k+1$\\ $(f_k,\pi_k)\ \longrightarrow\ (f_{k+1},\pi_{k+1})$};
+\draw[->, dashed] (learn.south -| mem.north) -- (mem.north);
+\draw[->, dashed] (learn.south -| pol.north) -- (pol.north);
+\end{tikzpicture}
+\caption{The agent. Solid: one round, in which $f_k$ and $\pi_k$ are fixed and only the memory $M_t$ changes. Dashed: between two rounds, learning changes both. The action depends on the history only through the memory.}\label{fig:agent}
+\end{figure}
+
+Learning proceeds in rounds $k=1,2,\dots$ A round is a number of runs of length $T$, all with the same state-update function $f_k$ and the same policy $\pi_k$; between two rounds learning changes both. For fixed $(f_k,\pi_k)$ this is a bounded agent as defined by Abel et al.\ (2023a), and in the words of Abel et al.\ (2023b) each pair $(f,\pi)$ is a base agent and learning selects the base agent of the next round.
+
+The history is $h_t=(O_1,A_1,\dots,A_{t-1},O_t)$, and $h$ denotes a value of $h_t$. An observation $o$ contains a reward $r(o)$. All sets are finite, actions are taken at $t=1,\dots,T-1$, and $\gamma\in[0,1]$. All probabilities and values below are those of the agent of round $k$, and sums over values of a memory or of an observation run over the values that have positive probability.
+
+\begin{assumption}[Environment]\label{as:env}
+$O_1$ has a fixed law and $O_{t+1}\sim e(\cdot\mid h_t,A_t)$. The environment may depend on the whole history.
+\end{assumption}
+\begin{assumption}[Memory]\label{as:mem}
+$M_1$ is computed from $O_1$ by $f_k$, and $M_t=f_k(M_{t-1},A_{t-1},O_t)$ for $t\ge2$. The memory contains the time $t$, so values of the memory at different times are different. $m$ is a value of $M_t$, and $m'=f_k(m,a,o)$ is the next value after the action $a$ and the observation $o$. We also write $f_k(h_t)$ for $M_t$, the memory that $f_k$ computes from the history, and likewise for any other state-update function.
+\end{assumption}
+\begin{assumption}[Policy]\label{as:pol}
+The agent takes $A_t=a$ after $h_t$ with probability $\pi_k(a\mid M_t)>0$. Where the agent explores, the exploration is part of $\pi_k$.
+\end{assumption}
+
+$\Pr$ is the law of the experience under $\pi_k$, and $J(\pi_k)$ is the expectation of $\sum_{t=1}^{T-1}\gamma^{t-1}r(O_{t+1})$. For every history and action,
+\begin{equation}\label{eq:bellman}
+Q_t(h,a)=\sum_oe(o\mid h,a)\big[r(o)+\gamma V_{t+1}(h,a,o)\big],\qquad V_t(h)=\sum_a\pi_k(a\mid m)\,Q_t(h,a),\qquad V_T=0,
+\end{equation}
+where $(h,a,o)$ is the next history and $m$ the memory value of $h$.
+
+\paragraph{The values of $\pi_k$ on another memory.} Between two rounds, training turns $f_k$ into $f_{k+1}$, for instance by gradient steps. $f_{k+1}(h_t)$ is the memory that it computes from the same history, and $n$ is one of its values; it also contains the time. With $\Pr(h\mid n)$ the probability of $h_t=h$ given $f_{k+1}(h_t)=n$, the values of $\pi_k$ on this memory average those of the histories,
+\[
+Q_t(n,a)=\sum_h\Pr(h\mid n)\,Q_t(h,a),\qquad V_t(n)=\sum_h\Pr(h\mid n)\,V_t(h).
+\]
+With $f_k$ in the place of $f_{k+1}$ these are $Q_t(m,a)$ and $V_t(m)$, the values that the critic of an actor-critic agent learns.
+
+\paragraph{Example.} $T=3$, $\gamma=1$, two actions. $O_1$ is a fair bit $c$. If $A_1=c$, then $O_2$ shows a fair bit $d$; otherwise $O_2$ is blank. The bit $d$ is drawn whether or not it is shown. The only reward is in $O_3$: it is $1$ if $A_2=d$ and $0$ otherwise. The memory of $f_k$ is empty at time $1$, so it forgets $c$, and it is $O_2$ at time $2$. The policy $\pi_k$ is uniform, and $J(\pi_k)=\tfrac12$.
+
+\section{Steps 1 and 2: two known facts}
+
+The \emph{greedy advantage} of the memory of $f_{k+1}$ is
+\begin{equation}\label{eq:greedy}
+\sum_{t=1}^{T-1}\gamma^{t-1}\sum_n\Pr(f_{k+1}(h_t)=n)\,\big[\max_aQ_t(n,a)-V_t(n)\big],
+\end{equation}
+and that of the history has $\max_aQ_t(h,a)-V_t(h)$, averaged over the histories.
+
+\paragraph{Step 1: what a policy step gains (Kakade and Langford, 2002).} Let the next agent take, with probability $\alpha$, an action with the largest $Q_t(n,a)$ on the memory of $f_{k+1}$, and otherwise the action of $\pi_k$. Then the return changes by $\alpha$ times the greedy advantage \eqref{eq:greedy}, up to a term of order $\alpha^2$. This is the step of conservative policy iteration, with the greedy actions taken on another memory. More generally, for any next policy that acts almost like $\pi_k$, the change of the return is close to the average advantage of the actions that it takes, and on a given memory this average is at most the greedy advantage.
+
+\paragraph{Step 2: what a memory hides (the value of information; Xu and Raginsky, 2020, Lemma 1).} The \emph{hidden loss} at a memory value $n$ is the value when each history with this memory value takes its own best action, minus the value when all of them take the one action that is best on average:
+\begin{equation}\label{eq:loss}
+\sum_h\Pr(h\mid n)\,\max_aQ_t(h,a)-\max_aQ_t(n,a)\ \ge0 .
+\end{equation}
+It is not negative because the maximum of an average is at most the average of the maxima. Summing over the memory values and the times, the greedy advantage of the history minus that of the memory is the average hidden loss.
+
+\paragraph{Together.} To first order, a small policy step on a memory changes the return by $\alpha$ times the difference between the greedy advantage of the history and the average hidden loss of the memory. So training $f$ does not by itself change the return: it changes what the memory hides, and the return moves when the policy then takes its step. The exact statements, for any next agent and with the size of the second-order term, are in the longer version named at the end.
+
+\paragraph{In the example.} Round 1, on the memory of $f_k$. At time $1$ both actions have the value $\tfrac12$, so the greedy action has advantage $0$ and forgetting $c$ hides nothing. At time $2$ the greedy action has advantage $1-\tfrac12$ when $d$ is shown, which has probability $\tfrac12$. So the greedy advantage is $\tfrac14$, and the step with $\alpha=1$ gives $J=\tfrac34$. Round 2, after that step. Now $Q_1(h,a)$ is $1$ if $a=c$ and $\tfrac12$ otherwise, while on the memory of $f_k$ both actions have the value $\tfrac34$: the hidden loss at time $1$ is $1-\tfrac34=\tfrac14$, and the greedy advantage of $f_k$ is $0$. A memory that keeps $c$ at time $1$, and still $O_2$ at time $2$, has the greedy advantage $\tfrac14$. What a memory hides depends on the current policy. (After the step with $\alpha=1$ the policy at time $2$ no longer takes every action; the exact values used in the examples do not need that it does.)
+
+\section{Step 3: the hidden loss and the four terms}
+
+This step is for the memory of $f_k$, which the policy reads; again nothing is learned inside it. Below, $a$ and $b$ are actions at time $t$ and $a'$ is the action at time $t+1$. Conditional laws such as $\Pr(o\mid m,b,a')$ or $\Pr(a\mid m,o)$ are those of the experience under $\pi_k$ given the stated values. Let $\Pr(o\mid m,a)=\sum_h\Pr(h\mid m)\,e(o\mid h,a)$. The state defect and its four terms are
+\begin{align*}
+D_t(m,a)&=I(h_t;O_{t+1}\mid M_t=m,A_t=a)=\sum_h\Pr(h\mid m)\,\KL\big(e(\cdot\mid h,a)\,\big\|\,\Pr(\cdot\mid m,a)\big),\\
+D^0_t(m)&=I(h_t;O_{t+1}\mid M_t=m),\\
+\dE_t(m)&=I(h_t;A_t\mid M_t=m,O_{t+1}),\\
+\dP_t(m,a)&=I(h_t;A_{t+1}\mid M_t=m,A_t=a),\\
+D^+_t(m,a)&=I(h_t;O_{t+1}\mid M_t=m,A_t=a,A_{t+1}),
+\end{align*}
+the last two for $t\le T-2$. The chain rule gives two splits of the state defect. The split at the current action is $\sum_a\pi_k(a\mid m)D_t(m,a)=D^0_t(m)+\dE_t(m)$, since $I(h_t;A_t\mid M_t=m)=0$. The split at the next action is $D_t(m,a)=\dP_t(m,a)+D^+_t(m,a)$ for $t\le T-2$, since given $(m,a,O_{t+1})$ the next action depends on $M_{t+1}$ alone. Both reasons use that the policy reads this memory.
+
+\begin{lemma}[One step]\label{lem:onestep}
+For every history $h$ with memory value $m$ and every action $a$,
+\begin{align}
+Q_t(h,a)-Q_t(m,a)={}&\sum_o\big[e(o\mid h,a)-\Pr(o\mid m,a)\big]\big[r(o)+\gamma V_{t+1}(m')\big] \label{eq:now}\\
+&+\gamma\big[u_t(h,a)-\bar u_t(m,a)\big], \nonumber
+\end{align}
+where $u_t(h,a)=\sum_oe(o\mid h,a)\big[V_{t+1}(h,a,o)-V_{t+1}(m')\big]$ and $\bar u_t(m,a)$ is its average over $h$ with the weights $\Pr(h\mid m)$.
+\end{lemma}
+\begin{proof}
+Add and subtract $\gamma V_{t+1}(m')$ in the bracket of \eqref{eq:bellman}; then average over $h$ with the weights $\Pr(h\mid m)$, and subtract.
+\end{proof}
+
+The sum \eqref{eq:now} is the part of the difference that is made at time $t$: the two predictions of the next observation, from the history and from the memory, differ, and the difference is weighted by the reward plus the value of the next memory. The other part is carried over from time $t+1$: it is zero when $V_{t+1}(h)=V_{t+1}(m)$ for every next history $h$ with memory value $m$.
+
+\begin{lemma}[Known: Pinsker's inequality; Cover and Thomas, 2006]\label{lem:tool}
+For laws $p$, $q$ on a finite set with $q(x)=0\Rightarrow p(x)=0$ and a function $w$: $\big|\sum_x[p(x)-q(x)]w(x)\big|\le\rng_xw(x)\,\sqrt{\tfrac12\KL(p\,\|\,q)}$, where the \emph{range} $\rng_xw(x)$ is $\max_xw(x)-\min_xw(x)$ over the $x$ with $q(x)>0$.
+\end{lemma}
+
+Three sizes are used. $\rho_t(m,a)$ is the root of the average of $\big[\eqref{eq:now}\big]^2$ over $h$ with the weights $\Pr(h\mid m)$: the size of the part made at time $t$, for one action. $\rho_t(m)$, without an action, is the same root with $\sum_a\pi_k(a\mid m)\times\eqref{eq:now}$ in the place of \eqref{eq:now}. The size of the carried part is
+\[
+\nu_t(m,a)=\sqrt{\sum_h\Pr(h\mid m)\sum_oe(o\mid h,a)\big[V_{t+1}(h,a,o)-V_{t+1}(m')\big]^2}\,.
+\]
+
+\begin{proposition}[The hidden loss and the four terms]\label{prop:terms}
+Let $m$ be a value of the memory of $f_k$ at time $t$ and $a^*$ an action with the largest $Q_t(m,a)$.
+
+(a) The hidden loss \eqref{eq:loss} at $m$ is at most $\displaystyle\frac12\sum_{a\ne a^*}\ \sum_{b\in\{a,a^*\}}\big[\rho_t(m,b)+\gamma\,\nu_t(m,b)\big]$.
+
+(b) The part made at time $t$ is bounded by the state defect of the action, as a whole or split at the next action:
+\begin{align*}
+\rho_t(m,b)&\le\rng_o\big[r(o)+\gamma V_{t+1}(m')\big]\sqrt{\tfrac12\,D_t(m,b)},\\
+\rho_t(m,b)&\le\rng_{a'}\sum_o\Pr(o\mid m,b,a')\big[r(o)+\gamma Q_{t+1}(m',a')\big]\sqrt{\tfrac12\,\dP_t(m,b)}\\
+&\quad+\max_{a'}\rng_o\big[r(o)+\gamma Q_{t+1}(m',a')\big]\sqrt{\tfrac12\,D^+_t(m,b)}\qquad(t\le T-2).
+\end{align*}
+
+(c) The carried part is bounded by the error of the state value at later times, and this error is bounded with the split at the current action. In each sum over $h$ below, $m$ is the memory value of $h$. For each action $b$, for $1\le i\le T-1$ and $i\le j\le T-1$,
+\begin{align*}
+\sum_m\Pr(M_t=m)\,\nu_t(m,b)&\le\big[\min_m\pi_k(b\mid m)\big]^{-1/2}\sqrt{\sum_h\Pr(h_{t+1}=h)\big[V_{t+1}(h)-V_{t+1}(m)\big]^2},\\
+\sqrt{\sum_h\Pr(h_i=h)\big[V_i(h)-V_i(m)\big]^2}&\le\sum_{j=i}^{T-1}\gamma^{j-i}\sqrt{\sum_m\Pr(M_j=m)\,\rho_j(m)^2},\\
+\rho_j(m)&\le\rng_o\bar y(o)\,\sqrt{\tfrac12\,D^0_j(m)}+\max_o\rng_ay_a(o)\,\sqrt{\tfrac12\,\dE_j(m)},
+\end{align*}
+where $y_a(o)=r(o)+\gamma V_{j+1}(f_k(m,a,o))$ and $\bar y(o)$ is its average over the action with the weights $\Pr(a\mid m,o)$. In (a) the action $a^*$ depends on $m$; there use $\nu_t(m,a^*)\le\sum_b\nu_t(m,b)$.
+\end{proposition}
+\begin{proof}
+(a) Let $x_a(h)=Q_t(h,a)-Q_t(h,a^*)$, with mean $\bar x_a=Q_t(m,a)-Q_t(m,a^*)\le0$ over $h$. The hidden loss is the mean of $\max_a x_a(h)\le\sum_{a\ne a^*}\max\{x_a(h),0\}\le\sum_{a\ne a^*}\max\{x_a(h)-\bar x_a,0\}$, and the mean of the positive part of a variable with mean zero is half the mean of its absolute value. By Lemma~\ref{lem:onestep}, $x_a(h)-\bar x_a$ is \eqref{eq:now} for $a$ minus \eqref{eq:now} for $a^*$ plus $\gamma$ times the same difference of $u_t-\bar u_t$. The mean of an absolute value is at most the root of the mean square; then use Minkowski's inequality, the fact that subtracting $\bar u_t$ does not increase the mean square, and Jensen's inequality for $u_t^2$.
+
+(b) Lemma~\ref{lem:tool} with $p=e(\cdot\mid h,b)$ and $q=\Pr(\cdot\mid m,b)$; square and average over $h$. For the second bound write $V_{t+1}(m')=\sum_{a'}\pi_k(a'\mid m')Q_{t+1}(m',a')$, so that \eqref{eq:now} is a difference of two joint laws of $(A_{t+1},O_{t+1})$. Adding and subtracting the law of $A_{t+1}$ from the history times the law of $O_{t+1}$ given $A_{t+1}$ from the memory splits it into a part with the two laws of $A_{t+1}$ and a part with the two laws of $O_{t+1}$ given $A_{t+1}$. Apply Lemma~\ref{lem:tool} to each, then Minkowski's and Jensen's inequalities; the averages of the divergences are $\dP_t$ and $D^+_t$.
+
+(c) First line: the next history $(h,a,o)$ has probability $\Pr(h_t=h)\pi_k(a\mid m)e(o\mid h,a)$, so the average of $\nu_t(m,a)^2$ over $(M_t,A_t)$ is the sum under the root. Then use Jensen's inequality and $\nu_t(m,b)^2\le\pi_k(b\mid m)^{-1}\sum_a\pi_k(a\mid m)\,\nu_t(m,a)^2$. Second line: average Lemma~\ref{lem:onestep} over the action with $\pi_k(a\mid m)$. By Minkowski's and Jensen's inequalities as in (a), the root on the left at time $i$ is at most $\sqrt{\sum_m\Pr(M_i=m)\rho_i(m)^2}$ plus $\gamma$ times the same root at time $i+1$, and the root at time $T$ is zero. Third line: Bayes' rule gives $\pi_k(a\mid m)\big[e(o\mid h,a)-\Pr(o\mid m,a)\big]=\big[\Pr(o\mid h)-\Pr(o\mid m)\big]\Pr(a\mid m,o)+\Pr(o\mid h)\big[\Pr(a\mid h,o)-\Pr(a\mid m,o)\big]$; sum over $a$ and $o$ against $y_a(o)$, apply Lemma~\ref{lem:tool} to the law of the observation and, for each $o$, to the law of the action, then Minkowski's and Jensen's inequalities. The averages of the divergences are $D^0_j$ and $\dE_j$.
+\end{proof}
+
+So the hidden loss of the memory that the policy reads has two sources. First, histories with the same memory value predict the consequences of an action differently. This is bounded with $D_t$ of the two actions that are compared, or, for $t\le T-2$, with their $\dP_t$ and $D^+_t$. Second, the values at the next time are themselves in error. This is bounded with $D^0_j$ and $\dE_j$ at the later times $j$, as a root mean square over the memory values and with a factor that grows as an action becomes rare. Each term comes with its own range of values. These are upper bounds: a term can be large where the hidden loss is zero, for instance when the history knows more about a part of the observation on which no value depends. So the four terms say what $f$ can be trained to predict, and the greedy advantage says whether a change of $f$ helped.
+
+\paragraph{In the example.} Take round 2 again, at time $1$. Here $D_1(m,a)=\ln2$. Split at the current action, $D^0_1=0$ and $\dE_1=\ln2$; split at the next action, $\dP_1=0$ and $D^+_1=\ln2$. The value of the next memory is $1$ when $d$ is shown and $\tfrac12$ otherwise, and \eqref{eq:now} is $\pm\tfrac14$, so $\rho_1(m,a)=\tfrac14\le\tfrac12\sqrt{\ln2/2}\approx0.29$. The carried part is zero because the value at time $2$ depends on $O_2$ alone, and (a) reads $\tfrac14\le\tfrac12\big(\tfrac14+\tfrac14\big)$. In the round before, the four terms are the same, but the range is zero and so is the hidden loss. For a memory that keeps $c$ at time $1$ the same four formulas give zero.
+
+\section{Step 4: the algorithm}\label{sec:algo}
+
+\paragraph{The four prediction losses.} For a candidate for $f_{k+1}$, each loss is the average log-loss of a predictor that reads the memory of the candidate:
+\begin{center}
+\small
+\begin{tabular}{lll}
+\hline
+term & predict & from\\
+\hline
+$D^0$ & $O_{t+1}$ & $f_{k+1}(h_t)$\\
+$\dE$ & $A_t$ & $f_{k+1}(h_t)$ and $O_{t+1}$\\
+$\dP$ & $A_{t+1}$ & $f_{k+1}(h_t)$ and $A_t$\\
+$D^+$ & $O_{t+1}$ & $f_{k+1}(h_t)$, $A_t$ and $A_{t+1}$\\
+\hline
+\end{tabular}
+\end{center}
+For a variable $Y$ and a memory $N$ that is a function of the history, the smallest average log-loss of predicting $Y$ from $N$ is $H(Y\mid N)=I(h_t;Y\mid N)+H(Y\mid h_t)$, and the last entropy does not depend on the candidate; the same holds with the other variables that the predictor reads added to every condition. So the smallest value of each loss is the average of its term, computed with the memory of the candidate, plus a number that does not depend on the candidate.
+
+\paragraph{A critic for a candidate.} $Q_t(n,a)$ is defined with weights $\Pr(h\mid n)$ that do not depend on the action, while $\pi_k$ chooses its action from another memory. So when the returns after $(n,a)$ are averaged, each step has to be weighted by $1/\pi_k(A_t\mid M_t)$: the average over the steps with $f_{k+1}(h_t)=n$ of the return times $\mathbf 1\{A_t=a\}/\pi_k(a\mid M_t)$ is $\sum_h\Pr(h\mid n)\,\pi_k(a\mid m)\,Q_t(h,a)/\pi_k(a\mid m)=Q_t(n,a)$. For $f_k$ itself no weights are needed. The weights are large where an action is rare.
+
+\begin{center}
+\fbox{\begin{minipage}{0.94\linewidth}
+\textbf{Round $k$.} The agent makes a number of runs of length $T$ with $f_k$ and $\pi_k$ fixed; $\pi_k$ takes every action with positive probability, as a softmax policy does. Then, from the experience of the round, as in an actor-critic method:
+\begin{enumerate}
+\item \emph{Candidates.} For each of a few settings of four weights, start from $f_k$ and take gradient steps on the weighted sum of the four prediction losses. These are the auxiliary losses of $f$. Each setting gives one candidate for $f_{k+1}$, and $f_k$ itself is a candidate too.
+\item \emph{Critic.} Train a critic on the memory of each candidate, with the weights above. The greedy advantage of a candidate is \eqref{eq:greedy} with the values of its critic; the average of $V_t$ is the same for all candidates, so only the averages of $\max_aQ_t(n,a)$ have to be compared.
+\item \emph{Choice.} $f_{k+1}$ is the candidate with the largest greedy advantage; ties go to $f_k$.
+\item \emph{Policy.} In round $k+1$ the agent takes, with a small probability $\alpha$, the greedy action of the critic on the memory of $f_{k+1}$, and otherwise the action of $\pi_k$. For this it keeps the memory of $f_k$ as well, unless the new memory determines the old one. Go to round $k+1$.
+\end{enumerate}
+\end{minipage}}
+\end{center}
+
+Lines 3 and 4 are Steps~1 and~2: to first order the step changes the return by $\alpha$ times the greedy advantage of the chosen memory. Line 1 is a choice: the hidden loss of the memory that the policy reads is bounded with the four terms (Proposition~\ref{prop:terms}), so they are what $f$ is trained to lower, but for a candidate no bound is proved, and lines 2 and 3 check whether the training helped. The loop repeats because what a memory hides changes with the policy.
+
+\paragraph{In the example.} Round 1: $f_{k+1}=f_k$, and the step with $\alpha=1$ gives $J=\tfrac34$. Round 2: a candidate that keeps $c$ has all four terms zero at time $1$ and the greedy advantage $\tfrac14$, against $0$ for $f_k$; the step towards it with $\alpha=1$ gives $J=1$.
+
+\paragraph{Not covered.}
+\begin{itemize}\setlength{\itemsep}{0pt}
+\item A bound on the hidden loss of a candidate that the policy does not read yet. Proposition~\ref{prop:terms} and the two splits are for the memory that the policy reads.
+\item The weights of the four losses. No statement gives them.
+\item The size of the step, and a policy step other than the mixture of line 4.
+\item Dropping the memory of $f_k$ after the step, as an agent with one network for $f$ does; with line 4 as written the memory grows by one component per round.
+\item Estimation from finitely many runs, a critic that bootstraps, and an agent that changes $f$ and the policy at every time step.
+\end{itemize}
+
+\paragraph{Longer versions,} in the folder \texttt{archive}. Steps~1 and~2 as propositions for any next agent, with proofs:\\ {\small\texttt{main\_four\_steps\_with\_step1\_proofs\_2026-11-24.tex}}.\\ Line-by-line proofs of Step~3: {\small\texttt{main\_theory\_to\_algorithm\_paper\_style\_2026-11-24.tex}}.
+
+\begin{thebibliography}{5}
+\bibitem[Abel et~al.(2023a)]{abel2023bounded}
+D.~Abel, A.~Barreto, H.~van Hasselt, B.~Van~Roy, D.~Precup, and S.~Singh.
+\newblock On the convergence of bounded agents.
+\newblock arXiv:2307.11044, 2023.
+
+\bibitem[Abel et~al.(2023b)]{abel2023definition}
+D.~Abel, A.~Barreto, B.~Van~Roy, D.~Precup, H.~van Hasselt, and S.~Singh.
+\newblock A definition of continual reinforcement learning.
+\newblock arXiv:2307.11046, 2023.
+
+\bibitem[Cover and Thomas(2006)]{cover2006elements}
+T.~M. Cover and J.~A. Thomas.
+\newblock \emph{Elements of Information Theory}.
+\newblock Wiley, 2nd edition, 2006.
+
+\bibitem[Kakade and Langford(2002)]{kakade2002cpi}
+S.~Kakade and J.~Langford.
+\newblock Approximately optimal approximate reinforcement learning.
+\newblock In \emph{International Conference on Machine Learning (ICML)}, 2002.
+
+\bibitem[Xu and Raginsky(2020)]{xu2020minimum}
+A.~Xu and M.~Raginsky.
+\newblock Minimum excess risk in Bayesian learning.
+\newblock arXiv:2012.14868, 2020.
+\end{thebibliography}
+
+\end{document}

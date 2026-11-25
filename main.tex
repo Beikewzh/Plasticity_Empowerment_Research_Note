@@ -27,16 +27,46 @@
 \begin{document}
 \maketitle
 
-\paragraph{Question.} An agent has a state-update function $f$ that turns its history into a memory $M_t$, a critic, and a policy that reads only the memory. It learns all three (Figure~\ref{fig:agent}). Learning proceeds in rounds: during a round $f$ and the policy are fixed while the agent collects experience, and between two rounds both change. How should $f$ be trained, and how should the policy change, from one round to the next?
+\paragraph{Question.} Take a recurrent actor-critic agent. A state-update function $f$, for instance a recurrent network, turns the history into a memory $M_t$, the agent state. A critic estimates $Q(M_t,a)$, and a policy $\pi(a\mid M_t)$ reads only the memory. All three are learned, in rounds: during a round they are fixed and the agent collects experience, and between two rounds they are updated (Figure~\ref{fig:agent}). What should $f$ remember, and how can the agent tell from its own experience?
 
-\paragraph{Answer, in four steps.}
+\paragraph{Answer.}
 \begin{enumerate}
-\item (Known.) A small policy step towards the greedy actions on a memory changes the return, to first order, by the size of the step times the \emph{greedy advantage} of that memory, the average of $\max_aQ-V$ on it \eqref{eq:greedy}.
-\item (Known.) The greedy advantage of a memory is that of the whole history minus its \emph{hidden loss}: what is lost when all histories with the same memory value have to take the same action \eqref{eq:loss}.
-\item For the memory that the policy reads, the hidden loss is bounded with the four terms of the state defect, each under a square root and times a range of values (Proposition~\ref{prop:terms}). The four terms measure what the history tells, beyond the memory, about the next observation ($D^0$), about the action just taken once the next observation is seen ($\dE$), about the next action ($\dP$), and about the next observation once the next action is known ($D^+$).
-\item So: train candidates for the next $f$ on the four terms as auxiliary prediction losses, keep the candidate with the largest greedy advantage as estimated by a critic, and move the policy a small step towards the greedy actions on it (Section~\ref{sec:algo}).
+\item (Known.) How much a small policy step can gain on a memory is the \emph{greedy advantage} of that memory: the average of $\max_aQ-V$ over its values. A critic on that memory shows it.
+\item (Known.) A memory that merges histories with different best actions has a smaller greedy advantage than the whole history. The difference is its \emph{hidden loss}.
+\item (This note.) The hidden loss of the memory that the policy reads is bounded with the four terms of the state defect, each under a square root and times a range of values. The four terms measure what the history tells, beyond the memory, about the next observation ($D^0$), about the action just taken once the next observation is seen ($\dE$), about the next action ($\dP$), and about the next observation once the next action is known ($D^+$).
+\item (This note.) So the agent trains $f$ on four prediction losses, one for each term, and lets the greedy advantage choose between the results. The bound does not give the weights of the four losses, and what a memory hides changes with the policy, so the choice is made again in every round.
 \end{enumerate}
-Steps 1 and 2 are known and are only recalled. Step 3 is an upper bound, so the theory does not give the weights of the four losses; step 4 tries a few settings of the weights and lets the greedy advantage choose.
+
+\section{An example}\label{sec:example}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[>={Stealth[length=2mm]}, box/.style={draw, rounded corners=2pt, align=center, font=\small, inner sep=4pt}]
+\node[box] (o1) at (0,0) {time 1\\ see a bit $c$};
+\node[box] (a1) at (3,0) {act: $A_1$};
+\node[box] (o2a) at (6.6,0.9) {time 2\\ see a bit $d$};
+\node[box] (o2b) at (6.6,-0.9) {time 2\\ see nothing};
+\node[box] (a2a) at (9.6,0.9) {act: $A_2$};
+\node[box] (a2b) at (9.6,-0.9) {act: $A_2$};
+\node[box] (r) at (12.6,0) {reward $1$\\ if $A_2=d$};
+\draw[->] (o1) -- (a1);
+\draw[->] (a1) -- node[above, sloped, font=\scriptsize] {$A_1=c$} (o2a.west);
+\draw[->] (a1) -- node[below, sloped, font=\scriptsize] {$A_1\ne c$} (o2b.west);
+\draw[->] (o2a) -- (a2a);
+\draw[->] (o2b) -- (a2b);
+\draw[->] (a2a) -- (r);
+\draw[->] (a2b) -- (r);
+\end{tikzpicture}
+\caption{The example. Both bits are fair, and $d$ is drawn whether or not it is shown. The agent's memory keeps nothing at time $1$ and keeps what it saw at time $2$.}\label{fig:example}
+\end{figure}
+
+At time $1$ the agent sees a bit $c$ and acts. If its action equals $c$, it sees a second bit $d$ at time $2$; otherwise it sees nothing. At time $2$ it acts again, and the reward is $1$ if this action equals $d$ (Figure~\ref{fig:example}). The agent's memory does not keep $c$. Its first policy is uniform, with return $\tfrac12$.
+
+\emph{Round 1.} The critic finds one thing to improve: at time $2$, when $d$ is seen, take the action $d$. This is worth $1$ against $\tfrac12$ on half of the runs, so the policy can gain $\tfrac14$, and after the policy step the return is $\tfrac34$. Would remembering $c$ have helped? No. While the policy at time $2$ is uniform, seeing $d$ is worth nothing, so at time $1$ both actions are worth $\tfrac12$ whatever $c$ is. The memory merges the histories $c=0$ and $c=1$ at no cost.
+
+\emph{Round 2.} The policy now uses $d$. So at time $1$ the action equal to $c$ is worth $1$ and the other one $\tfrac12$. The memory still merges $c=0$ and $c=1$, and on it both actions are worth $\tfrac34$: the critic sees nothing to improve, although $\tfrac14$ can still be gained. A memory that also keeps $c$ shows it, and after the policy step the return is $1$.
+
+At time $1$ the world, the memory, and what the memory predicts about the next observation are the same in both rounds. What the merging costs is $0$ in round 1 and $\tfrac14$ in round 2: it depends on the values of the current policy. The rest of the note says this in general.
 
 \section{Setting}
 
@@ -83,11 +113,11 @@ Q_t(n,a)=\sum_h\Pr(h\mid n)\,Q_t(h,a),\qquad V_t(n)=\sum_h\Pr(h\mid n)\,V_t(h).
 \]
 With $f_k$ in the place of $f_{k+1}$ these are $Q_t(m,a)$ and $V_t(m)$, the values that the critic of an actor-critic agent learns.
 
-\paragraph{Example.} $T=3$, $\gamma=1$, two actions. $O_1$ is a fair bit $c$. If $A_1=c$, then $O_2$ shows a fair bit $d$; otherwise $O_2$ is blank. The bit $d$ is drawn whether or not it is shown. The only reward is in $O_3$: it is $1$ if $A_2=d$ and $0$ otherwise. The memory of $f_k$ is empty at time $1$, so it forgets $c$, and it is $O_2$ at time $2$. The policy $\pi_k$ is uniform, and $J(\pi_k)=\tfrac12$.
+In the example of Section~\ref{sec:example}, $T=3$, $\gamma=1$, $O_1=c$, $O_2$ is $d$ or blank, and the only reward is in $O_3$.
 
 \section{Steps 1 and 2: two known facts}
 
-The \emph{greedy advantage} of the memory of $f_{k+1}$ is
+How much can the policy still improve if it reads a given memory? The answer is the \emph{greedy advantage} of the memory: at each memory value, the value of the best action minus the value of what the policy does now, averaged over the memory values that the agent meets. For the memory of $f_{k+1}$ it is
 \begin{equation}\label{eq:greedy}
 \sum_{t=1}^{T-1}\gamma^{t-1}\sum_n\Pr(f_{k+1}(h_t)=n)\,\big[\max_aQ_t(n,a)-V_t(n)\big],
 \end{equation}
@@ -103,11 +133,23 @@ It is not negative because the maximum of an average is at most the average of t
 
 \paragraph{Together.} To first order, a small policy step on a memory changes the return by $\alpha$ times the difference between the greedy advantage of the history and the average hidden loss of the memory. So training $f$ does not by itself change the return: it changes what the memory hides, and the return moves when the policy then takes its step. The exact statements, for any next agent and with the size of the second-order term, are in the longer version named at the end.
 
-\paragraph{In the example.} Round 1, on the memory of $f_k$. At time $1$ both actions have the value $\tfrac12$, so the greedy action has advantage $0$ and forgetting $c$ hides nothing. At time $2$ the greedy action has advantage $1-\tfrac12$ when $d$ is shown, which has probability $\tfrac12$. So the greedy advantage is $\tfrac14$, and the step with $\alpha=1$ gives $J=\tfrac34$. Round 2, after that step. Now $Q_1(h,a)$ is $1$ if $a=c$ and $\tfrac12$ otherwise, while on the memory of $f_k$ both actions have the value $\tfrac34$: the hidden loss at time $1$ is $1-\tfrac34=\tfrac14$, and the greedy advantage of $f_k$ is $0$. A memory that keeps $c$ at time $1$, and still $O_2$ at time $2$, has the greedy advantage $\tfrac14$. What a memory hides depends on the current policy. (After the step with $\alpha=1$ the policy at time $2$ no longer takes every action; the exact values used in the examples do not need that it does.)
+\paragraph{In the example.} In round 1 the greedy advantage of the memory is $\tfrac14$, and no memory has more. In round 2 it is $0$, the hidden loss at time $1$ is $\tfrac14$, and a memory that keeps $c$ has the greedy advantage $\tfrac14$. (After the step of round 1 the policy at time $2$ no longer takes every action; the exact values used in the examples do not need that it does.)
 
 \section{Step 3: the hidden loss and the four terms}
 
-This step is for the memory of $f_k$, which the policy reads; again nothing is learned inside it. Below, $a$ and $b$ are actions at time $t$ and $a'$ is the action at time $t+1$. Conditional laws such as $\Pr(o\mid m,b,a')$ or $\Pr(a\mid m,o)$ are those of the experience under $\pi_k$ given the stated values. Let $\Pr(o\mid m,a)=\sum_h\Pr(h\mid m)\,e(o\mid h,a)$. The state defect and its four terms are
+Why would two histories with the same memory value prefer different actions? For one of two reasons. Either they predict differently what happens right after the action. Or they predict it alike, but at the next time the histories that are merged there already have different values. The first reason is bounded with the state defect at time $t$, the second with the state defect at later times, and each of the two splits of the state defect does one of the two jobs:
+\begin{center}
+\small
+\begin{tabular}{lll}
+\hline
+part of the hidden loss & what differs between merged histories & bounded with\\
+\hline
+made at time $t$ & the prediction of $O_{t+1}$ after an action & $D_t=\dP_t+D^+_t$ of the two actions\\
+carried from later & the state value from time $t+1$ on & $D^0_j$ and $\dE_j$ at later times $j$\\
+\hline
+\end{tabular}
+\end{center}
+This step is for the memory of $f_k$, which the policy reads; nothing is learned inside it. Below, $a$ and $b$ are actions at time $t$ and $a'$ is the action at time $t+1$. Conditional laws such as $\Pr(o\mid m,b,a')$ or $\Pr(a\mid m,o)$ are those of the experience under $\pi_k$ given the stated values. Let $\Pr(o\mid m,a)=\sum_h\Pr(h\mid m)\,e(o\mid h,a)$ be the prediction of the next observation from the memory. The state defect $D_t$ is what the history tells about the next observation beyond the memory and the action; the four terms are the pieces of its two splits:
 \begin{align*}
 D_t(m,a)&=I(h_t;O_{t+1}\mid M_t=m,A_t=a)=\sum_h\Pr(h\mid m)\,\KL\big(e(\cdot\mid h,a)\,\big\|\,\Pr(\cdot\mid m,a)\big),\\
 D^0_t(m)&=I(h_t;O_{t+1}\mid M_t=m),\\
@@ -168,7 +210,7 @@ where $y_a(o)=r(o)+\gamma V_{j+1}(f_k(m,a,o))$ and $\bar y(o)$ is its average ov
 (c) First line: the next history $(h,a,o)$ has probability $\Pr(h_t=h)\pi_k(a\mid m)e(o\mid h,a)$, so the average of $\nu_t(m,a)^2$ over $(M_t,A_t)$ is the sum under the root. Then use Jensen's inequality and $\nu_t(m,b)^2\le\pi_k(b\mid m)^{-1}\sum_a\pi_k(a\mid m)\,\nu_t(m,a)^2$. Second line: average Lemma~\ref{lem:onestep} over the action with $\pi_k(a\mid m)$. By Minkowski's and Jensen's inequalities as in (a), the root on the left at time $i$ is at most $\sqrt{\sum_m\Pr(M_i=m)\rho_i(m)^2}$ plus $\gamma$ times the same root at time $i+1$, and the root at time $T$ is zero. Third line: Bayes' rule gives $\pi_k(a\mid m)\big[e(o\mid h,a)-\Pr(o\mid m,a)\big]=\big[\Pr(o\mid h)-\Pr(o\mid m)\big]\Pr(a\mid m,o)+\Pr(o\mid h)\big[\Pr(a\mid h,o)-\Pr(a\mid m,o)\big]$; sum over $a$ and $o$ against $y_a(o)$, apply Lemma~\ref{lem:tool} to the law of the observation and, for each $o$, to the law of the action, then Minkowski's and Jensen's inequalities. The averages of the divergences are $D^0_j$ and $\dE_j$.
 \end{proof}
 
-So the hidden loss of the memory that the policy reads has two sources. First, histories with the same memory value predict the consequences of an action differently. This is bounded with $D_t$ of the two actions that are compared, or, for $t\le T-2$, with their $\dP_t$ and $D^+_t$. Second, the values at the next time are themselves in error. This is bounded with $D^0_j$ and $\dE_j$ at the later times $j$, as a root mean square over the memory values and with a factor that grows as an action becomes rare. Each term comes with its own range of values. These are upper bounds: a term can be large where the hidden loss is zero, for instance when the history knows more about a part of the observation on which no value depends. So the four terms say what $f$ can be trained to predict, and the greedy advantage says whether a change of $f$ helped.
+Each term comes with its own range of values, and these are upper bounds: a term can be large where the hidden loss is zero, as in round 1 of the example, or when the history knows more about a part of the observation on which no value depends. So the four terms say what $f$ can be trained to predict, and the greedy advantage says whether a change of $f$ helped.
 
 \paragraph{In the example.} Take round 2 again, at time $1$. Here $D_1(m,a)=\ln2$. Split at the current action, $D^0_1=0$ and $\dE_1=\ln2$; split at the next action, $\dP_1=0$ and $D^+_1=\ln2$. The value of the next memory is $1$ when $d$ is shown and $\tfrac12$ otherwise, and \eqref{eq:now} is $\pm\tfrac14$, so $\rho_1(m,a)=\tfrac14\le\tfrac12\sqrt{\ln2/2}\approx0.29$. The carried part is zero because the value at time $2$ depends on $O_2$ alone, and (a) reads $\tfrac14\le\tfrac12\big(\tfrac14+\tfrac14\big)$. In the round before, the four terms are the same, but the range is zero and so is the hidden loss. For a memory that keeps $c$ at time $1$ the same four formulas give zero.
 
