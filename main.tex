@@ -260,32 +260,31 @@ For a variable $Y$ and a memory $N$ that is a function of the history, the small
 \begin{algorithm}[h]
 \caption{One round of the agent}\label{alg:round}
 \begin{algorithmic}[1]
-\Require $f_k$; a policy $\pi_k$ that takes every action with positive probability; a step size $\alpha$; a few settings $w^1,\dots,w^J$ of four weights
-\State run a number of episodes with $f_k$ and $\pi_k$; store the histories, the actions, their probabilities $\pi_k(A_t\mid M_t)$ and the returns from each time on
-\State $f^0\gets f_k$
-\For{$j=1,\dots,J$} \Comment{candidates for $f_{k+1}$}
-  \State $f^j\gets f_k$ after gradient steps on $w^j_1\ell_{D^0}+w^j_2\ell_{\dE}+w^j_3\ell_{\dP}+w^j_4\ell_{D^+}$
+\Require $f_k$, $\pi_k$, a step size $\alpha$, a few settings $w^1,\dots,w^J$ of the four weights
+\State run episodes with $f_k$ and $\pi_k$
+\For{$j=1,\dots,J$}
+  \State $f^j\gets$ a copy of $f_k$ trained on $w^j_1\ell_{D^0}+w^j_2\ell_{\dE}+w^j_3\ell_{\dP}+w^j_4\ell_{D^+}$
+  \State $Q^j\gets$ a critic fitted on the memory of $f^j$
+  \State $g^j\gets$ the average over the episodes of $\max_aQ^j$
 \EndFor
-\For{$j=0,\dots,J$} \Comment{a critic for each candidate}
-  \State fit $Q^j(n,a)$ to the returns after $(f^j(h_t),A_t)$, each step weighted by $1/\pi_k(A_t\mid M_t)$
-  \State $g^j\gets$ the average over the episodes of $\sum_t\gamma^{t-1}\max_aQ^j(f^j(h_t),a)$
-\EndFor
-\State $j^*\gets$ the $j$ with the largest $g^j$; ties go to $0$ \Comment{largest greedy advantage}
-\State $f_{k+1}\gets f^{j^*}$, kept together with $f_k$ unless its memory determines that of $f_k$
-\State $\pi_{k+1}\gets$ with probability $\alpha$ the action with the largest $Q^{j^*}(f^{j^*}(h_t),a)$, otherwise the action of $\pi_k$
+\State $j^*\gets$ the $j$ with the largest $g^j$
+\State $f_{k+1}\gets f^{j^*}$
+\State $\pi_{k+1}\gets$ with probability $\alpha$ the best action of $Q^{j^*}$, otherwise the action of $\pi_k$
 \end{algorithmic}
 \end{algorithm}
 
-The numbers $g^j$ are the greedy advantages up to the average of $V_t$, which is the same for all candidates. Lines 6 to 12 are Steps~1 and~2: to first order the policy step changes the return by $\alpha$ times the greedy advantage of the chosen memory. Line 4 takes from Step~3 which four losses to use, and the loop over rounds repeats because what a memory hides changes with the policy.
+Three details. The policy $\pi_k$ takes every action with positive probability, and each critic is fitted to the returns with the weights above. The unchanged $f_k$, with its own critic, is one of the candidates ($j=0$), and it wins ties. The policy of line 9 uses the action of $\pi_k$, so the agent keeps the memory of $f_k$ as well, unless the new memory determines the old one.
 
-\paragraph{Why the weights are chosen and not derived.} Steps 1 to 3 give a lower bound on what the policy step gains: $\alpha$ times the greedy advantage of the history minus the bound of Step~3, up to order $\alpha^2$. One could turn this bound into the training objective of $f$, in the way a policy-improvement bound is turned into an objective for the policy: minimise the bound, that is, the four terms with the factors of Propositions~\ref{prop:q} and~\ref{prop:v} computed from the current critic as weights. We do not do this, for two reasons. First, the agent cannot evaluate the bound. A term is the prediction loss from the memory minus the same loss from the whole history; the second loss is unknown to the agent, and since the term stands under a square root it cannot be dropped as a constant. Second, each factor is one largest minus smallest value for a whole term, so it does not say which part of the observation carries the value, and a memory that lowers the bound need not lower the hidden loss. So line 4 takes only the four losses from the bound, and lines 6 to 10 choose between weightings with the criterion of Steps~1 and~2, which is exact. What the theory says about the weights is Section~\ref{sec:capacity}: with a part of the world outside the interaction, weight on the two action terms $\dE$ and $\dP$ is never spent on that part, and weight on the two observation terms $D^0$ and $D^+$ can be.
+The numbers $g^j$ are the greedy advantages up to the average of $V_t$, which is the same for all candidates. Lines 4 to 9 are Steps~1 and~2: to first order the policy step changes the return by $\alpha$ times the greedy advantage of the chosen memory. Line 3 takes from Step~3 which four losses to use, and the loop over rounds repeats because what a memory hides changes with the policy.
+
+\paragraph{Why the weights are chosen and not derived.} Steps 1 to 3 give a lower bound on what the policy step gains: $\alpha$ times the greedy advantage of the history minus the bound of Step~3, up to order $\alpha^2$. One could turn this bound into the training objective of $f$, in the way a policy-improvement bound is turned into an objective for the policy: minimise the bound, that is, the four terms with the factors of Propositions~\ref{prop:q} and~\ref{prop:v} computed from the current critic as weights. We do not do this, for two reasons. First, the agent cannot evaluate the bound. A term is the prediction loss from the memory minus the same loss from the whole history; the second loss is unknown to the agent, and since the term stands under a square root it cannot be dropped as a constant. Second, each factor is one largest minus smallest value for a whole term, so it does not say which part of the observation carries the value, and a memory that lowers the bound need not lower the hidden loss. So line 3 takes only the four losses from the bound, and lines 4 to 7 choose between weightings with the criterion of Steps~1 and~2, which is exact. What the theory says about the weights is Section~\ref{sec:capacity}: with a part of the world outside the interaction, weight on the two action terms $\dE$ and $\dP$ is never spent on that part, and weight on the two observation terms $D^0$ and $D^+$ can be.
 
 \paragraph{Not covered.}
 \begin{itemize}\setlength{\itemsep}{0pt}
 \item A bound on the hidden loss of a candidate that the policy does not read yet. Propositions~\ref{prop:q} and~\ref{prop:v} and the two splits are for the memory that the policy reads.
 \item Numbers for the weights of the four losses. Section~\ref{sec:capacity} gives a direction only, under Assumption~\ref{as:exo} and for an acting agent that does not read the exogenous part; if the next action responds to that part, the statement for $\dP$ fails. Nothing is said about which endogenous information to keep.
-\item The size of the step, and a policy step other than the mixture of line 12.
-\item Dropping the memory of $f_k$ after the step, as an agent with one network for $f$ does; with line 11 as written the memory grows by one component per round.
+\item The size of the step, and a policy step other than the mixture of line 9.
+\item Dropping the memory of $f_k$ after the step, as an agent with one network for $f$ does; with line 9 as written the memory grows by one component per round.
 \item Estimation from finitely many runs, a critic that bootstraps, and an agent that changes $f$ and the policy at every time step.
 \end{itemize}
 
