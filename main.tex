@@ -35,12 +35,12 @@
 
 \paragraph{Answer, in four steps.} Round $k$ has $f_k$ and $\pi_k$; round $k+1$ has $f_{k+1}$ and $\pi_{k+1}$.
 \begin{enumerate}
-\item For any $f_{k+1}$ and any policy $\pi_{k+1}$ that reads its memory, $J(\pi_{k+1})-J(\pi_k)$ is the policy advantage of $\pi_{k+1}$ up to an error that is small when $\pi_{k+1}$ acts almost like $\pi_k$ at every history. The policy advantage is at most the greedy advantage of the memory of $f_{k+1}$ (Proposition~\ref{prop:step}).
-\item The greedy advantage of a memory is that of the whole history minus the hidden loss of the memory (Proposition~\ref{prop:hide}).
+\item (Known.) For any $f_{k+1}$ and any policy $\pi_{k+1}$ that reads its memory, $J(\pi_{k+1})-J(\pi_k)$ is the policy advantage of $\pi_{k+1}$ up to an error that is small when $\pi_{k+1}$ acts almost like $\pi_k$ at every history. The policy advantage is at most the greedy advantage of the memory of $f_{k+1}$ (Proposition~\ref{prop:step}).
+\item (Known.) The greedy advantage of a memory is that of the whole history minus the hidden loss of the memory (Proposition~\ref{prop:hide}).
 \item For the memory that the policy reads, that of $f_k$, the hidden loss is bounded with square roots of the four terms, each times a range of values; for $D^0$ and $\dE$ the bound is on average over the memory values, with the terms of later times and a factor that grows when an action is rare (Proposition~\ref{prop:terms}). For a memory that the policy does not read yet, no bound is proved.
 \item So: train candidates for $f_{k+1}$ on the four terms as auxiliary prediction losses, keep the candidate with the largest greedy advantage as estimated by the critic, and move the policy a small step that raises its policy advantage (Section~\ref{sec:algo}).
 \end{enumerate}
-Step 2 is exact. In step 1 the error is of second order for a mixture of $\pi_k$ with a greedy policy, the step of conservative policy iteration. Step 3 is an upper bound, so the theory does not give the weights of the four losses; step 4 tries a few settings of the weights and lets the greedy advantage choose.
+Steps 1 and 2 are known results, written here for an agent whose policy reads a memory; step 3 and the algorithm are the content of this note. Step 2 is exact. In step 1 the error is of second order for a mixture of $\pi_k$ with a greedy policy, the step of conservative policy iteration. Step 3 is an upper bound, so the theory does not give the weights of the four losses; step 4 tries a few settings of the weights and lets the greedy advantage choose.
 
 \section{Setting}
 
@@ -109,30 +109,24 @@ The weights $\Pr(h\mid n)$ do not depend on the action. So $Q_t(n,a)$ is the ave
 
 \paragraph{Example.} $T=3$, $\gamma=1$, two actions. $O_1$ is a fair bit $c$. If $A_1=c$, then $O_2$ shows a fair bit $d$; otherwise $O_2$ is blank. The bit $d$ is drawn whether or not it is shown. The only reward is in $O_3$: it is $1$ if $A_2=d$ and $0$ otherwise. The memory of $f_k$ is empty at time $1$, so it forgets $c$, and it is $O_2$ at time $2$. The policy $\pi_k$ is uniform, and $J(\pi_k)=\tfrac12$.
 
-\section{Step 1: what a small policy step gains}
+\section{Steps 1 and 2: two known facts}
 
-This step is the learning of the policy. Let $f_{k+1}$ be any state-update function and $\pi_{k+1}$ any policy that reads its memory. For a history $h$, $m$ and $n$ are its memory values under $f_k$ and $f_{k+1}$. Write
+Both steps are known, and they are only restated here for a policy that reads a memory. The proofs are a few lines each; they are written out in the longer version named at the end.
+
+\paragraph{Step 1: what a policy step gains.} Let $f_{k+1}$ be any state-update function and $\pi_{k+1}$ any policy that reads its memory. For a history $h$, $m$ and $n$ are its memory values under $f_k$ and $f_{k+1}$. Write
 \begin{equation}\label{eq:g}
 g_t(h)=\sum_a\pi_{k+1}(a\mid n)\,\big[Q_t(h,a)-V_t(h)\big],
 \end{equation}
-the advantage, with the values of $\pi_k$, of what the new policy does at $h$. The \emph{policy advantage} of $\pi_{k+1}$ is $\sum_{t=1}^{T-1}\gamma^{t-1}\sum_h\Pr(h_t=h)\,g_t(h)$. Let $\epsilon$ be the largest value of $\sum_a\pi_{k+1}(a\mid n)^2/\pi_k(a\mid m)-1$ over the histories $h_t$ of positive probability with $t\le T-2$. It is the largest chi-square distance between the two policies over these histories, and it is zero when the new agent acts exactly like the old one.
+the advantage, with the values of $\pi_k$, of what the new policy does at $h$. The \emph{policy advantage} of $\pi_{k+1}$ is $\sum_{t=1}^{T-1}\gamma^{t-1}\sum_h\Pr(h_t=h)\,g_t(h)$. Let $\epsilon$ be the largest value of $\sum_a\pi_{k+1}(a\mid n)^2/\pi_k(a\mid m)-1$ over the histories $h_t$ of positive probability with $t\le T-2$: the largest chi-square distance between the two policies, zero when the new agent acts exactly like the old one.
 
-\begin{lemma}[Known: performance difference; Kakade and Langford, 2002]\label{lem:pdl}
-For every agent $\lambda(a\mid h)$, with $\Pr_\lambda$ its law,
-\[
-J(\lambda)-J(\pi_k)=\sum_{t=1}^{T-1}\gamma^{t-1}\sum_h\Pr\nolimits_\lambda(h_t=h)\sum_a\big[\lambda(a\mid h)-\pi_k(a\mid m)\big]\,Q_t(h,a).
-\]
-\end{lemma}
-
-\begin{proposition}[A policy step to any next agent]\label{prop:step}
+\begin{proposition}[A policy step; after Kakade and Langford, 2002]\label{prop:step}
 Under Assumptions~\ref{as:env} to~\ref{as:pol}:
 
-(a) The policy advantage of $\pi_{k+1}$ depends on the histories only through the memory of $f_{k+1}$, and it is at most the greedy advantage \eqref{eq:greedy} of that memory:
-\begin{align}
-\sum_{t=1}^{T-1}\gamma^{t-1}\sum_h\Pr(h_t=h)\,g_t(h)&=\sum_{t=1}^{T-1}\gamma^{t-1}\sum_n\Pr(f_{k+1}(h_t)=n)\sum_a\pi_{k+1}(a\mid n)\big[Q_t(n,a)-V_t(n)\big]\label{eq:sur}\\
-&\le\ \eqref{eq:greedy},\nonumber
-\end{align}
-with equality when $\pi_{k+1}$ takes only actions with the largest $Q_t(n,a)$.
+(a) The policy advantage of $\pi_{k+1}$ is
+\begin{equation}\label{eq:sur}
+\sum_{t=1}^{T-1}\gamma^{t-1}\sum_n\Pr(f_{k+1}(h_t)=n)\sum_a\pi_{k+1}(a\mid n)\big[Q_t(n,a)-V_t(n)\big],
+\end{equation}
+which is at most the greedy advantage \eqref{eq:greedy} of the memory of $f_{k+1}$, with equality when $\pi_{k+1}$ takes only actions with the largest $Q_t(n,a)$.
 
 (b) With $s_t$ the standard deviation of $g_t(h_t)$ under $\pi_k$,
 \[
@@ -141,49 +135,33 @@ with equality when $\pi_{k+1}$ takes only actions with the largest $Q_t(n,a)$.
 
 (c) A mixture step. Let $\pg$ take at each $n$ only actions with the largest $Q_t(n,a)$, and let the next agent take the action $a$ after $h$ with probability $(1-\alpha)\,\pi_k(a\mid m)+\alpha\,\pg(a\mid n)$, $0<\alpha\le1$. This is a policy on the memory of $f_{k+1}$ when $f_{k+1}$ is finer than $f_k$; otherwise the next agent keeps the memory of $f_k$ as well, and the memory of round $k+1$ is the pair. Then (b) holds, the policy advantage is $\alpha$ times the greedy advantage \eqref{eq:greedy} of the memory of $f_{k+1}$, and the right side of (b) is at most $\alpha^2\sum_{t=2}^{T-1}\gamma^{t-1}\sqrt{(t-1)\kappa}\,(1+\kappa)^{(t-2)/2}\,\bar s_t$, where $\kappa$ and $\bar s_t$ are $\epsilon$ and $s_t$ for $\pg$ in the place of $\pi_{k+1}$.
 \end{proposition}
-\begin{proof}
-(a) Group the histories by $n$: $\sum_h\Pr(h_t=h)\,\pi_{k+1}(a\mid n)\,Q_t(h,a)=\sum_n\Pr(f_{k+1}(h_t)=n)\,\pi_{k+1}(a\mid n)\,Q_t(n,a)$, and in the same way $\sum_h\Pr(h_t=h)V_t(h)=\sum_n\Pr(f_{k+1}(h_t)=n)V_t(n)$. An average over the action is at most the maximum.
-
-(b) By Lemma~\ref{lem:pdl} with $\lambda=\pi_{k+1}$ and $\sum_a\pi_k(a\mid m)Q_t(h,a)=V_t(h)$, $J(\pi_{k+1})-J(\pi_k)=\sum_t\gamma^{t-1}\sum_h\Prn(h_t=h)\,g_t(h)$, where $\Prn$ is the law of the experience under $\pi_{k+1}$. Let $L_t(h)=\Prn(h_t=h)/\Pr(h_t=h)$, which is the product over the times $\tau<t$ of $\pi_{k+1}(a_\tau\mid n_\tau)/\pi_k(a_\tau\mid m_\tau)$, with $a_\tau$, $n_\tau$, $m_\tau$ the action and the two memory values at time $\tau$ along $h$; and let $\bar g_t$ be the mean of $g_t(h_t)$ under $\pi_k$. Since $\sum_h\Pr(h_t=h)\big[L_t(h)-1\big]=0$,
-\begin{align*}
-\Big|\sum_h\big[\Prn(h_t=h)-\Pr(h_t=h)\big]g_t(h)\Big|&=\Big|\sum_h\Pr(h_t=h)\big[L_t(h)-1\big]\big[g_t(h)-\bar g_t\big]\Big|\\
-&\le\sqrt{\sum_h\Pr(h_t=h)\,L_t(h)^2-1}\;s_t \why{Cauchy--Schwarz}.
-\end{align*}
-Summing first over the last action and observation of $h$, and using $\sum_a\pi_{k+1}(a\mid n)^2/\pi_k(a\mid m)\le1+\epsilon$,
-\[
-\sum_h\Pr(h_t=h)\,L_t(h)^2\le(1+\epsilon)\sum_h\Pr(h_{t-1}=h)\,L_{t-1}(h)^2,
-\]
-and $L_1=1$, so the term $t=1$ vanishes.
-
-(c) Lemma~\ref{lem:pdl} and the proof of (b) use the new policy only through its action probabilities at each history, so (b) holds for the mixture. The part of $g_t$ that comes from $\pi_k$ is $\sum_a\pi_k(a\mid m)Q_t(h,a)-V_t(h)=0$. So $g_t$ is $\alpha$ times the $g_t$ of $\pg$, which gives the policy advantage by (a) for $\pg$, and $s_t=\alpha\bar s_t$. Also the chi-square distance of the mixture from $\pi_k(\cdot\mid m)$ is $\alpha^2\big[\sum_a\pg(a\mid n)^2/\pi_k(a\mid m)-1\big]\le\alpha^2\kappa$. Then use $(1+z)^p-1\le pz(1+z)^{p-1}$ for $z\ge0$ and an integer $p\ge1$, and $\alpha\le1$.
+\begin{proof}[Idea of the proof]
+(a) Group the histories by $n$. (b) The performance difference lemma gives $J(\pi_{k+1})-J(\pi_k)=\sum_t\gamma^{t-1}\sum_h\Prn(h_t=h)\,g_t(h)$, with $\Prn$ the law of the experience under $\pi_{k+1}$. Change the measure from $\Prn$ to $\Pr$ and use the Cauchy--Schwarz inequality; the second moment of the ratio of the two laws grows by at most the factor $1+\epsilon$ at each time. (c) The part of $g_t$ that comes from $\pi_k$ is zero, and the chi-square distance of the mixture from $\pi_k$ is $\alpha^2$ times that of $\pg$.
 \end{proof}
 
-So the change of the return is the policy advantage up to the right side of (b), and the step is a gain when the policy advantage exceeds that right side. The memory of the next agent enters in two places. First, no policy on it has a policy advantage above its greedy advantage. Second, $\epsilon$ can be small only if a policy on the new memory can act like $\pi_k$: a memory that merges two memory values of $f_k$ at which $\pi_k$ acts differently cannot, and then (b) says little unless the next agent keeps the memory of $f_k$. For the mixture step (c), the step of conservative policy iteration (Kakade and Langford, 2002), the change of the return is $\alpha$ times the greedy advantage up to a term of order $\alpha^2$. So between two memories, the one with the strictly larger greedy advantage gives the larger gain once $\alpha$ is small enough. With $f_{k+1}=f_k$ this is the usual small policy step on the current memory.
+So the change of the return is the policy advantage up to the right side of (b), and no policy on a memory has a policy advantage above the greedy advantage of that memory. For the mixture step, which is the step of conservative policy iteration, the change of the return is $\alpha$ times the greedy advantage up to a term of order $\alpha^2$; so between two memories, the one with the strictly larger greedy advantage gives the larger gain once $\alpha$ is small enough. Without the mixture, $\epsilon$ can be small only if a policy on the new memory can act like $\pi_k$, which fails when the new memory merges two memory values of $f_k$ at which $\pi_k$ acts differently.
 
-\paragraph{In the example.} Take $f_{k+1}=f_k$ and the mixture step. At time $1$ both actions have the value $\tfrac12$, so the advantage of the greedy action is $0$. At time $2$ it is $1-\tfrac12$ when $d$ is shown, which has probability $\tfrac12$, and $0$ otherwise. So the greedy advantage is $\tfrac14$. At time $1$ the two actions tie; let $\pg=\pi_k$ there. Then the visits at time $2$ do not change, and the left side of (b) is zero. The step with $\alpha=1$ gives $J=\tfrac34$. (After it the policy at time $2$ no longer takes every action. The exact values in the examples below do not need that it does; the critic of Step~4 would.)
-
-\section{Step 2: what a memory hides}
-
-In this step the policy is fixed and nothing is learned: it compares what two state-update functions show of the values of the same policy. The \emph{hidden loss} at a memory value $n$ of $f_{k+1}$ is the value when each history with this memory value takes its own best action, minus the value when all of them take the one action that is best on average:
+\paragraph{Step 2: what a memory hides.} The \emph{hidden loss} at a memory value $n$ of $f_{k+1}$ is the value when each history with this memory value takes its own best action, minus the value when all of them take the one action that is best on average:
 \begin{equation}\label{eq:loss}
 \sum_h\Pr(h\mid n)\,\max_aQ_t(h,a)-\max_aQ_t(n,a).
 \end{equation}
 
-\begin{proposition}[Greedy advantage and hidden loss]\label{prop:hide}
+\begin{proposition}[Greedy advantage and hidden loss; the inequality is that of the value of information, Xu and Raginsky, 2020, Lemma 1]\label{prop:hide}
 The greedy advantage of the history minus that of the memory of $f_{k+1}$ is the average hidden loss,
-\begin{align*}
-&\sum_{t=1}^{T-1}\gamma^{t-1}\Big[\sum_h\Pr(h_t=h)\max_aQ_t(h,a)-\sum_n\Pr(f_{k+1}(h_t)=n)\max_aQ_t(n,a)\Big]\\
-&\qquad=\sum_{t=1}^{T-1}\gamma^{t-1}\sum_n\Pr(f_{k+1}(h_t)=n)\,\big[\text{hidden loss \eqref{eq:loss} at }n\big]\ \ge0 .
-\end{align*}
+\[
+\sum_{t=1}^{T-1}\gamma^{t-1}\sum_n\Pr(f_{k+1}(h_t)=n)\,\big[\text{hidden loss \eqref{eq:loss} at }n\big]\ \ge0 .
+\]
 If $f_{k+1}$ is finer than $f_k$, its greedy advantage is at least that of $f_k$; the same holds for any two memories of which one is a function of the other.
 \end{proposition}
-\begin{proof}
-The averages of $V_t$ are the same on both memories, so the difference of the two greedy advantages is the left side. Group the histories by $n$. Each hidden loss is nonnegative because $Q_t(n,a)$ is an average of $Q_t(h,a)$, and the maximum of an average is at most the average of the maxima. For the last claim, $Q_t(m,a)$ is an average of the $Q_t(n,a)$ over the values $n$ that give the memory value $m$, and the same argument applies with the memory of $f_{k+1}$ in the role of the history.
+\begin{proof}[Idea of the proof]
+The averages of $V_t$ are the same on every memory. Group the histories by $n$: $Q_t(n,a)$ is an average of $Q_t(h,a)$, and the maximum of an average is at most the average of the maxima.
 \end{proof}
 
-So training $f$ does not by itself change the return. It changes how much of the greedy advantage of the history, the most that any memory can show, is left on the memory; the return moves when the policy then takes its step (Step~1).
+So training $f$ does not by itself change the return. It changes how much of the greedy advantage of the history, the most that any memory can show, is left on the memory; the return moves when the policy then takes its step.
 
-\paragraph{In the example.} With the uniform policy, $Q_1(h,a)=\tfrac12$ for both values of $c$ and both actions: the hidden loss of the memory of $f_k$ at time $1$ is $0$, and keeping $c$ adds nothing. Now take the next round, after the policy step with $\alpha=1$. There $Q_1(h,a)$ is $1$ if $a=c$ and $\tfrac12$ otherwise, while on the memory of $f_k$ both actions have the value $\tfrac34$: the hidden loss at time $1$ is $1-\tfrac34=\tfrac14$, and the greedy advantage of $f_k$ is $0$. An $f_{k+1}$ that keeps $c$ at time $1$, and still $O_2$ at time $2$, has the greedy advantage $\tfrac14$. What a memory hides depends on the current policy.
+\paragraph{In the example.} Round 1, with $f_{k+1}=f_k$ and the mixture step. At time $1$ both actions have the value $\tfrac12$, so the advantage of the greedy action is $0$, and the hidden loss of forgetting $c$ is $0$ as well. At time $2$ the advantage of the greedy action is $1-\tfrac12$ when $d$ is shown, which has probability $\tfrac12$, and $0$ otherwise. So the greedy advantage is $\tfrac14$. At time $1$ the two actions tie; let $\pg=\pi_k$ there. Then the visits at time $2$ do not change, the left side of (b) is zero, and the step with $\alpha=1$ gives $J=\tfrac34$. (After it the policy at time $2$ no longer takes every action. The exact values in the examples below do not need that it does; the critic of Step~4 would.)
+
+Round 2, after that step. Now $Q_1(h,a)$ is $1$ if $a=c$ and $\tfrac12$ otherwise, while on the memory of $f_k$ both actions have the value $\tfrac34$: the hidden loss at time $1$ is $1-\tfrac34=\tfrac14$, and the greedy advantage of $f_k$ is $0$. An $f_{k+1}$ that keeps $c$ at time $1$, and still $O_2$ at time $2$, has the greedy advantage $\tfrac14$. What a memory hides depends on the current policy.
 
 \section{Step 3: the hidden loss and the four terms}
 
@@ -250,7 +228,7 @@ where $y_a(o)=r(o)+\gamma V_{j+1}(f_k(m,a,o))$ and $\bar y(o)$ is its average ov
 
 So the hidden loss of the memory that the policy reads has two sources. First, histories with the same memory value predict the consequences of an action differently. This is bounded with $D_t$ of the two actions that are compared, or, for $t\le T-2$, with their $\dP_t$ and $D^+_t$. Second, the values at the next time are themselves in error. This is bounded with $D^0_j$ and $\dE_j$ at the later times $j$, as a root mean square over the memory values and with a factor that grows as an action becomes rare. Each term comes with its own range of values. These are upper bounds: a term can be large where the hidden loss is zero, for instance when the history knows more about a part of the observation on which no value depends. So the four terms say what $f$ can be trained to predict, and the greedy advantage says whether a change of $f$ helped.
 
-\paragraph{In the example.} Take again the round after the policy step with $\alpha=1$, at time $1$. Here $D_1(m,a)=\ln2$. Split at the current action, $D^0_1=0$ and $\dE_1=\ln2$; split at the next action, $\dP_1=0$ and $D^+_1=\ln2$. The value of the next memory is $1$ when $d$ is shown and $\tfrac12$ otherwise, and \eqref{eq:now} is $\pm\tfrac14$, so $\rho_1(m,a)=\tfrac14\le\tfrac12\sqrt{\ln2/2}\approx0.29$. The carried part is zero because the value at time $2$ depends on $O_2$ alone, and (a) reads $\tfrac14\le\tfrac12\big(\tfrac14+\tfrac14\big)$. In the round before, the four terms are the same, but the range is zero and so is the hidden loss. For a memory that keeps $c$ at time $1$ the same four formulas give zero.
+\paragraph{In the example.} Take round 2 again, at time $1$. Here $D_1(m,a)=\ln2$. Split at the current action, $D^0_1=0$ and $\dE_1=\ln2$; split at the next action, $\dP_1=0$ and $D^+_1=\ln2$. The value of the next memory is $1$ when $d$ is shown and $\tfrac12$ otherwise, and \eqref{eq:now} is $\pm\tfrac14$, so $\rho_1(m,a)=\tfrac14\le\tfrac12\sqrt{\ln2/2}\approx0.29$. The carried part is zero because the value at time $2$ depends on $O_2$ alone, and (a) reads $\tfrac14\le\tfrac12\big(\tfrac14+\tfrac14\big)$. In the round before, the four terms are the same, but the range is zero and so is the hidden loss. For a memory that keeps $c$ at time $1$ the same four formulas give zero.
 
 \section{Step 4: the algorithm}\label{sec:algo}
 
@@ -300,9 +278,9 @@ Each line rests on one statement, except the first.
 \item Estimation from finitely many runs, a critic that bootstraps, and an agent that changes $f$ and the policy at every time step.
 \end{itemize}
 
-\paragraph{Longer version.} Line-by-line proofs of Step~3 are in the folder \texttt{archive}, file\\ {\small\texttt{main\_theory\_to\_algorithm\_paper\_style\_2026-11-24.tex}}.
+\paragraph{Longer versions,} in the folder \texttt{archive}. The proofs of Steps~1 and~2 written out:\\ {\small\texttt{main\_four\_steps\_with\_step1\_proofs\_2026-11-24.tex}}.\\ Line-by-line proofs of Step~3: {\small\texttt{main\_theory\_to\_algorithm\_paper\_style\_2026-11-24.tex}}.
 
-\begin{thebibliography}{4}
+\begin{thebibliography}{5}
 \bibitem[Abel et~al.(2023a)]{abel2023bounded}
 D.~Abel, A.~Barreto, H.~van Hasselt, B.~Van~Roy, D.~Precup, and S.~Singh.
 \newblock On the convergence of bounded agents.
@@ -322,6 +300,11 @@ T.~M. Cover and J.~A. Thomas.
 S.~Kakade and J.~Langford.
 \newblock Approximately optimal approximate reinforcement learning.
 \newblock In \emph{International Conference on Machine Learning (ICML)}, 2002.
+
+\bibitem[Xu and Raginsky(2020)]{xu2020minimum}
+A.~Xu and M.~Raginsky.
+\newblock Minimum excess risk in Bayesian learning.
+\newblock arXiv:2012.14868, 2020.
 \end{thebibliography}
 
 \end{document}
