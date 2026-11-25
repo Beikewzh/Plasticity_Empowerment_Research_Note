@@ -37,10 +37,10 @@
 \begin{enumerate}
 \item For any $f_{k+1}$ and any policy $\pi_{k+1}$ that reads its memory, $J(\pi_{k+1})-J(\pi_k)$ is the policy advantage of $\pi_{k+1}$ up to an error that is small when $\pi_{k+1}$ acts almost like $\pi_k$ at every history. The policy advantage is at most the greedy advantage of the memory of $f_{k+1}$ (Proposition~\ref{prop:step}).
 \item The greedy advantage of a memory is that of the whole history minus the hidden loss of the memory (Proposition~\ref{prop:hide}).
-\item For the memory that the policy reads, that of $f_k$, the hidden loss is at most a sum of square roots of the four terms, each times a range of values; for $D^0$ and $\dE$ the terms are those of later times, and they come with a factor that grows when an action is rare (Proposition~\ref{prop:terms}). For a memory that the policy does not read yet, no bound is proved.
+\item For the memory that the policy reads, that of $f_k$, the hidden loss is bounded with square roots of the four terms, each times a range of values; for $D^0$ and $\dE$ the bound is on average over the memory values, with the terms of later times and a factor that grows when an action is rare (Proposition~\ref{prop:terms}). For a memory that the policy does not read yet, no bound is proved.
 \item So: train candidates for $f_{k+1}$ on the four terms as auxiliary prediction losses, keep the candidate with the largest greedy advantage as estimated by the critic, and move the policy a small step that raises its policy advantage (Section~\ref{sec:algo}).
 \end{enumerate}
-Step 2 is exact, and step 1 is exact to first order in the size of the policy step. Step 3 is an upper bound, so the theory does not give the weights of the four losses; step 4 tries a few settings of the weights and lets the greedy advantage choose.
+Step 2 is exact. In step 1 the error is of second order for a mixture of $\pi_k$ with a greedy policy, the step of conservative policy iteration. Step 3 is an upper bound, so the theory does not give the weights of the four losses; step 4 tries a few settings of the weights and lets the greedy advantage choose.
 
 \section{Setting}
 
@@ -103,9 +103,9 @@ and the \emph{greedy advantage} of this memory is
 \begin{equation}\label{eq:greedy}
 \sum_{t=1}^{T-1}\gamma^{t-1}\sum_n\Pr(f_{k+1}(h_t)=n)\,\big[\max_aQ_t(n,a)-V_t(n)\big].
 \end{equation}
-With $f_k$ in the place of $f_{k+1}$ these are $Q_t(m,a)$ and $V_t(m)$, and they are what the critic of an actor-critic agent learns: the average return after $M_t=m$ and $A_t=a$ is $\sum_h\Pr(h\mid m,a)\,Q_t(h,a)$, and $\Pr(h\mid m,a)=\Pr(h\mid m)$ because $\pi_k$ reads $m$ alone. The history is the memory of a state-update function that forgets nothing; its greedy advantage has $\max_aQ_t(h,a)-V_t(h)$ in \eqref{eq:greedy}.
+With $f_k$ in the place of $f_{k+1}$ these are $Q_t(m,a)$ and $V_t(m)$, and they are what the critic of an actor-critic agent learns: the average return after $M_t=m$ and $A_t=a$ is $\sum_h\Pr(h\mid m,a)\,Q_t(h,a)$, and $\Pr(h\mid m,a)=\Pr(h\mid m)$ because $\pi_k$ reads $m$ alone. The history is the memory of a state-update function that forgets nothing; its greedy advantage has $\max_aQ_t(h,a)-V_t(h)$ in \eqref{eq:greedy}. The greedy advantage of $f_k$ is not negative; that of a memory that is not finer than $f_k$ can be.
 
-The weights $\Pr(h\mid n)$ do not depend on the action. So $Q_t(n,a)$ is the average return after the action $a$ at $n$ when the action is drawn independently of the history. Unless $f_{k+1}$ is finer than $f_k$, it is in general not the average return after $a$ at $n$ when the action is drawn by $\pi_k$, which reads another memory. With actions drawn by $\pi_k$, each step has to be weighted by $1/\pi_k(A_t\mid M_t)$: the average over the steps with $f_{k+1}(h_t)=n$ of the return times $\mathbf 1\{A_t=a\}/\pi_k(a\mid M_t)$ is $\sum_h\Pr(h\mid n)\,\pi_k(a\mid m)\,Q_t(h,a)/\pi_k(a\mid m)=Q_t(n,a)$.
+The weights $\Pr(h\mid n)$ do not depend on the action. So $Q_t(n,a)$ is the average return after the action $a$ at $n$ when the action is drawn independently of the history given $n$. Unless $f_{k+1}$ is finer than $f_k$, it is in general not the average return after $a$ at $n$ when the action is drawn by $\pi_k$, which reads another memory. With actions drawn by $\pi_k$, each step has to be weighted by $1/\pi_k(A_t\mid M_t)$: the average over the steps with $f_{k+1}(h_t)=n$ of the return times $\mathbf 1\{A_t=a\}/\pi_k(a\mid M_t)$ is $\sum_h\Pr(h\mid n)\,\pi_k(a\mid m)\,Q_t(h,a)/\pi_k(a\mid m)=Q_t(n,a)$.
 
 \paragraph{Example.} $T=3$, $\gamma=1$, two actions. $O_1$ is a fair bit $c$. If $A_1=c$, then $O_2$ shows a fair bit $d$; otherwise $O_2$ is blank. The bit $d$ is drawn whether or not it is shown. The only reward is in $O_3$: it is $1$ if $A_2=d$ and $0$ otherwise. The memory of $f_k$ is empty at time $1$, so it forgets $c$, and it is $O_2$ at time $2$. The policy $\pi_k$ is uniform, and $J(\pi_k)=\tfrac12$.
 
@@ -115,7 +115,7 @@ This step is the learning of the policy. Let $f_{k+1}$ be any state-update funct
 \begin{equation}\label{eq:g}
 g_t(h)=\sum_a\pi_{k+1}(a\mid n)\,\big[Q_t(h,a)-V_t(h)\big],
 \end{equation}
-the advantage, with the values of $\pi_k$, of what the new policy does at $h$. Let $\epsilon$ be the largest value of $\sum_a\pi_{k+1}(a\mid n)^2/\pi_k(a\mid m)-1$ over the histories $h_t$ of positive probability with $t\le T-2$. It is a chi-square distance between the two policies at one history, and it is zero when the new agent acts exactly like the old one.
+the advantage, with the values of $\pi_k$, of what the new policy does at $h$. The \emph{policy advantage} of $\pi_{k+1}$ is $\sum_{t=1}^{T-1}\gamma^{t-1}\sum_h\Pr(h_t=h)\,g_t(h)$. Let $\epsilon$ be the largest value of $\sum_a\pi_{k+1}(a\mid n)^2/\pi_k(a\mid m)-1$ over the histories $h_t$ of positive probability with $t\le T-2$. It is the largest chi-square distance between the two policies over these histories, and it is zero when the new agent acts exactly like the old one.
 
 \begin{lemma}[Known: performance difference; Kakade and Langford, 2002]\label{lem:pdl}
 For every agent $\lambda(a\mid h)$, with $\Pr_\lambda$ its law,
@@ -139,7 +139,7 @@ with equality when $\pi_{k+1}$ takes only actions with the largest $Q_t(n,a)$.
 \Big|J(\pi_{k+1})-J(\pi_k)-\big[\text{policy advantage \eqref{eq:sur}}\big]\Big|\le\sum_{t=2}^{T-1}\gamma^{t-1}\sqrt{(1+\epsilon)^{t-1}-1}\;s_t .
 \]
 
-(c) A mixture step. Let $f_{k+1}$ be finer than $f_k$, let $\pg$ take at each $n$ only actions with the largest $Q_t(n,a)$, and let $\pi_{k+1}=(1-\alpha)\,\pi_k+\alpha\,\pg$ with $0<\alpha\le1$. Then the policy advantage is $\alpha$ times the greedy advantage \eqref{eq:greedy}, and the right side of (b) is at most $\alpha^2\sum_{t=2}^{T-1}\gamma^{t-1}\sqrt{(t-1)\kappa}\,(1+\kappa)^{(t-2)/2}\,\bar s_t$, where $\kappa$ and $\bar s_t$ are $\epsilon$ and $s_t$ for $\pg$ in the place of $\pi_{k+1}$.
+(c) A mixture step. Let $\pg$ take at each $n$ only actions with the largest $Q_t(n,a)$, and let the next agent take the action $a$ after $h$ with probability $(1-\alpha)\,\pi_k(a\mid m)+\alpha\,\pg(a\mid n)$, $0<\alpha\le1$. This is a policy on the memory of $f_{k+1}$ when $f_{k+1}$ is finer than $f_k$; otherwise the next agent keeps the memory of $f_k$ as well, and the memory of round $k+1$ is the pair. Then (b) holds, the policy advantage is $\alpha$ times the greedy advantage \eqref{eq:greedy} of the memory of $f_{k+1}$, and the right side of (b) is at most $\alpha^2\sum_{t=2}^{T-1}\gamma^{t-1}\sqrt{(t-1)\kappa}\,(1+\kappa)^{(t-2)/2}\,\bar s_t$, where $\kappa$ and $\bar s_t$ are $\epsilon$ and $s_t$ for $\pg$ in the place of $\pi_{k+1}$.
 \end{proposition}
 \begin{proof}
 (a) Group the histories by $n$: $\sum_h\Pr(h_t=h)\,\pi_{k+1}(a\mid n)\,Q_t(h,a)=\sum_n\Pr(f_{k+1}(h_t)=n)\,\pi_{k+1}(a\mid n)\,Q_t(n,a)$, and in the same way $\sum_h\Pr(h_t=h)V_t(h)=\sum_n\Pr(f_{k+1}(h_t)=n)V_t(n)$. An average over the action is at most the maximum.
@@ -155,12 +155,12 @@ Summing first over the last action and observation of $h$, and using $\sum_a\pi_
 \]
 and $L_1=1$, so the term $t=1$ vanishes.
 
-(c) Since $f_{k+1}$ is finer than $f_k$, $\pi_k$ is a policy on the memory of $f_{k+1}$, and its part of $g_t$ is $\sum_a\pi_k(a\mid m)Q_t(h,a)-V_t(h)=0$. So $g_t$ is $\alpha$ times the $g_t$ of $\pg$, which gives the policy advantage by (a) and $s_t=\alpha\bar s_t$. Also $\sum_a\pi_{k+1}(a\mid n)^2/\pi_k(a\mid m)-1=\alpha^2\big[\sum_a\pg(a\mid n)^2/\pi_k(a\mid m)-1\big]\le\alpha^2\kappa$. Then use $(1+z)^p-1\le pz(1+z)^{p-1}$ for $z\ge0$ and an integer $p\ge1$, and $\alpha\le1$.
+(c) Lemma~\ref{lem:pdl} and the proof of (b) use the new policy only through its action probabilities at each history, so (b) holds for the mixture. The part of $g_t$ that comes from $\pi_k$ is $\sum_a\pi_k(a\mid m)Q_t(h,a)-V_t(h)=0$. So $g_t$ is $\alpha$ times the $g_t$ of $\pg$, which gives the policy advantage by (a) for $\pg$, and $s_t=\alpha\bar s_t$. Also the chi-square distance of the mixture from $\pi_k(\cdot\mid m)$ is $\alpha^2\big[\sum_a\pg(a\mid n)^2/\pi_k(a\mid m)-1\big]\le\alpha^2\kappa$. Then use $(1+z)^p-1\le pz(1+z)^{p-1}$ for $z\ge0$ and an integer $p\ge1$, and $\alpha\le1$.
 \end{proof}
 
-So the policy advantage is the first-order change of the return, and the step is a gain when it exceeds the right side of (b). The memory of the next agent enters in two places. First, no policy on it has a policy advantage above its greedy advantage. Second, $\epsilon$ can be small only if a policy on the new memory can act like $\pi_k$; a memory that drops what $\pi_k$ reads cannot, and then (b) says little. For a small mixture step (c) on a memory finer than that of $f_k$, the change of the return is $\alpha$ times the greedy advantage up to a term of order $\alpha^2$: between two such memories, the one with the larger greedy advantage gives the larger gain once $\alpha$ is small enough. With $f_{k+1}=f_k$ this is the usual small policy step on the current memory. The policy advantage \eqref{eq:sur} is the objective that a policy-gradient step with a constraint on the size of the step raises; the mixture is one such step.
+So the change of the return is the policy advantage up to the right side of (b), and the step is a gain when the policy advantage exceeds that right side. The memory of the next agent enters in two places. First, no policy on it has a policy advantage above its greedy advantage. Second, $\epsilon$ can be small only if a policy on the new memory can act like $\pi_k$: a memory that merges two memory values of $f_k$ at which $\pi_k$ acts differently cannot, and then (b) says little unless the next agent keeps the memory of $f_k$. For the mixture step (c), the step of conservative policy iteration (Kakade and Langford, 2002), the change of the return is $\alpha$ times the greedy advantage up to a term of order $\alpha^2$. So between two memories, the one with the strictly larger greedy advantage gives the larger gain once $\alpha$ is small enough. With $f_{k+1}=f_k$ this is the usual small policy step on the current memory.
 
-\paragraph{In the example.} Take $f_{k+1}=f_k$ and the mixture step. At time $1$ both actions have the value $\tfrac12$, so the advantage of the greedy action is $0$. At time $2$ it is $1-\tfrac12$ when $d$ is shown, which has probability $\tfrac12$, and $0$ otherwise. So the greedy advantage is $\tfrac14$. At time $1$ the two actions tie; let $\pg=\pi_k$ there. Then the visits at time $2$ do not change, and the left side of (b) is zero. The step with $\alpha=1$ gives $J=\tfrac34$. (After it the policy at time $2$ no longer takes every action; nothing below needs that it does.)
+\paragraph{In the example.} Take $f_{k+1}=f_k$ and the mixture step. At time $1$ both actions have the value $\tfrac12$, so the advantage of the greedy action is $0$. At time $2$ it is $1-\tfrac12$ when $d$ is shown, which has probability $\tfrac12$, and $0$ otherwise. So the greedy advantage is $\tfrac14$. At time $1$ the two actions tie; let $\pg=\pi_k$ there. Then the visits at time $2$ do not change, and the left side of (b) is zero. The step with $\alpha=1$ gives $J=\tfrac34$. (After it the policy at time $2$ no longer takes every action. The exact values in the examples below do not need that it does; the critic of Step~4 would.)
 
 \section{Step 2: what a memory hides}
 
@@ -175,7 +175,7 @@ The greedy advantage of the history minus that of the memory of $f_{k+1}$ is the
 &\sum_{t=1}^{T-1}\gamma^{t-1}\Big[\sum_h\Pr(h_t=h)\max_aQ_t(h,a)-\sum_n\Pr(f_{k+1}(h_t)=n)\max_aQ_t(n,a)\Big]\\
 &\qquad=\sum_{t=1}^{T-1}\gamma^{t-1}\sum_n\Pr(f_{k+1}(h_t)=n)\,\big[\text{hidden loss \eqref{eq:loss} at }n\big]\ \ge0 .
 \end{align*}
-If $f_{k+1}$ is finer than $f_k$, its greedy advantage is at least that of $f_k$.
+If $f_{k+1}$ is finer than $f_k$, its greedy advantage is at least that of $f_k$; the same holds for any two memories of which one is a function of the other.
 \end{proposition}
 \begin{proof}
 The averages of $V_t$ are the same on both memories, so the difference of the two greedy advantages is the left side. Group the histories by $n$. Each hidden loss is nonnegative because $Q_t(n,a)$ is an average of $Q_t(h,a)$, and the maximum of an average is at most the average of the maxima. For the last claim, $Q_t(m,a)$ is an average of the $Q_t(n,a)$ over the values $n$ that give the memory value $m$, and the same argument applies with the memory of $f_{k+1}$ in the role of the history.
@@ -275,9 +275,9 @@ For a variable $Y$ and a memory $N$ that is a function of the history, the small
 \textbf{Round $k$.} The agent makes a number of runs of length $T$ with $f_k$ and $\pi_k$ fixed; $\pi_k$ takes every action with positive probability, as a softmax policy does. Then, from the experience of the round, as in an actor-critic method:
 \begin{enumerate}
 \item \emph{Candidates.} For each of a few settings of four weights, start from $f_k$ and take gradient steps on the weighted sum of the four prediction losses. These are the auxiliary losses of $f$. Each setting gives one candidate for $f_{k+1}$, and $f_k$ itself is a candidate too.
-\item \emph{Critic.} For $f_k$ this is the usual critic, which learns the return after $(M_t,A_t)$. For every other candidate, train a critic on its memory in the same way, with each step weighted by $1/\pi_k(A_t\mid M_t)$: it learns $Q_t(n,a)$. The greedy advantage of a candidate is \eqref{eq:greedy} with the values of its critic.
-\item \emph{Choice.} $f_{k+1}$ is the candidate with the largest greedy advantage.
-\item \emph{Policy.} $\pi_{k+1}$ is a policy on the memory of $f_{k+1}$ with a positive policy advantage \eqref{eq:sur} that stays close to $\pi_k$ at every history; for instance the mixture step of Proposition~\ref{prop:step}(c) with a small $\alpha$, for which the agent keeps the memory of $f_k$ as well. If the greedy advantage is zero, $\pi_{k+1}=\pi_k$. Go to round $k+1$.
+\item \emph{Critic.} For $f_k$ this is the usual critic, which learns the return after $(M_t,A_t)$. For every other candidate, train a critic on its memory in the same way, with each step weighted by $1/\pi_k(A_t\mid M_t)$: it learns $Q_t(n,a)$. The greedy advantage of a candidate is \eqref{eq:greedy} with the values of its critic; the average of $V_t$ is the same for all candidates, so only the averages of $\max_aQ_t(n,a)$ have to be compared.
+\item \emph{Choice.} $f_{k+1}$ is the candidate with the largest greedy advantage; ties go to $f_k$.
+\item \emph{Policy.} $\pi_{k+1}$ is a policy on the memory of $f_{k+1}$ with a positive policy advantage \eqref{eq:sur} that stays close to $\pi_k$ at every history; for instance the mixture step of Proposition~\ref{prop:step}(c) with a small $\alpha$, for which the agent keeps the memory of $f_k$ as well unless $f_{k+1}$ is finer. If the greedy advantage is zero, $\pi_{k+1}=\pi_k$. Go to round $k+1$.
 \end{enumerate}
 \end{minipage}}
 \end{center}
@@ -286,17 +286,17 @@ Each line rests on one statement, except the first.
 \begin{itemize}\setlength{\itemsep}{0pt}
 \item Line 1 is a choice. The hidden loss of the memory that the policy reads is bounded with the four terms (Proposition~\ref{prop:terms}), so they are what $f$ is trained to lower; for a candidate no bound is proved, and lines 2 and 3 check whether the training helped.
 \item Line 2 weights each step by $1/\pi_k(A_t\mid M_t)$ because $Q_t(n,a)$ is defined with weights $\Pr(h\mid n)$ that do not depend on the action, while $\pi_k$ chooses its action from another memory. The weights are large where an action is rare.
-\item Lines 3 and 4 are Proposition~\ref{prop:step}: the policy advantage is the first-order change of the return, no policy on a memory has more of it than the greedy advantage of that memory, and staying close to $\pi_k$ keeps the error (b) small. The loop repeats because what a memory hides changes with the policy.
+\item Lines 3 and 4 are Proposition~\ref{prop:step}: the change of the return is the policy advantage up to the error (b), no policy on a memory has more policy advantage than the greedy advantage of that memory, and staying close to $\pi_k$ keeps the error small. The loop repeats because what a memory hides changes with the policy.
 \end{itemize}
 
-\paragraph{In the example.} Round 1: $f_{k+1}=f_k$, and the mixture step with $\alpha=1$ gives $J=\tfrac34$. Round 2: a candidate that keeps $c$ has all four terms zero at time $1$ and the greedy advantage $\tfrac14$, against $0$ for $f_k$; the mixture step towards it gives $J=1$.
+\paragraph{In the example.} Round 1: $f_{k+1}=f_k$, and the mixture step with $\alpha=1$ gives $J=\tfrac34$. Round 2: a candidate that keeps $c$ has all four terms zero at time $1$ and the greedy advantage $\tfrac14$, against $0$ for $f_k$; the mixture step towards it with $\alpha=1$ gives $J=1$.
 
 \paragraph{Not covered.}
 \begin{itemize}\setlength{\itemsep}{0pt}
 \item A bound on the hidden loss of a candidate that the policy does not read yet. Proposition~\ref{prop:terms} and the two splits are for the memory that the policy reads.
 \item The weights of the four losses. No statement gives them.
-\item How close $\pi_{k+1}$ has to be to $\pi_k$, and which policy within that distance is best. The ranking of candidates by greedy advantage is proved for a small mixture step on memories finer than that of $f_k$ only.
-\item A candidate that is not finer than $f_k$, as when one network for $f$ is trained on. Proposition~\ref{prop:step}(a) and (b) hold, but a policy on such a memory cannot be arbitrarily close to $\pi_k$.
+\item The best size of the step, and which policy near $\pi_k$ is best. Proposition~\ref{prop:step} gives a sufficient size in terms of $\kappa$ and $\bar s_t$, which would have to be estimated. The ranking of candidates by greedy advantage is proved for a small mixture step only.
+\item Dropping the memory of $f_k$ when the candidate is not finer, as an agent with one network for $f$ does. With the mixture step the memory grows by one component per round; without it, a policy on the candidate can be close to $\pi_k$ only if $\pi_k$ acts the same at the memory values of $f_k$ that the candidate merges.
 \item Estimation from finitely many runs, a critic that bootstraps, and an agent that changes $f$ and the policy at every time step.
 \end{itemize}
 
