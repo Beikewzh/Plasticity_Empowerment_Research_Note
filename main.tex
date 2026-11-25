@@ -35,7 +35,7 @@
 \item (Known.) How much a small policy step can gain on a memory is the \emph{greedy advantage} of that memory: the average of $\max_aQ-V$ over its values. A critic on that memory shows it.
 \item (Known.) A memory that merges histories with different best actions has a smaller greedy advantage than the whole history. The difference is its \emph{hidden loss}.
 \item (This note.) The hidden loss of the memory that the policy reads is bounded with the four terms of the state defect, each under a square root and times a range of values (Propositions~\ref{prop:terms} to~\ref{prop:v}). The four terms measure what the history tells, beyond the memory, about the next observation ($D^0$), about the action just taken once the next observation is seen ($\dE$), about the next action ($\dP$), and about the next observation once the next action is known ($D^+$).
-\item (This note.) So the agent trains $f$ on four prediction losses, one for each term, and lets the greedy advantage choose between the results. The bound does not give the weights of the four losses, and what a memory hides changes with the policy, so the choice is made again in every round.
+\item (This note.) So the agent trains $f$ on four prediction losses, one for each term, and lets the greedy advantage choose between the results. The bound does not give the weights of the four losses, and what a memory hides changes with the policy, so the choice is made again in every round. For a memory that is too small, Section~\ref{sec:capacity} says which term to trust when a part of the world is not influenced by the actions: reading that part never lowers $\dE$ and never raises the return, while it can lower the state defect.
 \end{enumerate}
 
 \section{Setting}
@@ -191,6 +191,48 @@ Together: the hidden loss at time $t$ is bounded with $\dP_t$ and $D^+_t$ of eve
 
 These are upper bounds. The terms are about observations and actions, not about the reward that they carry: when the values do not differ between the next observations or actions, the factor is zero and so is the hidden loss, however large the term is. So the four terms say what $f$ can be trained to predict, and the greedy advantage says whether a change of $f$ helped.
 
+\section{When the memory is too small}\label{sec:capacity}
+
+The bounds of Step~3 hold for a memory of any size, but they do not say what a memory that is too small should give up. This section answers it for one kind of world: a part of what the agent observes is not influenced by what it does. A screen that is on in the room, the weather, or a background that moves are of this kind.
+
+\begin{assumption}[A part that the actions do not influence]\label{as:exo}
+The observation has an endogenous and an exogenous part, $O_t=(O^{\mathrm{end}}_t,O^{\mathrm{exo}}_t)$. The law of $O^{\mathrm{exo}}_{t+1}$ depends only on the earlier exogenous parts. The law of $O^{\mathrm{end}}_{t+1}$ depends only on the earlier endogenous parts and on the actions. The two are drawn independently, and the reward is a function of the endogenous part.
+\end{assumption}
+
+Let $x=(x_1,\dots,x_T)$ be a sequence of values of the exogenous part. We write $f_k^{x}$ for the state-update function that works like $f_k$ but reads $x_t$ in the place of $O^{\mathrm{exo}}_t$. It never reads the exogenous part, and at each time it has no more memory values than $f_k$.
+
+\begin{proposition}[Reading the exogenous part never raises the return]\label{prop:exoJ}
+Under Assumption~\ref{as:exo}, the return of the agent $(f_k,\pi_k)$ is the average, over the sequences $x$ of the exogenous part, of the return of the agent $(f_k^{x},\pi_k)$. So for some $x$ the agent $(f_k^{x},\pi_k)$ has at least the same return, and among the agents with a given number of memory values there is a best one that never reads the exogenous part.
+\end{proposition}
+\begin{proof}
+Given that the exogenous part follows the sequence $x$, the endogenous parts, the memory and the actions of $(f_k,\pi_k)$ have the law that they have for $(f_k^{x},\pi_k)$, because the exogenous part acts on the rest only through the memory. The reward is a function of the endogenous part. Average over $x$.
+\end{proof}
+
+\begin{proposition}[Reading the exogenous part never lowers $\dE$]\label{prop:exoE}
+Under Assumption~\ref{as:exo}, at every time $t$, with $x_{1:t}$ the exogenous parts in the history,
+\begin{align*}
+\sum_m\Pr(M_t=m)\,\dE_t(m)={}&I\big(x_{1:t};A_t\mid M_t,O_{t+1}\big)\\
+&+\sum_x\Pr(x)\,\Big[\sum_m\Pr(M_t=m)\,\dE_t(m)\ \text{ of the agent }(f_k^{x},\pi_k)\Big].
+\end{align*}
+So for some $x$ the sum over the times of the average of $\dE_t$ is no larger for $f_k^{x}$ than for $f_k$.
+\end{proposition}
+\begin{proof}
+The left side is $I(h_t;A_t\mid M_t,O_{t+1})$. Split the history into its exogenous parts and the rest, and use the chain rule: the first term is what the exogenous parts tell, and the second is what the rest tells once the exogenous parts are given. Given the sequence $x$ the agent is $(f_k^{x},\pi_k)$, as in the proof of Proposition~\ref{prop:exoJ}, which gives the sum over $x$. The first term is not negative, and an average is at least its smallest element; the same $x$ serves at all times.
+\end{proof}
+
+So the action term agrees with the best agent: neither gains anything from the exogenous part. The state defect $D_t$ does not agree, because it counts everything that the history tells about the next observation, and the exogenous part is in it. The next proposition gives the smallest world in which this costs value.
+
+\paragraph{A world with one decision.} $O_1=(c,x)$ with two fair bits. The agent acts once. $O_2=(y,x')$: the reward $y$ is $1$ with probability $q$ if the action equals $c$, plus $(1-q)/2$ in any case, and $x'=x$ with probability $s\ge\tfrac12$. So $x$ is exogenous. The memory is one bit, any function of $(c,x)$, and the policy is uniform. Write $H(p)=-p\ln p-(1-p)\ln(1-p)$.
+
+\begin{proposition}[The state defect can prefer the exogenous part]\label{prop:exoD}
+In this world, a memory that keeps $c$ has the average state defect $\ln2-H(s)$, $\dE=0$ and hidden loss $0$. A memory that keeps $x$ has the average state defect $\ln2-H\big(\tfrac{1+q}2\big)$ and hidden loss $\tfrac q2$. If $s>\tfrac{1+q}2$, the memories with the smallest state defect among the sixteen are those that keep $x$. If $s<1$, the memories with the smallest $\dE$ are those that keep $c$.
+\end{proposition}
+\begin{proof}
+A memory that keeps $c$ predicts $y$ as well as the history, and what the history adds is $x$, which tells $\ln2-H(s)$ about $x'$; given $c$ and $O_2$ the action tells nothing more about $x$, so $\dE=0$, and the best action is known, so nothing is hidden. A memory that keeps $x$ predicts $x'$ as well as the history, and what the history adds is $c$, which tells $\ln2-H\big(\tfrac{1+q}2\big)$ about $y$; both actions have the value $\tfrac12$ on it while the history knows an action of value $\tfrac{1+q}2$. The other fourteen memories are compared by computing the two terms for each.
+\end{proof}
+
+The condition $s>\tfrac{1+q}2$ says when the state defect chooses wrongly: the exogenous part is more predictable from its own past than the reward is from what the memory could keep instead. Then a memory that is trained to lower $D_t$ spends its one bit on the exogenous part and loses $\tfrac q2$, and a memory trained to lower $\dE_t$ does not. This is a statement about which term to trust when the memory is too small; it does not give numbers for the weights.
+
 \section{Step 4: the algorithm}\label{sec:algo}
 
 \paragraph{The four prediction losses.} For a candidate for $f_{k+1}$, each loss is the average log-loss of a predictor that reads the memory of the candidate:
@@ -232,12 +274,12 @@ For a variable $Y$ and a memory $N$ that is a function of the history, the small
 
 The numbers $g^j$ are the greedy advantages up to the average of $V_t$, which is the same for all candidates. Lines 6 to 12 are Steps~1 and~2: to first order the policy step changes the return by $\alpha$ times the greedy advantage of the chosen memory. Line 4 takes from Step~3 which four losses to use, and the loop over rounds repeats because what a memory hides changes with the policy.
 
-\paragraph{Why the weights are chosen and not derived.} Steps 1 to 3 give a lower bound on what the policy step gains: $\alpha$ times the greedy advantage of the history minus the bound of Step~3, up to order $\alpha^2$. One could turn this bound into the training objective of $f$, in the way a policy-improvement bound is turned into an objective for the policy: minimise the bound, that is, the four terms with the factors of Propositions~\ref{prop:q} and~\ref{prop:v} computed from the current critic as weights. We do not do this, for two reasons. First, the agent cannot evaluate the bound. A term is the prediction loss from the memory minus the same loss from the whole history; the second loss is unknown to the agent, and since the term stands under a square root it cannot be dropped as a constant. Second, each factor is one largest minus smallest value for a whole term, so it does not say which part of the observation carries the value, and a memory that lowers the bound need not lower the hidden loss. So line 4 takes only the four losses from the bound, and lines 6 to 10 choose between weightings with the criterion of Steps~1 and~2, which is exact.
+\paragraph{Why the weights are chosen and not derived.} Steps 1 to 3 give a lower bound on what the policy step gains: $\alpha$ times the greedy advantage of the history minus the bound of Step~3, up to order $\alpha^2$. One could turn this bound into the training objective of $f$, in the way a policy-improvement bound is turned into an objective for the policy: minimise the bound, that is, the four terms with the factors of Propositions~\ref{prop:q} and~\ref{prop:v} computed from the current critic as weights. We do not do this, for two reasons. First, the agent cannot evaluate the bound. A term is the prediction loss from the memory minus the same loss from the whole history; the second loss is unknown to the agent, and since the term stands under a square root it cannot be dropped as a constant. Second, each factor is one largest minus smallest value for a whole term, so it does not say which part of the observation carries the value, and a memory that lowers the bound need not lower the hidden loss. So line 4 takes only the four losses from the bound, and lines 6 to 10 choose between weightings with the criterion of Steps~1 and~2, which is exact. What the theory says about the weights is Section~\ref{sec:capacity}: with a part that the actions do not influence, weight on $\dE$ is never spent on that part, and weight on the whole state defect can be.
 
 \paragraph{Not covered.}
 \begin{itemize}\setlength{\itemsep}{0pt}
 \item A bound on the hidden loss of a candidate that the policy does not read yet. Propositions~\ref{prop:q} and~\ref{prop:v} and the two splits are for the memory that the policy reads.
-\item The weights of the four losses. No statement gives them.
+\item Numbers for the weights of the four losses. Section~\ref{sec:capacity} gives a direction only, for $\dE$ and under Assumption~\ref{as:exo}. The same statement for $\dP$ fails when the next policy reacts to the exogenous part, and nothing is said about which endogenous information to keep.
 \item The size of the step, and a policy step other than the mixture of line 12.
 \item Dropping the memory of $f_k$ after the step, as an agent with one network for $f$ does; with line 11 as written the memory grows by one component per round.
 \item Estimation from finitely many runs, a critic that bootstraps, and an agent that changes $f$ and the policy at every time step.
