@@ -17,7 +17,6 @@
 \newcommand{\KL}{\mathrm{KL}}
 \newcommand{\dE}{\Delta E}
 \newcommand{\dP}{\Delta P}
-\newcommand{\rng}{\operatorname{rng}}
 \newcommand{\why}[1]{\tag*{\small(#1)}}
 
 \title{The Return of an Agent That Acts on a Memory:\\ from the four terms to an algorithm, in four steps}
@@ -43,7 +42,7 @@
 \centering
 \begin{tikzpicture}[>={Stealth[length=2.5mm]}, node distance=10mm and 16mm,
   box/.style={draw, rounded corners=3pt, minimum height=10mm, minimum width=27mm, align=center, font=\small}]
-\node[box] (world) {environment\\ $e(O_{t+1}\mid h_t, A_t)$};
+\node[box] (world) {environment\\ $\Pr(O_{t+1}\mid h_t, A_t)$};
 \node[box, right=of world] (mem) {memory\\ $M_t = f_k(M_{t-1}, A_{t-1}, O_t)$};
 \node[box, right=of mem] (pol) {policy\\ $A_t \sim \pi_k(\cdot \mid M_t)$};
 \draw[->, thick] (world) -- node[above, font=\small] {$O_t$} (mem);
@@ -61,7 +60,7 @@ Learning proceeds in rounds $k=1,2,\dots$ A round is a number of runs of length 
 The history is $h_t=(O_1,A_1,\dots,A_{t-1},O_t)$, and $h$ denotes a value of $h_t$. An observation $o$ contains a reward $r(o)$. All sets are finite, actions are taken at $t=1,\dots,T-1$, and $\gamma\in[0,1]$. All probabilities and values below are those of the agent of round $k$, and sums over values of a memory or of an observation run over the values that have positive probability.
 
 \begin{assumption}[Environment]\label{as:env}
-$O_1$ has a fixed law and $O_{t+1}\sim e(\cdot\mid h_t,A_t)$. The environment may depend on the whole history.
+$O_1$ has a fixed law, and the law $\Pr(O_{t+1}=o\mid h_t=h,A_t=a)$, written $\Pr(o\mid h,a)$, is given by the environment: it does not depend on the agent, and it may depend on the whole history.
 \end{assumption}
 \begin{assumption}[Memory]\label{as:mem}
 $M_1$ is computed from $O_1$ by $f_k$, and $M_t=f_k(M_{t-1},A_{t-1},O_t)$ for $t\ge2$. The memory contains the time $t$, so values of the memory at different times are different. $m$ is a value of $M_t$, and $m'=f_k(m,a,o)$ is the next value after the action $a$ and the observation $o$. We also write $f_k(h_t)$ for $M_t$, the memory that $f_k$ computes from the history, and likewise for any other state-update function.
@@ -72,7 +71,7 @@ The agent takes $A_t=a$ after $h_t$ with probability $\pi_k(a\mid M_t)>0$. Where
 
 $\Pr$ is the law of the experience under $\pi_k$, and $J(\pi_k)$ is the expectation of $\sum_{t=1}^{T-1}\gamma^{t-1}r(O_{t+1})$. For every history and action,
 \begin{equation}\label{eq:bellman}
-Q_t(h,a)=\sum_oe(o\mid h,a)\big[r(o)+\gamma V_{t+1}(h,a,o)\big],\qquad V_t(h)=\sum_a\pi_k(a\mid m)\,Q_t(h,a),\qquad V_T=0,
+Q_t(h,a)=\sum_o\Pr(o\mid h,a)\big[r(o)+\gamma V_{t+1}(h,a,o)\big],\qquad V_t(h)=\sum_a\pi_k(a\mid m)\,Q_t(h,a),\qquad V_T=0,
 \end{equation}
 where $(h,a,o)$ is the next history and $m$ the memory value of $h$.
 
@@ -114,9 +113,9 @@ carried from later & the state value from time $t+1$ on & $D^0_j$ and $\dE_j$ at
 \hline
 \end{tabular}
 \end{center}
-This step is for the memory of $f_k$, which the policy reads; nothing is learned inside it. Below, $a$ and $b$ are actions at time $t$ and $a'$ is the action at time $t+1$. Conditional laws such as $\Pr(o\mid m,b,a')$ or $\Pr(a\mid m,o)$ are those of the experience under $\pi_k$ given the stated values. Let $\Pr(o\mid m,a)=\sum_h\Pr(h\mid m)\,e(o\mid h,a)$ be the prediction of the next observation from the memory. The state defect $D_t$ is what the history tells about the next observation beyond the memory and the action; the four terms are the pieces of its two splits:
+This step is for the memory of $f_k$, which the policy reads; nothing is learned inside it. Below, $a$ and $b$ are actions at time $t$ and $a'$ is the action at time $t+1$. Conditional laws such as $\Pr(o\mid m,b,a')$ or $\Pr(a\mid m,o)$ are those of the experience under $\pi_k$ given the stated values. Let $\Pr(o\mid m,a)=\sum_h\Pr(h\mid m)\,\Pr(o\mid h,a)$ be the prediction of the next observation from the memory. The state defect $D_t$ is what the history tells about the next observation beyond the memory and the action; the four terms are the pieces of its two splits:
 \begin{align*}
-D_t(m,a)&=I(h_t;O_{t+1}\mid M_t=m,A_t=a)=\sum_h\Pr(h\mid m)\,\KL\big(e(\cdot\mid h,a)\,\big\|\,\Pr(\cdot\mid m,a)\big),\\
+D_t(m,a)&=I(h_t;O_{t+1}\mid M_t=m,A_t=a)=\sum_h\Pr(h\mid m)\,\KL\big(\Pr(\cdot\mid h,a)\,\big\|\,\Pr(\cdot\mid m,a)\big),\\
 D^0_t(m)&=I(h_t;O_{t+1}\mid M_t=m),\\
 \dE_t(m)&=I(h_t;A_t\mid M_t=m,O_{t+1}),\\
 \dP_t(m,a)&=I(h_t;A_{t+1}\mid M_t=m,A_t=a),\\
@@ -127,24 +126,29 @@ the last two for $t\le T-2$. The chain rule gives two splits of the state defect
 \begin{lemma}[One step]\label{lem:onestep}
 For every history $h$ with memory value $m$ and every action $a$,
 \begin{align}
-Q_t(h,a)-Q_t(m,a)={}&\sum_o\big[e(o\mid h,a)-\Pr(o\mid m,a)\big]\big[r(o)+\gamma V_{t+1}(m')\big] \label{eq:now}\\
-&+\gamma\big[u_t(h,a)-\bar u_t(m,a)\big], \nonumber
+Q_t(h,a)-Q_t(m,a)={}&\sum_o\big[\Pr(o\mid h,a)-\Pr(o\mid m,a)\big]\big[r(o)+\gamma V_{t+1}(m')\big] \label{eq:now}\\
+&+\gamma\sum_o\Pr(o\mid h,a)\big[V_{t+1}(h,a,o)-V_{t+1}(m')\big] \label{eq:carried}\\
+&-\gamma\sum_{h'}\Pr(h'\mid m)\sum_o\Pr(o\mid h',a)\big[V_{t+1}(h',a,o)-V_{t+1}(m')\big], \nonumber
 \end{align}
-where $u_t(h,a)=\sum_oe(o\mid h,a)\big[V_{t+1}(h,a,o)-V_{t+1}(m')\big]$ and $\bar u_t(m,a)$ is its average over $h$ with the weights $\Pr(h\mid m)$.
+where $m'=f_k(m,a,o)$ and $h'$ runs over the histories with the memory value $m$.
 \end{lemma}
 \begin{proof}
 Add and subtract $\gamma V_{t+1}(m')$ in the bracket of \eqref{eq:bellman}; then average over $h$ with the weights $\Pr(h\mid m)$, and subtract.
 \end{proof}
 
-The sum \eqref{eq:now} is the part of the difference that is made at time $t$: the two predictions of the next observation, from the history and from the memory, differ, and the difference is weighted by the reward plus the value of the next memory. The other part is carried over from time $t+1$: it is zero when $V_{t+1}(h)=V_{t+1}(m)$ for every next history $h$ with memory value $m$.
+The first line, \eqref{eq:now}, is the part of the difference that is made at time $t$: the history and the memory predict the next observation differently, and the difference is weighted by the reward plus the value of the next memory. The other two lines are the part carried over from time $t+1$: the sum \eqref{eq:carried} minus its average over the histories with the same memory value. They are zero when $V_{t+1}(h)=V_{t+1}(m)$ for every next history $h$ with memory value $m$.
 
 \begin{lemma}[Known: Pinsker's inequality; Cover and Thomas, 2006]\label{lem:tool}
-For laws $p$, $q$ on a finite set with $q(x)=0\Rightarrow p(x)=0$ and a function $w$: $\big|\sum_x[p(x)-q(x)]w(x)\big|\le\rng_xw(x)\,\sqrt{\tfrac12\KL(p\,\|\,q)}$, where the \emph{range} $\rng_xw(x)$ is $\max_xw(x)-\min_xw(x)$ over the $x$ with $q(x)>0$.
+For laws $p$, $q$ on a finite set with $q(x)=0\Rightarrow p(x)=0$ and a function $w$,
+\[
+\Big|\sum_x[p(x)-q(x)]\,w(x)\Big|\le\big[\max_xw(x)-\min_xw(x)\big]\,\sqrt{\tfrac12\KL(p\,\|\,q)},
+\]
+with the maximum and the minimum over the $x$ with $q(x)>0$.
 \end{lemma}
 
 Three sizes are used. $\rho_t(m,a)$ is the root of the average of $\big[\eqref{eq:now}\big]^2$ over $h$ with the weights $\Pr(h\mid m)$: the size of the part made at time $t$, for one action. $\rho_t(m)$, without an action, is the same root with $\sum_a\pi_k(a\mid m)\times\eqref{eq:now}$ in the place of \eqref{eq:now}. The size of the carried part is
 \[
-\nu_t(m,a)=\sqrt{\sum_h\Pr(h\mid m)\sum_oe(o\mid h,a)\big[V_{t+1}(h,a,o)-V_{t+1}(m')\big]^2}\,.
+\nu_t(m,a)=\sqrt{\sum_h\Pr(h\mid m)\sum_o\Pr(o\mid h,a)\big[V_{t+1}(h,a,o)-V_{t+1}(m')\big]^2}\,.
 \]
 
 \begin{proposition}[The hidden loss and the four terms]\label{prop:terms}
@@ -152,27 +156,31 @@ Let $m$ be a value of the memory of $f_k$ at time $t$ and $a^*$ an action with t
 
 (a) The hidden loss \eqref{eq:loss} at $m$ is at most $\displaystyle\frac12\sum_{a\ne a^*}\ \sum_{b\in\{a,a^*\}}\big[\rho_t(m,b)+\gamma\,\nu_t(m,b)\big]$.
 
-(b) The part made at time $t$ is bounded by the state defect of the action, as a whole or split at the next action:
-\begin{align*}
-\rho_t(m,b)&\le\rng_o\big[r(o)+\gamma V_{t+1}(m')\big]\sqrt{\tfrac12\,D_t(m,b)},\\
-\rho_t(m,b)&\le\rng_{a'}\sum_o\Pr(o\mid m,b,a')\big[r(o)+\gamma Q_{t+1}(m',a')\big]\sqrt{\tfrac12\,\dP_t(m,b)}\\
-&\quad+\max_{a'}\rng_o\big[r(o)+\gamma Q_{t+1}(m',a')\big]\sqrt{\tfrac12\,D^+_t(m,b)}\qquad(t\le T-2).
-\end{align*}
+(b) The part made at time $t$ is bounded by the state defect of the action. Let $y(o)=r(o)+\gamma V_{t+1}(m')$ be the reward plus the value of the next memory after $b$. Then
+\[
+\rho_t(m,b)\le\big[\max_oy(o)-\min_oy(o)\big]\sqrt{\tfrac12\,D_t(m,b)} .
+\]
+With the split at the next action, for $t\le T-2$: let $y(o,a')=r(o)+\gamma Q_{t+1}(m',a')$, and let $\bar y(a')$ be its average over $o$ with the weights $\Pr(o\mid m,b,a')$. Then
+\[
+\rho_t(m,b)\le\big[\max_{a'}\bar y(a')-\min_{a'}\bar y(a')\big]\sqrt{\tfrac12\,\dP_t(m,b)}+\max_{a'}\big[\max_oy(o,a')-\min_oy(o,a')\big]\sqrt{\tfrac12\,D^+_t(m,b)} .
+\]
+The first factor is how much the value differs between the next actions, the second how much it differs between the next observations once the next action is fixed.
 
 (c) The carried part is bounded by the error of the state value at later times, and this error is bounded with the split at the current action. In each sum over $h$ below, $m$ is the memory value of $h$. For each action $b$, for $1\le i\le T-1$ and $i\le j\le T-1$,
 \begin{align*}
 \sum_m\Pr(M_t=m)\,\nu_t(m,b)&\le\big[\min_m\pi_k(b\mid m)\big]^{-1/2}\sqrt{\sum_h\Pr(h_{t+1}=h)\big[V_{t+1}(h)-V_{t+1}(m)\big]^2},\\
 \sqrt{\sum_h\Pr(h_i=h)\big[V_i(h)-V_i(m)\big]^2}&\le\sum_{j=i}^{T-1}\gamma^{j-i}\sqrt{\sum_m\Pr(M_j=m)\,\rho_j(m)^2},\\
-\rho_j(m)&\le\rng_o\bar y(o)\,\sqrt{\tfrac12\,D^0_j(m)}+\max_o\rng_ay_a(o)\,\sqrt{\tfrac12\,\dE_j(m)},
+\rho_j(m)&\le\big[\max_o\bar y(o)-\min_o\bar y(o)\big]\sqrt{\tfrac12\,D^0_j(m)}\\
+&\quad+\max_o\big[\max_ay(a,o)-\min_ay(a,o)\big]\sqrt{\tfrac12\,\dE_j(m)},
 \end{align*}
-where $y_a(o)=r(o)+\gamma V_{j+1}(f_k(m,a,o))$ and $\bar y(o)$ is its average over the action with the weights $\Pr(a\mid m,o)$. In (a) the action $a^*$ depends on $m$; there use $\nu_t(m,a^*)\le\sum_b\nu_t(m,b)$.
+where $y(a,o)=r(o)+\gamma V_{j+1}(f_k(m,a,o))$ and $\bar y(o)$ is its average over the action with the weights $\Pr(a\mid m,o)$. In (a) the action $a^*$ depends on $m$; there use $\nu_t(m,a^*)\le\sum_b\nu_t(m,b)$.
 \end{proposition}
 \begin{proof}
-(a) Let $x_a(h)=Q_t(h,a)-Q_t(h,a^*)$, with mean $\bar x_a=Q_t(m,a)-Q_t(m,a^*)\le0$ over $h$. The hidden loss is the mean of $\max_a x_a(h)\le\sum_{a\ne a^*}\max\{x_a(h),0\}\le\sum_{a\ne a^*}\max\{x_a(h)-\bar x_a,0\}$, and the mean of the positive part of a variable with mean zero is half the mean of its absolute value. By Lemma~\ref{lem:onestep}, $x_a(h)-\bar x_a$ is \eqref{eq:now} for $a$ minus \eqref{eq:now} for $a^*$ plus $\gamma$ times the same difference of $u_t-\bar u_t$. The mean of an absolute value is at most the root of the mean square; then use Minkowski's inequality, the fact that subtracting $\bar u_t$ does not increase the mean square, and Jensen's inequality for $u_t^2$.
+(a) Let $x_a(h)=Q_t(h,a)-Q_t(h,a^*)$, with mean $\bar x_a=Q_t(m,a)-Q_t(m,a^*)\le0$ over $h$. The hidden loss is the mean of $\max_a x_a(h)\le\sum_{a\ne a^*}\max\{x_a(h),0\}\le\sum_{a\ne a^*}\max\{x_a(h)-\bar x_a,0\}$, and the mean of the positive part of a variable with mean zero is half the mean of its absolute value. By Lemma~\ref{lem:onestep}, $x_a(h)-\bar x_a$ is the right side of the lemma for $a$ minus the same for $a^*$. The mean of an absolute value is at most the root of the mean square; then use Minkowski's inequality for the four parts. The root mean square of \eqref{eq:now} is $\rho_t$. For the other two lines, subtracting from a variable its mean does not increase its mean square, and by Jensen's inequality the mean square of the sum \eqref{eq:carried} is at most $\gamma^2\nu_t^2$.
 
-(b) Lemma~\ref{lem:tool} with $p=e(\cdot\mid h,b)$ and $q=\Pr(\cdot\mid m,b)$; square and average over $h$. For the second bound write $V_{t+1}(m')=\sum_{a'}\pi_k(a'\mid m')Q_{t+1}(m',a')$, so that \eqref{eq:now} is a difference of two joint laws of $(A_{t+1},O_{t+1})$. Adding and subtracting the law of $A_{t+1}$ from the history times the law of $O_{t+1}$ given $A_{t+1}$ from the memory splits it into a part with the two laws of $A_{t+1}$ and a part with the two laws of $O_{t+1}$ given $A_{t+1}$. Apply Lemma~\ref{lem:tool} to each, then Minkowski's and Jensen's inequalities; the averages of the divergences are $\dP_t$ and $D^+_t$.
+(b) Lemma~\ref{lem:tool} with $p=\Pr(\cdot\mid h,b)$ and $q=\Pr(\cdot\mid m,b)$; square and average over $h$. For the second bound write $V_{t+1}(m')=\sum_{a'}\pi_k(a'\mid m')Q_{t+1}(m',a')$, so that \eqref{eq:now} is a difference of two joint laws of $(A_{t+1},O_{t+1})$. Adding and subtracting the law of $A_{t+1}$ from the history times the law of $O_{t+1}$ given $A_{t+1}$ from the memory splits it into a part with the two laws of $A_{t+1}$ and a part with the two laws of $O_{t+1}$ given $A_{t+1}$. Apply Lemma~\ref{lem:tool} to each, then Minkowski's and Jensen's inequalities; the averages of the divergences are $\dP_t$ and $D^+_t$.
 
-(c) First line: the next history $(h,a,o)$ has probability $\Pr(h_t=h)\pi_k(a\mid m)e(o\mid h,a)$, so the average of $\nu_t(m,a)^2$ over $(M_t,A_t)$ is the sum under the root. Then use Jensen's inequality and $\nu_t(m,b)^2\le\pi_k(b\mid m)^{-1}\sum_a\pi_k(a\mid m)\,\nu_t(m,a)^2$. Second line: average Lemma~\ref{lem:onestep} over the action with $\pi_k(a\mid m)$. By Minkowski's and Jensen's inequalities as in (a), the root on the left at time $i$ is at most $\sqrt{\sum_m\Pr(M_i=m)\rho_i(m)^2}$ plus $\gamma$ times the same root at time $i+1$, and the root at time $T$ is zero. Third line: Bayes' rule gives $\pi_k(a\mid m)\big[e(o\mid h,a)-\Pr(o\mid m,a)\big]=\big[\Pr(o\mid h)-\Pr(o\mid m)\big]\Pr(a\mid m,o)+\Pr(o\mid h)\big[\Pr(a\mid h,o)-\Pr(a\mid m,o)\big]$; sum over $a$ and $o$ against $y_a(o)$, apply Lemma~\ref{lem:tool} to the law of the observation and, for each $o$, to the law of the action, then Minkowski's and Jensen's inequalities. The averages of the divergences are $D^0_j$ and $\dE_j$.
+(c) First line: the next history $(h,a,o)$ has probability $\Pr(h_t=h)\pi_k(a\mid m)\Pr(o\mid h,a)$, so the average of $\nu_t(m,a)^2$ over $(M_t,A_t)$ is the sum under the root. Then use Jensen's inequality and $\nu_t(m,b)^2\le\pi_k(b\mid m)^{-1}\sum_a\pi_k(a\mid m)\,\nu_t(m,a)^2$. Second line: average Lemma~\ref{lem:onestep} over the action with $\pi_k(a\mid m)$. By Minkowski's and Jensen's inequalities as in (a), the root on the left at time $i$ is at most $\sqrt{\sum_m\Pr(M_i=m)\rho_i(m)^2}$ plus $\gamma$ times the same root at time $i+1$, and the root at time $T$ is zero. Third line: Bayes' rule gives $\pi_k(a\mid m)\big[\Pr(o\mid h,a)-\Pr(o\mid m,a)\big]=\big[\Pr(o\mid h)-\Pr(o\mid m)\big]\Pr(a\mid m,o)+\Pr(o\mid h)\big[\Pr(a\mid h,o)-\Pr(a\mid m,o)\big]$; sum over $a$ and $o$ against $y(a,o)$, apply Lemma~\ref{lem:tool} to the law of the observation and, for each $o$, to the law of the action, then Minkowski's and Jensen's inequalities. The averages of the divergences are $D^0_j$ and $\dE_j$.
 \end{proof}
 
 Each term comes with its own range of values, and these are upper bounds. The terms are about observations and actions, not about the reward that they carry: when the values do not differ between the next observations, the range is zero and so is the hidden loss, however large the term is. So the four terms say what $f$ can be trained to predict, and the greedy advantage says whether a change of $f$ helped.
