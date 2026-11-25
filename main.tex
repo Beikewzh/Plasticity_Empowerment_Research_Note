@@ -95,7 +95,7 @@ Q_t(h,a)=\sum_oe(o\mid h,a)\big[r(o)+\gamma V_{t+1}(h,a,o)\big],\qquad V_t(h)=\s
 \end{equation}
 where $(h,a,o)$ is the next history and $m$ the memory value of $h$.
 
-\paragraph{The next agent, and the values of $\pi_k$ on its memory.} Between the two rounds, training turns $f_k$ into $f_{k+1}$, for instance by gradient steps, and the policy of round $k+1$ reads the memory of $f_{k+1}$. $f_{k+1}(h_t)$ is the memory that it computes from the same history, and $n$ is one of its values; it also contains the time. We say that $f_{k+1}$ is \emph{finer} than $f_k$ when $M_t$ is a function of $f_{k+1}(h_t)$; in general it need not be. With $\Pr(h\mid n)$ the probability of $h_t=h$ given $f_{k+1}(h_t)=n$, the values of $\pi_k$ on the memory of $f_{k+1}$ average those of the histories,
+\paragraph{The next agent, and the values of $\pi_k$ on its memory.} Between the two rounds, training turns $f_k$ into $f_{k+1}$, for instance by gradient steps, and the policy of round $k+1$ reads the memory of $f_{k+1}$. $f_{k+1}(h_t)$ is the memory that it computes from the same history, and $n$ is one of its values; it also contains the time. We say that $f_{k+1}$ is \emph{finer} than $f_k$ when the new memory determines the old one: two histories with the same value of $f_{k+1}(h_t)$ also have the same value of $M_t$. So a finer memory keeps everything that the old memory kept and may keep more. After gradient steps $f_{k+1}$ is in general not finer, since it may also drop something that $f_k$ kept. With $\Pr(h\mid n)$ the probability of $h_t=h$ given $f_{k+1}(h_t)=n$, the values of $\pi_k$ on the memory of $f_{k+1}$ average those of the histories,
 \[
 Q_t(n,a)=\sum_h\Pr(h\mid n)\,Q_t(h,a),\qquad V_t(n)=\sum_h\Pr(h\mid n)\,V_t(h),
 \]
