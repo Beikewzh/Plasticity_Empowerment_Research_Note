@@ -108,7 +108,7 @@ and the \emph{visible value} of this memory is
 \begin{equation}\label{eq:X}
 X(\fn)=\sum_{t=1}^{T-1}\gamma^{t-1}\sum_n\Pr(\fn(h_t)=n)\,\max_aQ_t(n,a).
 \end{equation}
-With $f_k$ in the place of $\fn$ these are the values $Q_t(m,a)$, $V_t(m)$ that the agent's critic estimates, and $X(f_k)$ is the average of the critic's largest action value. The history is the memory of a state-update function that forgets nothing; its visible value, written $X(h)$, has $\max_aQ_t(h,a)$ in \eqref{eq:X}.
+With $f_k$ in the place of $\fn$ these are $Q_t(m,a)$ and $V_t(m)$, and they are what the critic of an actor-critic agent learns: the average return after $M_t=m$ and $A_t=a$ is $\sum_h\Pr(h\mid m,a)\,Q_t(h,a)$, and $\Pr(h\mid m,a)=\Pr(h\mid m)$ because $\pi_k$ reads $m$ alone. So $X(f_k)$ is the average of the critic's largest action value. The history is the memory of a state-update function that forgets nothing; its visible value, written $X(h)$, has $\max_aQ_t(h,a)$ in \eqref{eq:X}.
 
 The weights $\Pr(h\mid n)$ do not depend on the action. So $Q_t(n,a)$ is the average return after the action $a$ at $n$ when the action is drawn independently of the history, for instance uniformly. Unless $\fn$ is finer than $f_k$, it is in general not the average return after $a$ at $n$ when the action is drawn by $\pi_k$, which reads another memory.
 
@@ -279,7 +279,7 @@ For a variable $Y$ and a memory $N$ that is a function of the history, the small
 \textbf{Round $k$.} The agent makes a number of runs of length $T$ with $f_k$ and $\pi_k$ fixed. At each time, with a small probability that does not depend on the history, $\pi_k$ draws the action uniformly. Then, from the experience of the round, as in an actor-critic method:
 \begin{enumerate}
 \item \emph{Candidates.} For each of a few settings of four weights, start from $f_k$ and take gradient steps on the weighted sum of the four prediction losses. These are the auxiliary losses of $f$. Each setting gives one candidate $\fn$, and $f_k$ itself is a candidate too.
-\item \emph{Critic.} For each candidate, estimate $Q_t(n,a)$ by the average return after the steps on which the action was drawn uniformly, the memory of the candidate was $n$ and the action was $a$. Estimate its visible value by \eqref{eq:X} with these estimates, and $\bar V$ by \eqref{eq:Vbar} with the returns of the round.
+\item \emph{Critic.} For $f_k$ this is the usual critic, which learns the return after $(M_t,A_t)$. For every other candidate, train a critic on its memory in the same way, but only on the steps on which the action was drawn uniformly: it learns $Q_t(n,a)$. The visible value is \eqref{eq:X} with the critic's values, and $\bar V$ is \eqref{eq:Vbar} with the returns of the round.
 \item \emph{Choice.} Keep the candidate with the largest visible value.
 \item \emph{Policy.} If that visible value exceeds $\bar V$, set $\pi_{k+1}=(1-\alpha)\pi_k+\alpha\pn$ with a small $\alpha$, where $\pn$ takes the best actions on the memory of the candidate; $f_{k+1}$ then computes the memories of both $f_k$ and the candidate. Otherwise $\pi_{k+1}=\pi_k$ and $f_{k+1}=f_k$. Go to round $k+1$.
 \end{enumerate}
@@ -301,7 +301,7 @@ Each line rests on one statement, except the first.
 \item The weights of the four losses. No statement gives them.
 \item How small $\alpha$ has to be. For a large step the ranking of candidates by visible value need not hold.
 \item Dropping the memory of $f_k$ after a step with $\alpha<1$, as an agent with one network for $f$ does.
-\item Estimation from finitely many runs, and an agent that changes $f$ and the policy at every time step.
+\item Estimation from finitely many runs, a critic that bootstraps, and an agent that changes $f$ and the policy at every time step.
 \end{itemize}
 
 \paragraph{Longer version.} Line-by-line proofs of Step~3 are in the folder \texttt{archive}, file\\ {\small\texttt{main\_theory\_to\_algorithm\_paper\_style\_2026-11-24.tex}}.
