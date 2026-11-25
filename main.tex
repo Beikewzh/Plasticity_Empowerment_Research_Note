@@ -110,7 +110,7 @@ X(\fn)=\sum_{t=1}^{T-1}\gamma^{t-1}\sum_n\Pr(\fn(h_t)=n)\,\max_aQ_t(n,a).
 \end{equation}
 With $f_k$ in the place of $\fn$ these are $Q_t(m,a)$ and $V_t(m)$, and they are what the critic of an actor-critic agent learns: the average return after $M_t=m$ and $A_t=a$ is $\sum_h\Pr(h\mid m,a)\,Q_t(h,a)$, and $\Pr(h\mid m,a)=\Pr(h\mid m)$ because $\pi_k$ reads $m$ alone. So $X(f_k)$ is the average of the critic's largest action value. The history is the memory of a state-update function that forgets nothing; its visible value, written $X(h)$, has $\max_aQ_t(h,a)$ in \eqref{eq:X}.
 
-The weights $\Pr(h\mid n)$ do not depend on the action. So $Q_t(n,a)$ is the average return after the action $a$ at $n$ when the action is drawn independently of the history, for instance uniformly. Unless $\fn$ is finer than $f_k$, it is in general not the average return after $a$ at $n$ when the action is drawn by $\pi_k$, which reads another memory.
+The weights $\Pr(h\mid n)$ do not depend on the action. So $Q_t(n,a)$ is the average return after the action $a$ at $n$ when the action is drawn independently of the history, for instance uniformly. Unless $\fn$ is finer than $f_k$, it is in general not the average return after $a$ at $n$ when the action is drawn by $\pi_k$, which reads another memory. With actions drawn by $\pi_k$, each step has to be weighted by $1/\pi_k(A_t\mid M_t)$: the average over the steps with $\fn(h_t)=n$ of the return times $\mathbf 1\{A_t=a\}/\pi_k(a\mid M_t)$ is $\sum_h\Pr(h\mid n)\,\pi_k(a\mid m)\,Q_t(h,a)/\pi_k(a\mid m)=Q_t(n,a)$.
 
 \paragraph{Example.} $T=3$, $\gamma=1$, two actions. $O_1$ is a fair bit $c$. If $A_1=c$, then $O_2$ shows a fair bit $d$; otherwise $O_2$ is blank. The bit $d$ is drawn whether or not it is shown. The only reward is in $O_3$: it is $1$ if $A_2=d$ and $0$ otherwise. The memory of $f_k$ is empty at time $1$, so it forgets $c$, and it is $O_2$ at time $2$. The policy $\pi_k$ is uniform, and $J(\pi_k)=\tfrac12$.
 
@@ -276,10 +276,10 @@ For a variable $Y$ and a memory $N$ that is a function of the history, the small
 
 \begin{center}
 \fbox{\begin{minipage}{0.94\linewidth}
-\textbf{Round $k$.} The agent makes a number of runs of length $T$ with $f_k$ and $\pi_k$ fixed. At each time, with a small probability that does not depend on the history, $\pi_k$ draws the action uniformly. Then, from the experience of the round, as in an actor-critic method:
+\textbf{Round $k$.} The agent makes a number of runs of length $T$ with $f_k$ and $\pi_k$ fixed; $\pi_k$ takes every action with positive probability, as a softmax policy does. Then, from the experience of the round, as in an actor-critic method:
 \begin{enumerate}
 \item \emph{Candidates.} For each of a few settings of four weights, start from $f_k$ and take gradient steps on the weighted sum of the four prediction losses. These are the auxiliary losses of $f$. Each setting gives one candidate $\fn$, and $f_k$ itself is a candidate too.
-\item \emph{Critic.} For $f_k$ this is the usual critic, which learns the return after $(M_t,A_t)$. For every other candidate, train a critic on its memory in the same way, but only on the steps on which the action was drawn uniformly: it learns $Q_t(n,a)$. The visible value is \eqref{eq:X} with the critic's values, and $\bar V$ is \eqref{eq:Vbar} with the returns of the round.
+\item \emph{Critic.} For $f_k$ this is the usual critic, which learns the return after $(M_t,A_t)$. For every other candidate, train a critic on its memory in the same way, with each step weighted by $1/\pi_k(A_t\mid M_t)$: it learns $Q_t(n,a)$. The visible value is \eqref{eq:X} with the critic's values, and $\bar V$ is \eqref{eq:Vbar} with the returns of the round.
 \item \emph{Choice.} Keep the candidate with the largest visible value.
 \item \emph{Policy.} If that visible value exceeds $\bar V$, set $\pi_{k+1}=(1-\alpha)\pi_k+\alpha\pn$ with a small $\alpha$, where $\pn$ takes the best actions on the memory of the candidate; $f_{k+1}$ then computes the memories of both $f_k$ and the candidate. Otherwise $\pi_{k+1}=\pi_k$ and $f_{k+1}=f_k$. Go to round $k+1$.
 \end{enumerate}
@@ -289,7 +289,7 @@ For a variable $Y$ and a memory $N$ that is a function of the history, the small
 Each line rests on one statement, except the first.
 \begin{itemize}\setlength{\itemsep}{0pt}
 \item Line 1 is a choice. The hidden loss of the memory that the policy reads is bounded with the four terms (Proposition~\ref{prop:terms}), so they are what $f$ is trained to lower; for a candidate no bound is proved, and lines 2 and 3 check whether the training helped.
-\item Line 2 uses the uniformly drawn actions because $Q_t(n,a)$ is defined with weights $\Pr(h\mid n)$ that do not depend on the action. The return after such a step is that of $\pi_k$, exploration included.
+\item Line 2 weights each step by $1/\pi_k(A_t\mid M_t)$ because $Q_t(n,a)$ is defined with weights $\Pr(h\mid n)$ that do not depend on the action, while $\pi_k$ chooses its action from another memory. The weights are large where an action is rare.
 \item Lines 3 and 4 are Proposition~\ref{prop:step}: the first-order change of the return is $\alpha\,[X(\fn)-\bar V]$, and the step is small because of (b). The loop repeats because what a memory hides changes with the policy.
 \end{itemize}
 
