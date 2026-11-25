@@ -34,7 +34,7 @@
 \begin{enumerate}
 \item (Known.) How much a small policy step can gain on a memory is the \emph{greedy advantage} of that memory: the average of $\max_aQ-V$ over its values. A critic on that memory shows it.
 \item (Known.) A memory that merges histories with different best actions has a smaller greedy advantage than the whole history. The difference is its \emph{hidden loss}.
-\item (This note.) The hidden loss of the memory that the policy reads is bounded with the four terms of the state defect, each under a square root and times a range of values. The four terms measure what the history tells, beyond the memory, about the next observation ($D^0$), about the action just taken once the next observation is seen ($\dE$), about the next action ($\dP$), and about the next observation once the next action is known ($D^+$).
+\item (This note.) The hidden loss of the memory that the policy reads is bounded with the four terms of the state defect, each under a square root and times a range of values (Propositions~\ref{prop:terms} to~\ref{prop:v}). The four terms measure what the history tells, beyond the memory, about the next observation ($D^0$), about the action just taken once the next observation is seen ($\dE$), about the next action ($\dP$), and about the next observation once the next action is known ($D^+$).
 \item (This note.) So the agent trains $f$ on four prediction losses, one for each term, and lets the greedy advantage choose between the results. The bound does not give the weights of the four losses, and what a memory hides changes with the policy, so the choice is made again in every round.
 \end{enumerate}
 
@@ -103,7 +103,7 @@ It is not negative because the maximum of an average is at most the average of t
 
 \section{Step 3: the hidden loss and the four terms}
 
-Why would two histories with the same memory value prefer different actions? For one of two reasons. Either they predict differently what happens right after the action. Or they predict it alike, but at the next time the histories that are merged there already have different values. The proposition bounds the first with the split of the state defect at the next action, and the second with the split at the current action.
+Why would two histories with the same memory value prefer different actions? For one of two reasons. Either they predict differently what happens right after the action. Or they predict it alike, but at the next time the histories that are merged there already have different values. The first is bounded with the split of the state defect at the next action (Proposition~\ref{prop:q}), the second with the split at the current action (Proposition~\ref{prop:v}).
 
 This step is for the memory of $f_k$, which the policy reads. Throughout, $h$ is a history with the memory value $m$ at time $t$, $m'=f_k(m,a,o)$ is the next memory value, and $a'$ is the next action. $\Pr(o\mid m,a)=\sum_h\Pr(h\mid m)\,\Pr(o\mid h,a)$ is the prediction of the next observation from the memory, and conditional laws such as $\Pr(o\mid m,a,a')$ or $\Pr(a\mid m,o)$ are those of the experience under $\pi_k$. The state defect $D_t$ is what the history tells about the next observation beyond the memory and the action, and the four terms are the pieces of its two splits:
 \begin{align*}
@@ -130,13 +130,22 @@ Add and subtract $\gamma V_{t+1}(m')$ in the bracket of \eqref{eq:bellman}; then
 
 The first line, \eqref{eq:now}, is the part of the difference that is made at time $t$: the history and the memory predict the next observation differently, and the difference is weighted by the reward plus the value of the next memory. The other two lines are the part carried over from time $t+1$: the sum \eqref{eq:carried} minus its average over the histories with the same memory value. They are zero when $V_{t+1}(h)=V_{t+1}(m)$ for every next history $h$ with memory value $m$.
 
-\begin{proposition}[The hidden loss and the four terms]\label{prop:terms}
-(a) The hidden loss at $m$ is at most half the sum, over the actions, of the error of the action value:
+The bound comes in three inequalities.
+
+\begin{proposition}[The hidden loss is at most the error of the action values]\label{prop:terms}
+For every memory value $m$ at time $t$,
 \[
 \sum_h\Pr(h\mid m)\max_aQ_t(h,a)-\max_aQ_t(m,a)\ \le\ \frac12\sum_a\sqrt{\sum_h\Pr(h\mid m)\big[Q_t(h,a)-Q_t(m,a)\big]^2}\,.
 \]
+\end{proposition}
+\begin{proof}
+Since $\max_aQ_t(h,a)\le\max_aQ_t(m,a)+\max_a\big[Q_t(h,a)-Q_t(m,a)\big]$, the hidden loss is at most the mean over $h$ of $\max_a\big[Q_t(h,a)-Q_t(m,a)\big]$. A maximum is at most the sum of the positive parts. Each difference has mean zero over $h$, so the mean of its positive part is half the mean of its absolute value, which is at most its root mean square.
+\end{proof}
 
-(b) The error of the action value, with the split at the next action. For $t\le T-2$,
+The root on the right is the error of the action value at $(m,a)$: how far the value of $a$ on the memory is from its value on the histories that the memory merges. The next proposition bounds it.
+
+\begin{proposition}[The error of the action value, with the split at the next action]\label{prop:q}
+For every memory value $m$ at a time $t\le T-2$ and every action $a$,
 \begin{align*}
 &\sqrt{\sum_h\Pr(h\mid m)\big[Q_t(h,a)-Q_t(m,a)\big]^2}\\
 &\quad\le\Big[\max_{a'}\sum_o\Pr(o\mid m,a,a')\big(r(o)+\gamma Q_{t+1}(m',a')\big)\\
@@ -149,8 +158,21 @@ The two lines with $\dP_t$ and $D^+_t$ can be replaced by
 \Big[\max_o\big(r(o)+\gamma V_{t+1}(m')\big)-\min_o\big(r(o)+\gamma V_{t+1}(m')\big)\Big]\sqrt{\tfrac12\,D_t(m,a)},
 \]
 and at $t=T-1$ they are replaced by it.
+\end{proposition}
+\begin{proof}
+By Lemma~\ref{lem:onestep} and Minkowski's inequality, the root mean square of $Q_t(h,a)-Q_t(m,a)$ is at most that of \eqref{eq:now} plus that of the other two lines. For the other two lines, subtracting from a variable its mean does not increase its mean square, and by Jensen's inequality the mean square of the sum \eqref{eq:carried} is at most $\gamma^2$ times the sum under the last root. For \eqref{eq:now} we use Pinsker's inequality (Cover and Thomas, 2006): for two laws $p$, $q$ on a finite set and a function $w$, $\big|\sum_x[p(x)-q(x)]w(x)\big|\le\big[\max_xw(x)-\min_xw(x)\big]\sqrt{\tfrac12\KL(p\,\|\,q)}$, with the maximum and the minimum over the $x$ with $q(x)>0$. With $p=\Pr(\cdot\mid h,a)$ and $q=\Pr(\cdot\mid m,a)$, squaring and averaging over $h$ gives the bound with $D_t$. For the split write $V_{t+1}(m')=\sum_{a'}\pi_k(a'\mid m')Q_{t+1}(m',a')$, so that \eqref{eq:now} is a difference of two joint laws of $(A_{t+1},O_{t+1})$. Adding and subtracting the law of $A_{t+1}$ from the history times the law of $O_{t+1}$ given $A_{t+1}$ from the memory splits it into a part with the two laws of $A_{t+1}$ and a part with the two laws of $O_{t+1}$ given $A_{t+1}$. Apply Pinsker's inequality to each, then Minkowski's and Jensen's inequalities; the averages of the divergences are $\dP_t$ and $D^+_t$.
+\end{proof}
 
-(c) The error of the state value, with the split at the current action. For $t\le T-1$,
+Each term stands under a square root and is multiplied by a largest minus a smallest value: for $\dP_t$, how much the value differs between the next actions; for $D^+_t$, how much it differs between the next observations once the next action is fixed.
+
+The last root is an error of the state value at time $t+1$, for the histories that follow $(m,a)$. The next history $(h,a,o)$ has probability $\Pr(h_t=h)\,\pi_k(a\mid m)\,\Pr(o\mid h,a)$, so with the weights $\Pr(M_t=m)\,\pi_k(a\mid m)$ the average of the square of this root is the mean squared error of the state value at time $t+1$,
+\[
+\sum_h\Pr(h_{t+1}=h)\big[V_{t+1}(h)-V_{t+1}(m)\big]^2,\qquad m\text{ the memory value of }h .
+\]
+For one pair $(m,a)$ the root is therefore at most $\big[\Pr(M_t=m)\,\pi_k(a\mid m)\big]^{-1/2}$ times the root of this sum: a rarely taken action can hide more. The last proposition bounds this error.
+
+\begin{proposition}[The error of the state value, with the split at the current action]\label{prop:v}
+For every memory value $m$ at a time $t\le T-1$,
 \begin{align*}
 &\sqrt{\sum_h\Pr(h\mid m)\big[V_t(h)-V_t(m)\big]^2}\\
 &\quad\le\Big[\max_o\Big(r(o)+\gamma\sum_a\Pr(a\mid m,o)V_{t+1}(m')\Big)\\
@@ -158,23 +180,14 @@ and at $t=T-1$ they are replaced by it.
 &\qquad+\gamma\max_o\Big[\max_aV_{t+1}(m')-\min_aV_{t+1}(m')\Big]\sqrt{\tfrac12\,\dE_t(m)}\\
 &\qquad+\gamma\sqrt{\sum_h\Pr(h\mid m)\sum_a\pi_k(a\mid m)\sum_o\Pr(o\mid h,a)\big[V_{t+1}(h,a,o)-V_{t+1}(m')\big]^2}\,.
 \end{align*}
-
-(d) The last roots in (b) and (c) are errors of the state value at time $t+1$. With the weights $\Pr(M_t=m)\,\pi_k(a\mid m)$, the average of the square of the last root in (b) is $\sum_h\Pr(h_{t+1}=h)\big[V_{t+1}(h)-V_{t+1}(m)\big]^2$, where $m$ is the memory value of $h$; with the weights $\Pr(M_t=m)$, so is the average of the square of the last root in (c). At time $T$ this error is zero.
 \end{proposition}
-
-In each bound a term stands under a square root and is multiplied by a largest minus a smallest value. For $\dP_t$ this is how much the value differs between the next actions, and for $D^+_t$ how much it differs between the next observations once the next action is fixed. For $D^0_t$ it is how much the value differs between the next observations, and for $\dE_t$ how much the value of the next memory depends on the action once the observation is fixed.
-
 \begin{proof}
-(a) Since $\max_aQ_t(h,a)\le\max_aQ_t(m,a)+\max_a\big[Q_t(h,a)-Q_t(m,a)\big]$, the hidden loss is at most the mean over $h$ of $\max_a\big[Q_t(h,a)-Q_t(m,a)\big]$. A maximum is at most the sum of the positive parts. Each difference has mean zero over $h$, so the mean of its positive part is half the mean of its absolute value, which is at most its root mean square.
-
-(b) By Lemma~\ref{lem:onestep} and Minkowski's inequality, the root mean square of $Q_t(h,a)-Q_t(m,a)$ is at most that of \eqref{eq:now} plus that of the other two lines. For the other two lines, subtracting from a variable its mean does not increase its mean square, and by Jensen's inequality the mean square of the sum \eqref{eq:carried} is at most $\gamma^2$ times the sum under the last root. For \eqref{eq:now} we use Pinsker's inequality (Cover and Thomas, 2006): for two laws $p$, $q$ on a finite set and a function $w$, $\big|\sum_x[p(x)-q(x)]w(x)\big|\le\big[\max_xw(x)-\min_xw(x)\big]\sqrt{\tfrac12\KL(p\,\|\,q)}$, with the maximum and the minimum over the $x$ with $q(x)>0$. With $p=\Pr(\cdot\mid h,a)$ and $q=\Pr(\cdot\mid m,a)$, squaring and averaging over $h$ gives the bound with $D_t$. For the split write $V_{t+1}(m')=\sum_{a'}\pi_k(a'\mid m')Q_{t+1}(m',a')$, so that \eqref{eq:now} is a difference of two joint laws of $(A_{t+1},O_{t+1})$. Adding and subtracting the law of $A_{t+1}$ from the history times the law of $O_{t+1}$ given $A_{t+1}$ from the memory splits it into a part with the two laws of $A_{t+1}$ and a part with the two laws of $O_{t+1}$ given $A_{t+1}$. Apply Pinsker's inequality to each, then Minkowski's and Jensen's inequalities; the averages of the divergences are $\dP_t$ and $D^+_t$.
-
-(c) Average Lemma~\ref{lem:onestep} over the action with $\pi_k(a\mid m)$: this gives $V_t(h)-V_t(m)$. The last root comes as in (b). For the first line, Bayes' rule gives $\pi_k(a\mid m)\big[\Pr(o\mid h,a)-\Pr(o\mid m,a)\big]=\big[\Pr(o\mid h)-\Pr(o\mid m)\big]\Pr(a\mid m,o)+\Pr(o\mid h)\big[\Pr(a\mid h,o)-\Pr(a\mid m,o)\big]$. Sum over $a$ and $o$ against $r(o)+\gamma V_{t+1}(m')$ and apply Pinsker's inequality to the law of the observation and, for each $o$, to the law of the action; there $r(o)$ does not depend on the action and drops out. Then use Minkowski's and Jensen's inequalities. The averages of the divergences are $D^0_t$ and $\dE_t$.
-
-(d) The next history $(h,a,o)$ has probability $\Pr(h_t=h)\,\pi_k(a\mid m)\,\Pr(o\mid h,a)$.
+Average Lemma~\ref{lem:onestep} over the action with $\pi_k(a\mid m)$: this gives $V_t(h)-V_t(m)$. The last root comes as in the proof of Proposition~\ref{prop:q}. For the first line, Bayes' rule gives $\pi_k(a\mid m)\big[\Pr(o\mid h,a)-\Pr(o\mid m,a)\big]=\big[\Pr(o\mid h)-\Pr(o\mid m)\big]\Pr(a\mid m,o)+\Pr(o\mid h)\big[\Pr(a\mid h,o)-\Pr(a\mid m,o)\big]$. Sum over $a$ and $o$ against $r(o)+\gamma V_{t+1}(m')$ and apply Pinsker's inequality to the law of the observation and, for each $o$, to the law of the action; there $r(o)$ does not depend on the action and drops out. Then use Minkowski's and Jensen's inequalities. The averages of the divergences are $D^0_t$ and $\dE_t$.
 \end{proof}
 
-So the hidden loss at time $t$ is bounded with $\dP_t$ and $D^+_t$ of every action, plus the error of the state value at time $t+1$; and by (c) and (d), applied at the times $t+1,t+2,\dots$, this error is bounded with $D^0$ and $\dE$ at those times. Going from the histories that follow one pair $(m,a)$ to all histories costs a factor: by (d) the last root in (b) is at most $\big[\Pr(M_t=m)\,\pi_k(a\mid m)\big]^{-1/2}$ times the error of the state value at time $t+1$, so a rarely taken action can hide more.
+Here the factor of $D^0_t$ is how much the value differs between the next observations, and the factor of $\dE_t$ is how much the value of the next memory depends on the action once the observation is fixed. The last root is again an error of the state value at time $t+1$: with the weights $\Pr(M_t=m)$ the average of its square is the same mean squared error as above, and at time $T$ this error is zero. So Proposition~\ref{prop:v} can be applied again at the times $t+1,t+2,\dots$
+
+Together: the hidden loss at time $t$ is bounded with $\dP_t$ and $D^+_t$ of every action, plus the error of the state value at time $t+1$, which is bounded with $D^0$ and $\dE$ at the later times.
 
 These are upper bounds. The terms are about observations and actions, not about the reward that they carry: when the values do not differ between the next observations or actions, the factor is zero and so is the hidden loss, however large the term is. So the four terms say what $f$ can be trained to predict, and the greedy advantage says whether a change of $f$ helped.
 
@@ -219,11 +232,11 @@ For a variable $Y$ and a memory $N$ that is a function of the history, the small
 
 The numbers $g^j$ are the greedy advantages up to the average of $V_t$, which is the same for all candidates. Lines 6 to 12 are Steps~1 and~2: to first order the policy step changes the return by $\alpha$ times the greedy advantage of the chosen memory. Line 4 takes from Step~3 which four losses to use, and the loop over rounds repeats because what a memory hides changes with the policy.
 
-\paragraph{Why the weights are chosen and not derived.} Steps 1 to 3 give a lower bound on what the policy step gains: $\alpha$ times the greedy advantage of the history minus the bound of Proposition~\ref{prop:terms}, up to order $\alpha^2$. One could turn this bound into the training objective of $f$, in the way a policy-improvement bound is turned into an objective for the policy: minimise the bound, that is, the four terms with the factors of Proposition~\ref{prop:terms} computed from the current critic as weights. We do not do this, for two reasons. First, the agent cannot evaluate the bound. A term is the prediction loss from the memory minus the same loss from the whole history; the second loss is unknown to the agent, and since the term stands under a square root it cannot be dropped as a constant. Second, each factor is one largest minus smallest value for a whole term, so it does not say which part of the observation carries the value, and a memory that lowers the bound need not lower the hidden loss. So line 4 takes only the four losses from the bound, and lines 6 to 10 choose between weightings with the criterion of Steps~1 and~2, which is exact.
+\paragraph{Why the weights are chosen and not derived.} Steps 1 to 3 give a lower bound on what the policy step gains: $\alpha$ times the greedy advantage of the history minus the bound of Step~3, up to order $\alpha^2$. One could turn this bound into the training objective of $f$, in the way a policy-improvement bound is turned into an objective for the policy: minimise the bound, that is, the four terms with the factors of Propositions~\ref{prop:q} and~\ref{prop:v} computed from the current critic as weights. We do not do this, for two reasons. First, the agent cannot evaluate the bound. A term is the prediction loss from the memory minus the same loss from the whole history; the second loss is unknown to the agent, and since the term stands under a square root it cannot be dropped as a constant. Second, each factor is one largest minus smallest value for a whole term, so it does not say which part of the observation carries the value, and a memory that lowers the bound need not lower the hidden loss. So line 4 takes only the four losses from the bound, and lines 6 to 10 choose between weightings with the criterion of Steps~1 and~2, which is exact.
 
 \paragraph{Not covered.}
 \begin{itemize}\setlength{\itemsep}{0pt}
-\item A bound on the hidden loss of a candidate that the policy does not read yet. Proposition~\ref{prop:terms} and the two splits are for the memory that the policy reads.
+\item A bound on the hidden loss of a candidate that the policy does not read yet. Propositions~\ref{prop:q} and~\ref{prop:v} and the two splits are for the memory that the policy reads.
 \item The weights of the four losses. No statement gives them.
 \item The size of the step, and a policy step other than the mixture of line 12.
 \item Dropping the memory of $f_k$ after the step, as an agent with one network for $f$ does; with line 11 as written the memory grows by one component per round.
